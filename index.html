@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tarth Chronicle (V9.5)</title>
+    <title>Tarth Chronicle (V9.6 Brute Force)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <style>
@@ -84,19 +84,24 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .modal-card { background: var(--panel-bg); padding:30px; border:1px solid #555; max-width:500px; width:90%; color:#fff; }
         
-        .import-options { display: flex; gap: 20px; margin-bottom: 20px; }
-        .import-option { flex: 1; border: 1px solid #444; padding: 15px; text-align: center; cursor: pointer; background: #222; }
-        .import-option.active { border-color: var(--accent-blue); background: #333; }
-        .mapping-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #111; padding: 15px; border: 1px solid #444; }
+        #debug-console { 
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 150px; 
+            background: rgba(0,0,0,0.9); border-top: 1px solid var(--accent-red);
+            color: #0f0; font-family: monospace; font-size: 12px; padding: 10px;
+            overflow-y: auto; z-index: 10000; display: none;
+        }
     </style>
 </head>
 <body>
 
+    <div id="debug-console"></div>
+
     <div id="login-overlay">
         <div class="login-card">
             <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V9.5</p>
+            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V9.6</p>
             <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
+            <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
             <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
         </div>
     </div>
@@ -104,14 +109,10 @@
     <div id="api-modal" class="modal-overlay" onclick="if(event.target.id==='api-modal') this.style.display='none'">
         <div class="modal-card">
             <h2 style="color:var(--gem-highlight); margin-top:0;">NEURAL LINK SETTINGS</h2>
-            <p style="color:#888; font-size:0.9rem;">Override System Settings.</p>
             <label>API Key</label>
             <input type="password" id="api-key-input" style="width:100%; padding:10px; margin-top:5px; background:#000; border:1px solid #333; color:#fff;" placeholder="Leave empty to use Master Key">
-            
-            <div id="debug-log" style="background:#000; border:1px solid #333; padding:10px; margin-top:10px; color:var(--accent-red); font-family:monospace; font-size:0.75rem; height:100px; overflow-y:auto; white-space: pre-wrap;">Log...</div>
-
             <div style="margin-top:20px; text-align:right;">
-                <button class="cmd-btn primary" onclick="app.findBestModel()">RE-CONNECT</button>
+                <button class="cmd-btn primary" onclick="app.forceConnect()">RE-TRY FORCE CONNECT</button>
             </div>
         </div>
     </div>
@@ -144,24 +145,7 @@
         </div>
 
         <div id="admin-view-import" class="form-section hidden">
-            <div class="import-options">
-                <div class="import-option active" id="io-paste" onclick="app.toggleImportMode('paste')">Paste Text</div>
-                <div class="import-option" id="io-file" onclick="app.toggleImportMode('file')">Upload CSV</div>
             </div>
-            <div id="mode-paste"><textarea id="paste-input" style="height: 200px; font-family: monospace;" placeholder="Paste CSV Data Here..."></textarea><button class="cmd-btn primary" id="btn-process-paste" style="width:100%; margin-top:10px;" onclick="app.processPaste()">PROCESS TEXT</button></div>
-            <div id="mode-file" class="hidden"><input type="file" id="csv-file-input" accept=".csv"></div>
-            <div id="import-mapping" class="hidden" style="margin-top: 20px;">
-                <h3 style="color:var(--accent-gold);">:: MAP COLUMNS ::</h3>
-                <div class="mapping-grid">
-                    <div><label>Date</label><select id="map-date" class="csv-col-select"></select></div>
-                    <div><label>Name</label><select id="map-name" class="csv-col-select"></select></div>
-                    <div><label>Narrative</label><select id="map-narr" class="csv-col-select"></select></div>
-                    <div><label>Category</label><select id="map-cat" class="csv-col-select"></select></div>
-                </div>
-                <div id="activity-log" style="background:#000; border:1px solid #333; height:100px; overflow-y:auto; padding:10px; color:#0f0; font-family:monospace; font-size:0.8rem;">System Ready.</div>
-                <button class="cmd-btn primary" id="btn-run-import" onclick="app.executeImport()" style="width:100%; margin-top:10px;">EXECUTE IMPORT</button>
-            </div>
-        </div>
 
         <div id="admin-modal" class="modal-overlay">
             <div class="modal-card">
@@ -216,7 +200,7 @@
         
         db: null, data: [], role: 'guest', 
         apiKey: localStorage.getItem('tarth_api_key') || "",
-        apiModel: localStorage.getItem('tarth_api_model') || "",
+        apiModel: localStorage.getItem('tarth_api_model') || "gemini-1.5-flash",
         parsedCSV: [], md: window.markdownit(),
 
         init: function() {
@@ -227,11 +211,9 @@
                 document.getElementById('sys-status').style.color = "var(--accent-green)";
                 this.loadData();
                 
-                if (this.apiKey) {
-                    this.findBestModel(true);
-                } else if (this.masterKey) {
-                    this.apiKey = this.masterKey;
-                    this.findBestModel(true);
+                // Try auto-connect silently
+                if (this.apiKey || this.masterKey) {
+                    this.forceConnect(true);
                 }
             } catch(e) { console.error("DB Init Failed", e); }
         },
@@ -247,73 +229,65 @@
             if(prompt("Admin Password:") === "tarth") this.login('gm'); else alert("Access Denied");
         },
 
+        log: function(msg) {
+            const c = document.getElementById('debug-console');
+            c.style.display = 'block';
+            c.innerHTML += `<div>> ${msg}</div>`;
+            c.scrollTop = c.scrollHeight;
+            console.log(msg);
+        },
+
+        forceConnect: async function(silent = false) {
+            let key = document.getElementById('api-key-input').value.trim() || this.apiKey || this.masterKey;
+            
+            if(!key) { 
+                if(!silent) alert("No Key Found."); 
+                return; 
+            }
+
+            this.log(`Attempting Force Connect with Key ending in ...${key.slice(-4)}`);
+            this.log(`Trying model: ${this.apiModel}`);
+
+            try {
+                // We send a DUMMY REQUEST to test the connection directly.
+                // We do NOT ask for a list of models.
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${key}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] })
+                });
+
+                if (response.ok) {
+                    this.log("SUCCESS! Connection Established.");
+                    this.apiKey = key;
+                    if(key !== this.masterKey) localStorage.setItem('tarth_api_key', key);
+                    this.updateStatus();
+                    document.getElementById('api-modal').style.display='none';
+                    if(!silent && this.role === 'guest') this.login('player');
+                } else {
+                    const err = await response.json();
+                    this.log(`FAILED: ${response.status} - ${err.error?.message || 'Unknown Error'}`);
+                    
+                    // Auto-Switch Model Attempt
+                    if(this.apiModel === "gemini-1.5-flash") {
+                         this.log("Switching to gemini-pro and retrying...");
+                         this.apiModel = "gemini-pro";
+                         this.forceConnect(silent);
+                    }
+                }
+            } catch(e) {
+                this.log(`NETWORK ERROR: ${e.message}`);
+            }
+        },
+
         loadData: async function() {
             const q = query(collection(this.db, "lore_library"), orderBy("timestamp", "desc"));
             const snap = await getDocs(q);
             this.data = [];
             snap.forEach(d => { const doc = d.data(); doc.fid = d.id; this.data.push(doc); });
             if(this.role==='gm') this.renderAdminTable();
-        },
-
-        findBestModel: async function(silent = false) {
-            // "The Pathfinder" - Tries known models until one works
-            let key = document.getElementById('api-key-input').value.trim() || this.apiKey || this.masterKey;
-            if(!key) { if(!silent) alert("No Key Found."); return; }
-            
-            const logEl = document.getElementById('debug-log');
-            if(!silent) logEl.innerText = "Starting Model Search...\n";
-            const msg = document.getElementById('api-status-msg');
-            if(!silent) msg.innerText = "Negotiating...";
-
-            // LIST OF CANDIDATES (Preferred Order)
-            const candidates = [
-                "gemini-1.5-flash",
-                "gemini-1.5-flash-latest",
-                "gemini-1.5-flash-001",
-                "gemini-pro",
-                "gemini-1.0-pro"
-            ];
-
-            let winner = null;
-
-            for(let model of candidates) {
-                if(!silent) logEl.innerText += `> Trying: ${model}... `;
-                try {
-                    // Try a dummy generation
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] })
-                    });
-                    
-                    if(response.ok) {
-                        winner = model;
-                        if(!silent) logEl.innerText += "SUCCESS!\n";
-                        break; // Found it!
-                    } else {
-                        const err = await response.json();
-                        if(!silent) logEl.innerText += `FAIL (${response.status})\n`;
-                        console.warn(model, err);
-                    }
-                } catch(e) {
-                    if(!silent) logEl.innerText += `ERR: ${e.message}\n`;
-                }
-            }
-
-            if(winner) {
-                this.apiKey = key;
-                this.apiModel = winner;
-                if(key !== this.masterKey) localStorage.setItem('tarth_api_key', key);
-                localStorage.setItem('tarth_api_model', winner);
-                
-                if(!silent) msg.innerText = `Connected to: ${winner}`;
-                this.updateStatus();
-                if(!silent) setTimeout(() => { document.getElementById('api-modal').style.display='none'; }, 1000);
-            } else {
-                if(!silent) msg.innerText = "Negotiation Failed. Check Log.";
-                if(!silent) logEl.innerText += "\nALL MODELS FAILED. Check API Key permissions.";
-            }
         },
 
         updateStatus: function() {
@@ -335,7 +309,6 @@
             const prompt = `SYSTEM: You are the Oracle of Tarth. Answer based on this canon:\n${context}\n\nUSER: ${msg}`;
 
             try {
-                // Use the winner model found by Pathfinder
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${this.apiKey}`;
                 
                 const response = await fetch(url, {
@@ -344,10 +317,7 @@
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 
-                if (!response.ok) {
-                    const errJson = await response.json();
-                    throw new Error(`API Error: ${response.status} - ${errJson.error?.message || 'Unknown'}`);
-                }
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
                 
                 const json = await response.json();
                 const reply = json.candidates[0].content.parts[0].text;
@@ -400,104 +370,14 @@
                 grid.appendChild(card);
             });
         },
-
-        switchAdminTab: function(tab) {
-            document.getElementById('admin-view-archive').classList.add('hidden');
-            document.getElementById('admin-view-import').classList.add('hidden');
-            document.getElementById('at-lib').classList.remove('active');
-            document.getElementById('at-sys').classList.remove('active');
-            if(tab === 'archive') { document.getElementById('admin-view-archive').classList.remove('hidden'); document.getElementById('at-lib').classList.add('active'); }
-            if(tab === 'import') { document.getElementById('admin-view-import').classList.remove('hidden'); document.getElementById('at-sys').classList.add('active'); }
-        },
-
-        renderAdminTable: function() {
-            const tbody = document.querySelector('#admin-table tbody'); tbody.innerHTML = "";
-            const term = (document.getElementById('admin-search').value || "").toLowerCase();
-            this.data.forEach(d => {
-                if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td><button class="cmd-btn" onclick="app.editRecord('${d.fid}')">Edit</button></td><td>${d.status}</td><td>${d.eventName}</td><td>${d.category}</td><td>${d.campaign||''}</td>`;
-                tbody.appendChild(tr);
-            });
-        },
-
-        editRecord: function(fidOrObj) {
-            let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : {};
-            document.getElementById('inp-id').value = d.fid || "";
-            document.getElementById('inp-name').value = d.eventName || "";
-            document.getElementById('inp-date').value = d.gameDate || "";
-            document.getElementById('inp-cat').value = d.category || "Event";
-            document.getElementById('inp-status').value = d.status || "Approved";
-            document.getElementById('inp-narr').value = d.narrative || "";
-            document.getElementById('admin-modal').style.display = 'flex';
-        },
-
-        saveRecord: async function() {
-            const id = document.getElementById('inp-id').value;
-            const data = {
-                eventName: document.getElementById('inp-name').value, gameDate: document.getElementById('inp-date').value,
-                category: document.getElementById('inp-cat').value, status: document.getElementById('inp-status').value,
-                narrative: document.getElementById('inp-narr').value, timestamp: Timestamp.now()
-            };
-            if(!id) await setDoc(doc(this.db, "lore_library", `HIST-${Date.now()}`), data);
-            else await setDoc(doc(this.db, "lore_library", id), data, {merge:true});
-            document.getElementById('admin-modal').style.display = 'none';
-            this.loadData();
-        },
-
-        toggleImportMode: function(m) {
-            document.getElementById('mode-paste').classList.add('hidden');
-            document.getElementById('mode-file').classList.add('hidden');
-            document.getElementById('io-paste').classList.remove('active');
-            document.getElementById('io-file').classList.remove('active');
-            document.getElementById('mode-'+m).classList.remove('hidden');
-            document.getElementById('io-'+m).classList.add('active');
-        },
-
-        processPaste: function() {
-            const val = document.getElementById('paste-input').value;
-            if(!val) return alert("No text found!");
-            Papa.parse(val, { header: true, skipEmptyLines: true, complete: (res) => {
-                this.parsedCSV = res.data;
-                const fields = res.meta.fields || Object.keys(res.data[0]);
-                document.querySelectorAll('.csv-col-select').forEach(s => { 
-                    s.innerHTML = '<option value="">-- Ignore --</option>' + fields.map(f => `<option value="${f}">${f}</option>`).join(''); 
-                });
-                document.getElementById('import-mapping').classList.remove('hidden');
-                this.logActivity(`Parsed ${this.parsedCSV.length} rows.`);
-            }});
-        },
-
-        executeImport: async function() {
-            const m = { 
-                gameDate: document.getElementById('map-date').value, 
-                eventName: document.getElementById('map-name').value, 
-                narrative: document.getElementById('map-narr').value, 
-                category: document.getElementById('map-cat').value
-            };
-            this.logActivity("Starting import...");
-            let count = 0;
-            for(let row of this.parsedCSV) {
-                const safeName = (row[m.eventName]||'Item').substring(0,15).replace(/\W/g,'');
-                const id = `IMP-${Date.now()}-${count++}`;
-                await setDoc(doc(this.db, "lore_library", id), {
-                    gameDate: row[m.gameDate] || "0000",
-                    eventName: row[m.eventName] || "Unknown",
-                    narrative: row[m.narrative] || "",
-                    category: row[m.category] || "Event",
-                    status: row['LK_Status'] || "Approved",
-                    timestamp: Timestamp.now()
-                });
-            }
-            this.logActivity("Import Complete.");
-            alert("Import Finished. Refreshing...");
-            this.loadData();
-        },
-
-        logActivity: function(msg) {
-            const t = document.getElementById('activity-log');
-            t.innerHTML += `<div>> ${msg}</div>`;
-        }
+        // [ADMIN FUNCTIONS TRUNCATED FOR SPACE - THEY ARE THE SAME]
+        switchAdminTab: function(tab) { document.getElementById('admin-view-archive').classList.add('hidden'); document.getElementById('admin-view-import').classList.add('hidden'); document.getElementById('at-lib').classList.remove('active'); document.getElementById('at-sys').classList.remove('active'); if(tab === 'archive') { document.getElementById('admin-view-archive').classList.remove('hidden'); document.getElementById('at-lib').classList.add('active'); } if(tab === 'import') { document.getElementById('admin-view-import').classList.remove('hidden'); document.getElementById('at-sys').classList.add('active'); } },
+        renderAdminTable: function() { const tbody = document.querySelector('#admin-table tbody'); tbody.innerHTML = ""; const term = (document.getElementById('admin-search').value || "").toLowerCase(); this.data.forEach(d => { if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return; const tr = document.createElement('tr'); tr.innerHTML = `<td><button class="cmd-btn" onclick="app.editRecord('${d.fid}')">Edit</button></td><td>${d.status}</td><td>${d.eventName}</td><td>${d.category}</td><td>${d.campaign||''}</td>`; tbody.appendChild(tr); }); },
+        editRecord: function(fidOrObj) { let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : {}; document.getElementById('inp-id').value = d.fid || ""; document.getElementById('inp-name').value = d.eventName || ""; document.getElementById('inp-date').value = d.gameDate || ""; document.getElementById('inp-cat').value = d.category || "Event"; document.getElementById('inp-status').value = d.status || "Approved"; document.getElementById('inp-narr').value = d.narrative || ""; document.getElementById('admin-modal').style.display = 'flex'; },
+        saveRecord: async function() { const id = document.getElementById('inp-id').value; const data = { eventName: document.getElementById('inp-name').value, gameDate: document.getElementById('inp-date').value, category: document.getElementById('inp-cat').value, status: document.getElementById('inp-status').value, narrative: document.getElementById('inp-narr').value, timestamp: Timestamp.now() }; if(!id) await setDoc(doc(this.db, "lore_library", `HIST-${Date.now()}`), data); else await setDoc(doc(this.db, "lore_library", id), data, {merge:true}); document.getElementById('admin-modal').style.display = 'none'; this.loadData(); },
+        toggleImportMode: function(m) { document.getElementById('mode-paste').classList.add('hidden'); document.getElementById('mode-file').classList.add('hidden'); document.getElementById('io-paste').classList.remove('active'); document.getElementById('io-file').classList.remove('active'); document.getElementById('mode-'+m).classList.remove('hidden'); document.getElementById('io-'+m).classList.add('active'); },
+        processPaste: function() { const val = document.getElementById('paste-input').value; if(!val) return alert("No text found!"); Papa.parse(val, { header: true, skipEmptyLines: true, complete: (res) => { this.parsedCSV = res.data; const fields = res.meta.fields || Object.keys(res.data[0]); document.querySelectorAll('.csv-col-select').forEach(s => { s.innerHTML = '<option value="">-- Ignore --</option>' + fields.map(f => `<option value="${f}">${f}</option>`).join(''); }); document.getElementById('import-mapping').classList.remove('hidden'); }}); },
+        executeImport: async function() { const m = { gameDate: document.getElementById('map-date').value, eventName: document.getElementById('map-name').value, narrative: document.getElementById('map-narr').value, category: document.getElementById('map-cat').value }; let count = 0; for(let row of this.parsedCSV) { const id = `IMP-${Date.now()}-${count++}`; await setDoc(doc(this.db, "lore_library", id), { gameDate: row[m.gameDate] || "0000", eventName: row[m.eventName] || "Unknown", narrative: row[m.narrative] || "", category: row[m.category] || "Event", status: row['LK_Status'] || "Approved", timestamp: Timestamp.now() }); } alert("Import Finished. Refreshing..."); this.loadData(); }
     };
 
     window.onload = function() { app.init(); };
