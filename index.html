@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tarth Chronicle (V9.6 Brute Force)</title>
+    <title>Tarth Chronicle (V9.7 Live)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <style>
@@ -84,22 +84,25 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .modal-card { background: var(--panel-bg); padding:30px; border:1px solid #555; max-width:500px; width:90%; color:#fff; }
         
+        /* DEBUG CONSOLE */
         #debug-console { 
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 150px; 
-            background: rgba(0,0,0,0.9); border-top: 1px solid var(--accent-red);
-            color: #0f0; font-family: monospace; font-size: 12px; padding: 10px;
-            overflow-y: auto; z-index: 10000; display: none;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 120px; 
+            background: rgba(0,0,0,0.95); border-top: 1px solid var(--accent-red);
+            color: #0f0; font-family: monospace; font-size: 11px; padding: 10px;
+            overflow-y: auto; z-index: 99999; display: none;
         }
+        #debug-close { position:fixed; bottom:125px; left:10px; background:#cc0000; color:#fff; border:none; padding:5px 10px; cursor:pointer; font-weight:bold; z-index:100000; display:none; }
     </style>
 </head>
 <body>
 
     <div id="debug-console"></div>
+    <button id="debug-close" onclick="document.getElementById('debug-console').style.display='none';this.style.display='none'">CLOSE LOG [X]</button>
 
     <div id="login-overlay">
         <div class="login-card">
             <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V9.6</p>
+            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V9.7</p>
             <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
             <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
             <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
@@ -145,7 +148,24 @@
         </div>
 
         <div id="admin-view-import" class="form-section hidden">
+            <div class="import-options">
+                <div class="import-option active" id="io-paste" onclick="app.toggleImportMode('paste')">Paste Text</div>
+                <div class="import-option" id="io-file" onclick="app.toggleImportMode('file')">Upload CSV</div>
             </div>
+            <div id="mode-paste"><textarea id="paste-input" style="height: 200px; font-family: monospace;" placeholder="Paste CSV Data Here..."></textarea><button class="cmd-btn primary" id="btn-process-paste" style="width:100%; margin-top:10px;" onclick="app.processPaste()">PROCESS TEXT</button></div>
+            <div id="mode-file" class="hidden"><input type="file" id="csv-file-input" accept=".csv"></div>
+            <div id="import-mapping" class="hidden" style="margin-top: 20px;">
+                <h3 style="color:var(--accent-gold);">:: MAP COLUMNS ::</h3>
+                <div class="mapping-grid">
+                    <div><label>Date</label><select id="map-date" class="csv-col-select"></select></div>
+                    <div><label>Name</label><select id="map-name" class="csv-col-select"></select></div>
+                    <div><label>Narrative</label><select id="map-narr" class="csv-col-select"></select></div>
+                    <div><label>Category</label><select id="map-cat" class="csv-col-select"></select></div>
+                </div>
+                <div id="activity-log" style="background:#000; border:1px solid #333; height:100px; overflow-y:auto; padding:10px; color:#0f0; font-family:monospace; font-size:0.8rem;">System Ready.</div>
+                <button class="cmd-btn primary" id="btn-run-import" onclick="app.executeImport()" style="width:100%; margin-top:10px;">EXECUTE IMPORT</button>
+            </div>
+        </div>
 
         <div id="admin-modal" class="modal-overlay">
             <div class="modal-card">
@@ -211,7 +231,6 @@
                 document.getElementById('sys-status').style.color = "var(--accent-green)";
                 this.loadData();
                 
-                // Try auto-connect silently
                 if (this.apiKey || this.masterKey) {
                     this.forceConnect(true);
                 }
@@ -231,7 +250,9 @@
 
         log: function(msg) {
             const c = document.getElementById('debug-console');
+            const b = document.getElementById('debug-close');
             c.style.display = 'block';
+            b.style.display = 'block';
             c.innerHTML += `<div>> ${msg}</div>`;
             c.scrollTop = c.scrollHeight;
             console.log(msg);
@@ -245,12 +266,9 @@
                 return; 
             }
 
-            this.log(`Attempting Force Connect with Key ending in ...${key.slice(-4)}`);
-            this.log(`Trying model: ${this.apiModel}`);
+            if(!silent) this.log(`Attempting Force Connect with Key ending in ...${key.slice(-4)}`);
 
             try {
-                // We send a DUMMY REQUEST to test the connection directly.
-                // We do NOT ask for a list of models.
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${key}`;
                 
                 const response = await fetch(url, {
@@ -260,19 +278,25 @@
                 });
 
                 if (response.ok) {
-                    this.log("SUCCESS! Connection Established.");
+                    if(!silent) this.log("SUCCESS! Connection Established.");
                     this.apiKey = key;
                     if(key !== this.masterKey) localStorage.setItem('tarth_api_key', key);
                     this.updateStatus();
                     document.getElementById('api-modal').style.display='none';
                     if(!silent && this.role === 'guest') this.login('player');
+                    
+                    // AUTO HIDE LOG ON SUCCESS
+                    setTimeout(() => {
+                        document.getElementById('debug-console').style.display='none';
+                        document.getElementById('debug-close').style.display='none';
+                    }, 1500);
+
                 } else {
                     const err = await response.json();
                     this.log(`FAILED: ${response.status} - ${err.error?.message || 'Unknown Error'}`);
                     
-                    // Auto-Switch Model Attempt
                     if(this.apiModel === "gemini-1.5-flash") {
-                         this.log("Switching to gemini-pro and retrying...");
+                         this.log("Switching to gemini-pro...");
                          this.apiModel = "gemini-pro";
                          this.forceConnect(silent);
                     }
@@ -370,7 +394,6 @@
                 grid.appendChild(card);
             });
         },
-        // [ADMIN FUNCTIONS TRUNCATED FOR SPACE - THEY ARE THE SAME]
         switchAdminTab: function(tab) { document.getElementById('admin-view-archive').classList.add('hidden'); document.getElementById('admin-view-import').classList.add('hidden'); document.getElementById('at-lib').classList.remove('active'); document.getElementById('at-sys').classList.remove('active'); if(tab === 'archive') { document.getElementById('admin-view-archive').classList.remove('hidden'); document.getElementById('at-lib').classList.add('active'); } if(tab === 'import') { document.getElementById('admin-view-import').classList.remove('hidden'); document.getElementById('at-sys').classList.add('active'); } },
         renderAdminTable: function() { const tbody = document.querySelector('#admin-table tbody'); tbody.innerHTML = ""; const term = (document.getElementById('admin-search').value || "").toLowerCase(); this.data.forEach(d => { if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return; const tr = document.createElement('tr'); tr.innerHTML = `<td><button class="cmd-btn" onclick="app.editRecord('${d.fid}')">Edit</button></td><td>${d.status}</td><td>${d.eventName}</td><td>${d.category}</td><td>${d.campaign||''}</td>`; tbody.appendChild(tr); }); },
         editRecord: function(fidOrObj) { let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : {}; document.getElementById('inp-id').value = d.fid || ""; document.getElementById('inp-name').value = d.eventName || ""; document.getElementById('inp-date').value = d.gameDate || ""; document.getElementById('inp-cat').value = d.category || "Event"; document.getElementById('inp-status').value = d.status || "Approved"; document.getElementById('inp-narr').value = d.narrative || ""; document.getElementById('admin-modal').style.display = 'flex'; },
