@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lorekeeper V12.1 (The Codex Update)</title>
+    <title>Lorekeeper V12.3 (Ghost Protocol)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <style>
@@ -37,18 +37,19 @@
         .login-btn.creative { border-color: var(--accent-blue); color: var(--accent-blue); }
         .login-btn.creative:hover { background: rgba(92, 158, 255, 0.1); box-shadow: 0 0 15px rgba(92, 158, 255, 0.2); }
 
-        /* SHARED STYLES (DOSSIER & ADMIN) */
+        /* SHARED STYLES */
         .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
         .profile-name { font-size: 2.5rem; color: var(--text-main); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-family: "Courier New", monospace; }
         .profile-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
         .profile-img-container { width: 100%; border: 4px double var(--border-color); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; position:relative; }
-        .profile-img { width: 100%; height: auto; display: block; object-fit: cover; }
+        .profile-img { width: 100%; height: 100%; display: block; object-fit: cover; }
         .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
         .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
         .feed-entry { margin-bottom: 20px; position: relative; padding-left:20px; border-left:2px solid #333; }
         .feed-date { color: var(--accent-gold); font-weight: bold; font-size: 0.85rem; }
         .feed-title { color: var(--text-main); font-weight: bold; font-size: 1rem; }
         .feed-body { color: #aaa; margin-top: 5px; }
+        .ghost-warning { background:rgba(212, 175, 55, 0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:15px; margin-bottom:20px; font-family:monospace; }
 
         /* ADMIN SPECIFIC */
         #app-admin { display:none; background: var(--panel-bg); border-left: 2px solid var(--border-color); border-right: 2px solid var(--border-color); max-width: 1400px; margin: 0 auto; min-height: 100vh; flex-direction:column; }
@@ -140,7 +141,7 @@
     <div id="login-overlay">
         <div class="login-card">
             <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V12.1</p>
+            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V12.3</p>
             <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
             <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
             <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
@@ -301,12 +302,13 @@
         return { val: yr + (mIdx / 100), year: yr.toString(), monthIdx: mIdx };
     }
 
-    // IMAGE PLACEHOLDERS
-    function getPlaceholder(category) {
+    // RELIABLE IMAGE PLACEHOLDERS
+    function getPlaceholder(category, name) {
         const cat = (category || 'Lore').toLowerCase();
-        if(cat.includes('people') || cat.includes('creature') || cat.includes('factions')) return 'https://via.placeholder.com/400x600/111/555?text=ENTITY';
-        if(cat.includes('location')) return 'https://via.placeholder.com/400x600/111/5c9eff?text=LOCATION';
-        return 'https://via.placeholder.com/400x600/111/d4af37?text=ARCHIVE';
+        let bg = '333333'; let text = 'ARCHIVE';
+        if(cat.includes('people') || cat.includes('creature') || cat.includes('factions')) { bg='1a1a2e'; text='ENTITY'; }
+        if(cat.includes('location')) { bg='0f2027'; text='LOCATION'; }
+        return `https://placehold.co/400x600/${bg}/FFF?text=${name.replace(' ','+')}`;
     }
 
     window.app = {
@@ -454,7 +456,7 @@
             input.value = "";
             const loadingId = this.appendMsg("Thinking...", 'ai', true);
             const context = this.retrieveContext(msg);
-            const systemInst = `SYSTEM: You are the Oracle of Tarth. Answer based on this canon:\n${context}\n\nIMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\``;
+            const systemInst = `SYSTEM: You are the Oracle of Tarth. Answer based on this canon:\n${context}\n\nIMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\`\n\nIf asked for a PROFILE of a character that does NOT have a specific record in the context, but appears in events, SYNTHESIZE a summary from those events.`;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${this.apiKey}`;
@@ -548,7 +550,7 @@
                 // Find image
                 const imageRec = map[tag].find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)/i));
                 const category = map[tag][0].category;
-                const imgUrl = imageRec ? imageRec.url : getPlaceholder(category);
+                const imgUrl = imageRec ? imageRec.url : getPlaceholder(category, tag);
                 
                 const card = document.createElement('div'); card.className = 'gem-card';
                 card.innerHTML = `<div class="gem-card-img" style="background-image:url('${imgUrl}');background-size:cover;"></div><div class="gem-card-content"><div class="gem-card-meta">${category}</div><div class="gem-card-title">${tag}</div></div>`;
@@ -561,8 +563,8 @@
             this.switchGemView('dossier');
             const d = document.getElementById('gem-dossier-content');
             const imageRec = records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
-            const bioRec = records.find(r => r.category === 'People' || r.category === 'Location' || r.category === 'Factions') || records[0];
-            const imgUrl = imageRec ? imageRec.url : getPlaceholder(bioRec.category);
+            const bioRec = records.find(r => ['People','Location','Factions'].includes(r.category) && r.eventName === name) || records[0];
+            const imgUrl = imageRec ? imageRec.url : getPlaceholder(bioRec.category, name);
             
             records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
 
@@ -691,39 +693,55 @@
 
         renderDossier: function(name, records) {
             const d = document.getElementById('entity-dossier');
-            const imageRec = records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
-            const bioRec = records.find(r => r.category === 'People' || r.category === 'Location' || r.category === 'Factions') || records[0];
-            const imgUrl = imageRec ? imageRec.url : getPlaceholder(bioRec.category);
             
+            // Logic to find PRIMARY record (matching name + category)
+            const primaryRec = records.find(r => r.eventName === name && ['People','Location','Factions'].includes(r.category));
+            const imageRec = primaryRec && primaryRec.url ? primaryRec : records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
+            
+            // Ghost Detection
+            const isGhost = !primaryRec;
+            const category = primaryRec ? primaryRec.category : records[0].category;
+            const imgUrl = imageRec && imageRec.url ? imageRec.url : getPlaceholder(category, name);
+            const bioText = primaryRec ? primaryRec.narrative : `Derived profile based on ${records.length} event references.`;
+            const statsText = primaryRec ? primaryRec.stats : "";
+
             records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
 
+            // Create Ghost Function
+            window.createFromTag = () => {
+                app.editRecord({ eventName: name, category: 'People', status: 'Draft', tags: name });
+            };
+
             window.copyProfile = () => {
-                const txt = `*** ${name.toUpperCase()} ***\n\nOVERVIEW: ${bioRec.narrative}\n\nEVENTS:\n` + records.map(r => `[${r.gameDate}] ${r.eventName}: ${r.narrative}`).join('\n');
+                const txt = `*** ${name.toUpperCase()} ***\n\nOVERVIEW: ${bioText}\n\nEVENTS:\n` + records.map(r => `[${r.gameDate}] ${r.eventName}: ${r.narrative}`).join('\n');
                 navigator.clipboard.writeText(txt).then(() => alert('Profile Copied to Clipboard'));
             };
 
             let html = `
                 <div class="profile-header">
                     <div class="profile-name">${name}</div>
-                    <button class="cmd-btn" onclick="window.copyProfile()">COPY PROFILE</button>
+                    <div style="display:flex; gap:10px;">
+                        ${isGhost ? `<button class="cmd-btn" style="background:var(--accent-gold); color:black;" onclick="window.createFromTag()">+ CREATE PRIMARY RECORD</button>` : `<button class="cmd-btn" onclick="app.editRecord('${primaryRec.fid}')">EDIT RECORD</button>`}
+                        <button class="cmd-btn" onclick="window.copyProfile()">COPY PROFILE</button>
+                    </div>
                 </div>
+                
+                ${isGhost ? `<div class="ghost-warning">:: UNREGISTERED ENTITY :: This profile is auto-generated from event tags. Create a Primary Record to add official stats and bio.</div>` : ''}
+
                 <div class="profile-grid">
                     <div class="profile-img-container">
                         <img src="${imgUrl}" class="profile-img">
                     </div>
                     <div>
                         <div style="font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">NARRATIVE OVERVIEW</div>
-                        <div style="font-style:italic; color:#ccc; line-height:1.6;">${bioRec.narrative}</div>
+                        <div style="font-style:italic; color:#ccc; line-height:1.6;">${bioText}</div>
                         
                         <div style="margin-top:20px; font-weight:bold; color:var(--accent-green);">GAME DATA</div>
                         <div class="stat-block-gw">
-                            <div class="stat-header-gw"><span>${name}</span><span>${bioRec.game || 'System'}</span></div>
-                            <div style="background:#fff; padding:10px; font-size:0.9rem;">
-                                ${bioRec.stats ? `<pre style="white-space:pre-wrap; font-family:inherit;">${bioRec.stats}</pre>` : 'No stats recorded.'}
+                            <div class="stat-header-gw"><span>${name}</span><span>${primaryRec ? primaryRec.game : 'System'}</span></div>
+                            <div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">
+                                ${statsText ? `<pre style="white-space:pre-wrap; font-family:inherit;">${statsText}</pre>` : 'No stats recorded.'}
                             </div>
-                        </div>
-                        <div style="margin-top:10px;">
-                            <strong>Campaign:</strong> ${bioRec.campaign} | <strong>Status:</strong> ${bioRec.status}
                         </div>
                     </div>
                 </div>
