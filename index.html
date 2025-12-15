@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lorekeeper V12.0 (The Director)</title>
+    <title>Lorekeeper V12.1 (The Codex Update)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <style>
@@ -37,21 +37,30 @@
         .login-btn.creative { border-color: var(--accent-blue); color: var(--accent-blue); }
         .login-btn.creative:hover { background: rgba(92, 158, 255, 0.1); box-shadow: 0 0 15px rgba(92, 158, 255, 0.2); }
 
-        /* ADMIN LAYOUT */
+        /* SHARED STYLES (DOSSIER & ADMIN) */
+        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
+        .profile-name { font-size: 2.5rem; color: var(--text-main); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-family: "Courier New", monospace; }
+        .profile-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
+        .profile-img-container { width: 100%; border: 4px double var(--border-color); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; position:relative; }
+        .profile-img { width: 100%; height: auto; display: block; object-fit: cover; }
+        .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
+        .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
+        .feed-entry { margin-bottom: 20px; position: relative; padding-left:20px; border-left:2px solid #333; }
+        .feed-date { color: var(--accent-gold); font-weight: bold; font-size: 0.85rem; }
+        .feed-title { color: var(--text-main); font-weight: bold; font-size: 1rem; }
+        .feed-body { color: #aaa; margin-top: 5px; }
+
+        /* ADMIN SPECIFIC */
         #app-admin { display:none; background: var(--panel-bg); border-left: 2px solid var(--border-color); border-right: 2px solid var(--border-color); max-width: 1400px; margin: 0 auto; min-height: 100vh; flex-direction:column; }
         .header-bar { background: #222; border-bottom: 2px solid #444; padding: 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         .header-title { font-weight: 900; letter-spacing: 2px; color: var(--accent-gold); padding: 15px; font-family: "Courier New", monospace; }
         .status-light { font-size: 0.8rem; margin-right: 15px; font-weight: bold; color: var(--accent-red); white-space: nowrap; }
-        
         .campaign-select { background: #111; color: var(--accent-blue); border: 1px solid #444; padding: 5px 10px; font-weight: bold; margin-right: 20px; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
-        
         .nav-tabs { display: flex; }
         .tab-btn { background: #222; border: none; border-left: 1px solid #444; color: #666; padding: 15px 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         .tab-btn:hover { color: #fff; background: #333; }
         .tab-btn.active { background: var(--panel-bg); color: var(--accent-blue); box-shadow: inset 0 -3px 0 var(--accent-blue); }
         .form-section { padding: 20px; flex: 1; overflow-y:auto; padding-bottom:100px; }
-
-        /* TIMELINE (Advanced) */
         .timeline-controls { display:flex; gap:10px; margin-bottom:20px; background:#111; padding:15px; border:1px solid #333; }
         .timeline-scroll-area { flex: 1; overflow-y: auto; padding: 20px 40px; position: relative; }
         .year-block { position: relative; margin-bottom: 40px; z-index: 1; }
@@ -71,37 +80,17 @@
         .tl-body { display: none; padding: 0 15px 15px 15px; border-top: 1px solid #444; }
         .tl-item.expanded .tl-body { display: block; }
         .tl-actions { text-align: right; border-top: 1px dashed #444; padding-top: 10px; margin-top: 10px; }
-
-        /* LIBRARY TABLE */
         .table-container { overflow-x: auto; border: 1px solid #444; max-height: 70vh; margin-top:15px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         th { background: #111; text-align: left; padding: 10px; border-bottom: 2px solid #444; color: #888; position: sticky; top: 0; }
         td { padding: 8px 10px; border-bottom: 1px solid #333; cursor: pointer; }
         tr:hover { background-color: #2a2a2a; }
-
-        /* PROFILES (Correct Layout) */
         .profile-container { display: flex; height: 100%; gap: 0; }
         .profile-list { width: 260px; border-right: 1px solid #444; overflow-y: auto; max-height: 85vh; background: #181818; }
         .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: all 0.2s; }
         .profile-item:hover { background: #222; color: var(--accent-blue); padding-left: 20px; }
-        
         .profile-content { flex: 1; padding: 30px; overflow-y: auto; max-height: 85vh; position: relative; }
-        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
-        .profile-name { font-size: 2.5rem; color: var(--text-main); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-family: "Courier New", monospace; }
         
-        /* The Layout: Image Left, Text Right */
-        .profile-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
-        .profile-img-container { width: 100%; border: 4px double var(--border-color); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .profile-img { width: 100%; height: auto; display: block; }
-        
-        .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
-        .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
-        
-        .feed-entry { margin-bottom: 20px; position: relative; padding-left:20px; border-left:2px solid #333; }
-        .feed-date { color: var(--accent-gold); font-weight: bold; font-size: 0.85rem; }
-        .feed-title { color: var(--text-main); font-weight: bold; font-size: 1rem; }
-        .feed-body { color: #aaa; margin-top: 5px; }
-
         /* FORMS */
         .row { display: flex; gap: 15px; margin-bottom: 15px; } .col { flex: 1; }
         label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #888; margin-bottom: 5px; letter-spacing: 0.5px; font-weight: bold; }
@@ -109,10 +98,6 @@
         button.cmd-btn { background: #333; color: white; border: 1px solid #555; padding: 8px 16px; cursor: pointer; }
         button.cmd-btn:hover { border-color: #888; }
         button.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
-
-        /* MODALS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-card { background: var(--panel-bg); padding:30px; border:1px solid #555; max-width:900px; width:90%; color:#fff; max-height:90vh; overflow-y:auto; }
 
         /* GEM INTERFACE */
         #app-gem { display:none; background: var(--gem-bg); min-height: 100vh; padding: 20px; font-family: "Segoe UI", sans-serif; flex-direction:column; }
@@ -138,6 +123,14 @@
         .gem-card-content { padding: 15px; }
         .gem-card-title { font-size: 1.1rem; font-weight: bold; color: #fff; margin-bottom: 5px; }
         .gem-card-meta { font-size: 0.7rem; color: var(--gem-highlight); text-transform: uppercase; }
+        
+        #gem-view-dossier { color:#fff; max-width:1200px; margin:0 auto; width:100%; padding-bottom:50px; }
+        .back-btn { background:none; border:none; color:var(--gem-highlight); cursor:pointer; font-size:1.2rem; margin-bottom:10px; display:flex; align-items:center; gap:5px; }
+        .back-btn:hover { text-decoration:underline; }
+
+        /* MODALS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-card { background: var(--panel-bg); padding:30px; border:1px solid #555; max-width:900px; width:90%; color:#fff; max-height:90vh; overflow-y:auto; }
     </style>
 </head>
 <body>
@@ -147,7 +140,7 @@
     <div id="login-overlay">
         <div class="login-card">
             <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V12.0</p>
+            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V12.1</p>
             <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
             <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
             <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
@@ -170,7 +163,6 @@
             <div style="padding-left:15px; display:flex; align-items:center;">
                 <span class="header-title">:: LOREKEEPER ::</span>
                 <span id="sys-status" class="status-light" style="margin-left:20px;">● OFFLINE</span>
-                
                 <select id="campaign-select" class="campaign-select" onchange="app.changeCampaign()">
                     <option value="All">All Campaigns</option>
                     <option value="Tarth 2.0">Tarth 2.0</option>
@@ -254,36 +246,15 @@
         <div id="admin-modal" class="modal-overlay">
             <div class="modal-card">
                 <h2 style="color:var(--accent-gold);">EDIT RECORD</h2>
-                <div class="row">
-                    <div class="col"><label>Name</label><input id="inp-name"></div>
-                    <div class="col"><label>In-Game Date</label><input id="inp-date"></div>
-                    <div class="col"><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option><option>System Generated</option></select></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Category</label><select id="inp-cat"><option>Event</option><option>Location</option><option>People</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Factions</option></select></div>
-                    <div class="col"><label>Game System</label><input id="inp-game" placeholder="e.g. Pathfinder 1e"></div>
-                    <div class="col"><label>Campaign</label><input id="inp-camp"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Image URL</label><input id="inp-url" placeholder="https://..."></div>
-                    <div class="col"><label>Reference URL</label><input id="inp-ref" placeholder="External Link..."></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Perspective</label><input id="inp-persp"></div>
-                    <div class="col"><label>Sensory Details</label><input id="inp-sense"></div>
-                </div>
+                <div class="row"><div class="col"><label>Name</label><input id="inp-name"></div><div class="col"><label>In-Game Date</label><input id="inp-date"></div><div class="col"><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option><option>System Generated</option></select></div></div>
+                <div class="row"><div class="col"><label>Category</label><select id="inp-cat"><option>Event</option><option>Location</option><option>People</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Factions</option></select></div><div class="col"><label>Game System</label><input id="inp-game" placeholder="e.g. Pathfinder 1e"></div><div class="col"><label>Campaign</label><input id="inp-camp"></div></div>
+                <div class="row"><div class="col"><label>Image URL</label><input id="inp-url" placeholder="https://..."></div><div class="col"><label>Reference URL</label><input id="inp-ref" placeholder="External Link..."></div></div>
+                <div class="row"><div class="col"><label>Perspective</label><input id="inp-persp"></div><div class="col"><label>Sensory Details</label><input id="inp-sense"></div></div>
                 <div class="row"><div class="col"><label>Stats / Rules Block</label><textarea id="inp-stats" style="height:80px;" placeholder="Stat Block..."></textarea></div></div>
                 <div class="row"><div class="col"><label>Tags (Comma Separated)</label><input id="inp-tags"></div></div>
                 <div class="row"><div class="col"><label>Narrative Description</label><textarea id="inp-narr" style="height:150px;"></textarea></div></div>
-                
                 <input type="hidden" id="inp-id">
-                <div style="text-align:right; margin-top:15px; display:flex; justify-content:space-between;">
-                     <button class="cmd-btn" style="color:var(--accent-red); border-color:var(--accent-red);" onclick="app.deleteRecord()">DELETE</button>
-                     <div>
-                        <button class="cmd-btn" onclick="document.getElementById('admin-modal').style.display='none'">CANCEL</button>
-                        <button class="cmd-btn primary" onclick="app.saveRecord()">SAVE</button>
-                     </div>
-                </div>
+                <div style="text-align:right; margin-top:15px; display:flex; justify-content:space-between;"><button class="cmd-btn" style="color:var(--accent-red); border-color:var(--accent-red);" onclick="app.deleteRecord()">DELETE</button><div><button class="cmd-btn" onclick="document.getElementById('admin-modal').style.display='none'">CANCEL</button><button class="cmd-btn primary" onclick="app.saveRecord()">SAVE</button></div></div>
             </div>
         </div>
     </div>
@@ -301,17 +272,16 @@
             </div>
         </div>
         <div id="gem-view-oracle">
-            <div class="chat-window" id="chat-feed">
-                <div class="chat-msg ai">Greetings. I am the Oracle of Tarth. Status: <span id="oracle-status" style="color:red;">OFFLINE</span>.</div>
-            </div>
-            <div class="chat-input-area">
-                <input type="text" class="chat-input" id="chat-input" placeholder="Ask the Oracle..." onkeypress="if(event.key==='Enter') app.sendChat()">
-                <button class="chat-send" onclick="app.sendChat()">➤</button>
-            </div>
+            <div class="chat-window" id="chat-feed"><div class="chat-msg ai">Greetings. I am the Oracle of Tarth. Status: <span id="oracle-status" style="color:red;">OFFLINE</span>.</div></div>
+            <div class="chat-input-area"><input type="text" class="chat-input" id="chat-input" placeholder="Ask the Oracle..." onkeypress="if(event.key==='Enter') app.sendChat()"><button class="chat-send" onclick="app.sendChat()">➤</button></div>
         </div>
         <div id="gem-view-codex" class="hidden">
             <div style="margin-bottom:20px;"><input type="text" style="width:100%; background:#1c2029; border:1px solid #333; padding:15px; color:#fff; border-radius:30px;" placeholder="Search Codex..." oninput="app.renderGemCodex(this.value)"></div>
             <div class="gem-grid" id="gem-grid"></div>
+        </div>
+        <div id="gem-view-dossier" class="hidden">
+            <button class="back-btn" onclick="app.closeGemDossier()">← BACK TO CODEX</button>
+            <div id="gem-dossier-content"></div>
         </div>
     </div>
 
@@ -329,6 +299,14 @@
         let yr = 0; const yMatch = d.match(/-?\d{1,4}/); if (yMatch) yr = parseInt(yMatch[0]);
         let mIdx = 0; for(let i=0; i<TARTH_MONTHS.length; i++) { if (d.toLowerCase().includes(TARTH_MONTHS[i].toLowerCase())) { mIdx = i + 1; break; } }
         return { val: yr + (mIdx / 100), year: yr.toString(), monthIdx: mIdx };
+    }
+
+    // IMAGE PLACEHOLDERS
+    function getPlaceholder(category) {
+        const cat = (category || 'Lore').toLowerCase();
+        if(cat.includes('people') || cat.includes('creature') || cat.includes('factions')) return 'https://via.placeholder.com/400x600/111/555?text=ENTITY';
+        if(cat.includes('location')) return 'https://via.placeholder.com/400x600/111/5c9eff?text=LOCATION';
+        return 'https://via.placeholder.com/400x600/111/d4af37?text=ARCHIVE';
     }
 
     window.app = {
@@ -366,7 +344,7 @@
             document.getElementById('login-overlay').style.display = 'none';
             if(role === 'gm') {
                 document.getElementById('app-admin').style.display = 'flex';
-                document.getElementById('app-gem').style.display = 'none'; // Explicitly hide
+                document.getElementById('app-gem').style.display = 'none';
                 this.switchAdminTab('timeline');
             } else {
                 document.getElementById('app-admin').style.display = 'none';
@@ -437,9 +415,7 @@
         updateCampaignDropdown: function() {
             const sel = document.getElementById('campaign-select'); 
             sel.innerHTML = `<option value="All">All Campaigns</option>`;
-            Array.from(this.knownCampaigns).sort().forEach(c => {
-                 sel.innerHTML += `<option value="${c}">${c}</option>`;
-            });
+            Array.from(this.knownCampaigns).sort().forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
             sel.innerHTML += `<option value="NEW">+ New...</option>`;
             sel.value = this.currentCampaign;
         },
@@ -459,7 +435,6 @@
         },
 
         refreshAdminViews: function() {
-            // Re-render active tab
             if(document.getElementById('at-time').classList.contains('active')) this.renderTimeline();
             if(document.getElementById('at-lib').classList.contains('active')) this.renderAdminTable();
             if(document.getElementById('at-prof').classList.contains('active')) this.renderProfiles();
@@ -475,14 +450,11 @@
             const input = document.getElementById('chat-input');
             const msg = input.value;
             if(!msg || !this.apiKey) return;
-            
             this.appendMsg(msg, 'user');
             input.value = "";
             const loadingId = this.appendMsg("Thinking...", 'ai', true);
             const context = this.retrieveContext(msg);
-            
-            const systemInst = `SYSTEM: You are the Oracle of Tarth. Answer based on this canon:\n${context}\n\n` +
-                `IMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\``;
+            const systemInst = `SYSTEM: You are the Oracle of Tarth. Answer based on this canon:\n${context}\n\nIMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\``;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${this.apiKey}`;
@@ -514,7 +486,6 @@
                         this.loadData();
                     } catch(e) { console.error("JSON Parse Error", e); }
                 }
-
             } catch(e) { document.getElementById(loadingId).innerText = `Error: ${e.message}`; }
         },
 
@@ -547,21 +518,79 @@
         switchGemView: function(view) {
             document.getElementById('gem-view-oracle').classList.add('hidden');
             document.getElementById('gem-view-codex').classList.add('hidden');
+            document.getElementById('gem-view-dossier').classList.add('hidden');
             document.getElementById('gem-view-'+view).classList.remove('hidden');
             document.querySelectorAll('.gem-nav button').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
         },
 
+        closeGemDossier: function() {
+            this.switchGemView('codex');
+        },
+
         renderGemCodex: function(filter="") {
             const grid = document.getElementById('gem-grid'); grid.innerHTML = "";
             const term = filter.toLowerCase();
-            this.data.filter(d => (d.status === 'Approved' && !d.isSecret) && this.isRelevant(d)).forEach(d => {
-                if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return;
-                let img = d.url && d.url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? d.url : null;
+            
+            // Group by Tags for Gem View
+            const map = {}; 
+            this.data.forEach(d => { 
+                if((d.status === 'Approved' && !d.isSecret) && this.isRelevant(d) && d.tags) {
+                    let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); 
+                    tags.forEach(t => { 
+                        const tag = t.trim(); 
+                        if(tag && (tag.toLowerCase().includes(term) || term==="")) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }
+                    }); 
+                }
+            });
+
+            Object.keys(map).sort().forEach(tag => {
+                // Find image
+                const imageRec = map[tag].find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)/i));
+                const category = map[tag][0].category;
+                const imgUrl = imageRec ? imageRec.url : getPlaceholder(category);
+                
                 const card = document.createElement('div'); card.className = 'gem-card';
-                card.innerHTML = `<div class="gem-card-img" style="${img?`background-image:url('${img}');background-size:cover;`:''}"></div><div class="gem-card-content"><div class="gem-card-meta">${d.category}</div><div class="gem-card-title">${d.eventName}</div></div>`;
+                card.innerHTML = `<div class="gem-card-img" style="background-image:url('${imgUrl}');background-size:cover;"></div><div class="gem-card-content"><div class="gem-card-meta">${category}</div><div class="gem-card-title">${tag}</div></div>`;
+                card.onclick = () => { app.renderGemDossier(tag, map[tag]); };
                 grid.appendChild(card);
             });
+        },
+
+        renderGemDossier: function(name, records) {
+            this.switchGemView('dossier');
+            const d = document.getElementById('gem-dossier-content');
+            const imageRec = records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
+            const bioRec = records.find(r => r.category === 'People' || r.category === 'Location' || r.category === 'Factions') || records[0];
+            const imgUrl = imageRec ? imageRec.url : getPlaceholder(bioRec.category);
+            
+            records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
+
+            let html = `
+                <div class="profile-header">
+                    <div class="profile-name">${name}</div>
+                </div>
+                <div class="profile-grid">
+                    <div class="profile-img-container">
+                        <img src="${imgUrl}" class="profile-img">
+                    </div>
+                    <div>
+                        <div style="font-weight:bold; color:var(--gem-highlight); margin-bottom:5px;">NARRATIVE OVERVIEW</div>
+                        <div style="font-style:italic; color:#ccc; line-height:1.6;">${bioRec.narrative}</div>
+                        
+                        <div style="margin-top:20px; font-weight:bold; color:var(--gem-highlight);">GAME DATA</div>
+                        <div class="stat-block-gw">
+                            <div class="stat-header-gw"><span>${name}</span><span>${bioRec.game || 'System'}</span></div>
+                            <div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">
+                                ${bioRec.stats ? `<pre style="white-space:pre-wrap; font-family:inherit;">${bioRec.stats}</pre>` : 'No stats recorded.'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>
+            `;
+            records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; });
+            d.innerHTML = html;
         },
 
         // ADMIN FUNCTIONS
@@ -646,16 +675,11 @@
 
         renderProfiles: function() {
             const list = document.getElementById('entity-list'); list.innerHTML = "";
-            
-            // Group by Tags
             const map = {}; 
             this.data.forEach(d => { 
                 if(!this.isRelevant(d) || !d.tags) return; 
                 let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); 
-                tags.forEach(t => { 
-                    const tag = t.trim(); 
-                    if(tag) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }
-                }); 
+                tags.forEach(t => { const tag = t.trim(); if(tag) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }}); 
             });
 
             Object.keys(map).sort().forEach(tag => { 
@@ -669,11 +693,10 @@
             const d = document.getElementById('entity-dossier');
             const imageRec = records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
             const bioRec = records.find(r => r.category === 'People' || r.category === 'Location' || r.category === 'Factions') || records[0];
+            const imgUrl = imageRec ? imageRec.url : getPlaceholder(bioRec.category);
             
-            // Sort Chronologically
             records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
 
-            // Copy Function
             window.copyProfile = () => {
                 const txt = `*** ${name.toUpperCase()} ***\n\nOVERVIEW: ${bioRec.narrative}\n\nEVENTS:\n` + records.map(r => `[${r.gameDate}] ${r.eventName}: ${r.narrative}`).join('\n');
                 navigator.clipboard.writeText(txt).then(() => alert('Profile Copied to Clipboard'));
@@ -686,7 +709,7 @@
                 </div>
                 <div class="profile-grid">
                     <div class="profile-img-container">
-                        ${imageRec ? `<img src="${imageRec.url}" class="profile-img">` : `<div style="color:#666;">No Image Linked</div>`}
+                        <img src="${imgUrl}" class="profile-img">
                     </div>
                     <div>
                         <div style="font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">NARRATIVE OVERVIEW</div>
@@ -707,9 +730,7 @@
                 <div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>
             `;
             
-            records.forEach(r => {
-                html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`;
-            });
+            records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; });
             d.innerHTML = html;
         },
 
