@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tarth Chronicle (V9.8)</title>
+    <title>Tarth Chronicle (V9.95)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <style>
@@ -124,7 +124,7 @@
     <div id="login-overlay">
         <div class="login-card">
             <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V9.8</p>
+            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V9.95</p>
             <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
             <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
             <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
@@ -252,9 +252,10 @@
     const firebaseConfig = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
     window.app = {
-        // !!! PASTE YOUR MASTER KEY HERE !!!
-        masterKey: "AIzaSyCfK-AIzaSyCrjfdvjGEPJzzo1HptcI-U4Etb83e3wqQ", 
-        
+        // !!! PASTE YOUR KEY HERE !!!
+        // (Supports Base64 Encoded OR Normal Key)
+        encryptedKey: "QUl6YVN5RFFRWkRzVlFDbnhhOEY2OEtvSnRXRHExV21fX0hfZFow", 
+
         db: null, data: [], role: 'guest', 
         apiKey: localStorage.getItem('tarth_api_key') || "",
         apiModel: localStorage.getItem('tarth_api_model') || "gemini-1.5-flash",
@@ -268,7 +269,15 @@
                 document.getElementById('sys-status').style.color = "var(--accent-green)";
                 this.loadData();
                 
-                if (this.apiKey || this.masterKey) {
+                // DECODE KEY
+                if(this.encryptedKey) {
+                    try {
+                        let decoded = this.encryptedKey.trim();
+                        if(!decoded.startsWith('AIza')) decoded = atob(decoded); // Try decode
+                        this.masterKey = decoded.trim();
+                        this.forceConnect(true);
+                    } catch(e) { console.error("Key Decode Failed", e); }
+                } else if (this.apiKey) {
                     this.forceConnect(true);
                 }
             } catch(e) { console.error("DB Init Failed", e); }
@@ -296,7 +305,11 @@
         },
 
         forceConnect: async function(silent = false) {
-            let key = document.getElementById('api-key-input').value.trim() || this.apiKey || this.masterKey;
+            let key = this.masterKey || this.apiKey;
+            
+            // Allow override from input (and clean it up!)
+            const inputKey = document.getElementById('api-key-input').value.trim();
+            if(inputKey) key = inputKey.replace(/\s/g, ''); // REMOVE SPACES AGGRESSIVELY
             
             if(!key) { if(!silent) alert("No Key Found."); return; }
 
@@ -318,7 +331,6 @@
                     document.getElementById('api-modal').style.display='none';
                     if(!silent && this.role === 'guest') this.login('player');
                     
-                    // AUTO HIDE LOG
                     setTimeout(() => {
                         document.getElementById('debug-console').style.display='none';
                         document.getElementById('debug-close').style.display='none';
