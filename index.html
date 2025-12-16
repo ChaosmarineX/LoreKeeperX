@@ -111,7 +111,26 @@
         .icon-btn:hover { color:#fff; }
         #gem-view-oracle { display:flex; flex-direction:column; height:80vh; max-width:900px; margin:0 auto; width:100%; }
         .chat-window { flex:1; overflow-y:auto; padding:20px; background:#0b0d10; border:1px solid #333; border-radius:10px; margin-bottom:20px; }
-        .chat-msg { margin-bottom:20px; padding:15px; border-radius:10px; max-width:80%; line-height:1.6; }
+        /* FIXED CHAT BUBBLES */
+        .chat-msg { 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border-radius: 10px; 
+            max-width: 80%; 
+            line-height: 1.6;
+            word-wrap: break-word;       /* Forces long words to break */
+            overflow-wrap: break-word;   /* Modern browser support */
+            overflow: hidden;            /* Clips anything that still tries to escape */
+        }
+
+        /* FIX FOR CODE BLOCKS (The JSON part) */
+        .chat-msg pre, .chat-msg code {
+            white-space: pre-wrap;       /* Wraps code instead of scrolling horizontally */
+            word-break: break-all;       /* Forces break on specific characters */
+            background: rgba(0,0,0,0.3); /* Slight dim for contrast */
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
         .chat-msg.user { background: var(--gem-chat-user); color:#ccd6f6; align-self:flex-end; margin-left:auto; border-bottom-right-radius:2px; }
         .chat-msg.ai { background: var(--gem-chat-ai); color:#8892b0; border-left:3px solid var(--gem-highlight); border-top-left-radius:2px; }
         .chat-input-area { display:flex; gap:10px; position:relative; }
