@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lorekeeper V12.3 (Ghost Protocol)</title>
+    <title>Lorekeeper V13.0 (The Living World)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <style>
@@ -109,33 +109,20 @@
         .gem-controls { display:flex; gap:15px; align-items:center; }
         .icon-btn { cursor:pointer; font-size:1.2rem; color:#666; transition:0.2s; }
         .icon-btn:hover { color:#fff; }
+        
         #gem-view-oracle { display:flex; flex-direction:column; height:80vh; max-width:900px; margin:0 auto; width:100%; }
-        .chat-window { flex:1; overflow-y:auto; padding:20px; background:#0b0d10; border:1px solid #333; border-radius:10px; margin-bottom:20px; }
         /* FIXED CHAT BUBBLES */
-        .chat-msg { 
-            margin-bottom: 20px; 
-            padding: 15px; 
-            border-radius: 10px; 
-            max-width: 80%; 
-            line-height: 1.6;
-            word-wrap: break-word;       /* Forces long words to break */
-            overflow-wrap: break-word;   /* Modern browser support */
-            overflow: hidden;            /* Clips anything that still tries to escape */
-        }
-
-        /* FIX FOR CODE BLOCKS (The JSON part) */
-        .chat-msg pre, .chat-msg code {
-            white-space: pre-wrap;       /* Wraps code instead of scrolling horizontally */
-            word-break: break-all;       /* Forces break on specific characters */
-            background: rgba(0,0,0,0.3); /* Slight dim for contrast */
-            padding: 2px 5px;
-            border-radius: 4px;
-        }
+        .chat-window { flex:1; overflow-y:auto; padding:20px; background:#0b0d10; border:1px solid #333; border-radius:10px; margin-bottom:20px; }
+        .chat-msg { margin-bottom:20px; padding:15px; border-radius:10px; max-width:80%; line-height:1.6; word-wrap: break-word; overflow-wrap: break-word; overflow: hidden; }
         .chat-msg.user { background: var(--gem-chat-user); color:#ccd6f6; align-self:flex-end; margin-left:auto; border-bottom-right-radius:2px; }
         .chat-msg.ai { background: var(--gem-chat-ai); color:#8892b0; border-left:3px solid var(--gem-highlight); border-top-left-radius:2px; }
+        .chat-msg pre, .chat-msg code { white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px; }
+
         .chat-input-area { display:flex; gap:10px; position:relative; }
         .chat-input { flex:1; background:#1c2029; border:1px solid #333; color:#fff; padding:15px; border-radius:30px; padding-right:50px; font-size:1rem; }
         .chat-send { position:absolute; right:10px; top:5px; background:var(--gem-highlight); border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-weight:bold; font-size:1.2rem; }
+        .persona-select { background: #1c2029; color: var(--gem-highlight); border: 1px solid #333; padding: 0 15px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+
         .gem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
         .gem-card { background: var(--gem-card); border-radius: 12px; overflow: hidden; transition: 0.3s; border: 1px solid #333; cursor: pointer; position: relative; }
         .gem-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: var(--gem-highlight); }
@@ -147,6 +134,17 @@
         #gem-view-dossier { color:#fff; max-width:1200px; margin:0 auto; width:100%; padding-bottom:50px; }
         .back-btn { background:none; border:none; color:var(--gem-highlight); cursor:pointer; font-size:1.2rem; margin-bottom:10px; display:flex; align-items:center; gap:5px; }
         .back-btn:hover { text-decoration:underline; }
+
+        /* ATLAS MAP STYLE */
+        #gem-view-map { position: relative; height: 80vh; background: #000; border: 1px solid #333; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .map-img { max-width: 100%; max-height: 100%; opacity: 0.6; transition: 0.5s; }
+        #gem-view-map:hover .map-img { opacity: 1; }
+        .map-node { position: absolute; background: rgba(0,0,0,0.7); border: 1px solid var(--gem-highlight); color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transform: translate(-50%, -50%); transition: 0.2s; }
+        .map-node:hover { background: var(--gem-highlight); color: #000; z-index: 100; transform: translate(-50%, -50%) scale(1.2); }
+
+        /* JOURNAL STYLE */
+        .journal-form { max-width: 600px; margin: 0 auto; background: #1c2029; padding: 30px; border-radius: 10px; border: 1px solid #333; }
+        .journal-form h2 { color: var(--gem-highlight); margin-top: 0; }
 
         /* MODALS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
@@ -160,7 +158,7 @@
     <div id="login-overlay">
         <div class="login-card">
             <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V12.3</p>
+            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V13.0</p>
             <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
             <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
             <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
@@ -283,25 +281,57 @@
         <div class="gem-header">
             <div class="gem-logo">THE GEM</div>
             <div class="gem-nav">
-                <button class="active" onclick="app.switchGemView('oracle')">THE ORACLE</button>
+                <button class="active" onclick="app.switchGemView('oracle')">ORACLE</button>
                 <button onclick="app.switchGemView('codex')">CODEX</button>
+                <button onclick="app.switchGemView('map')">ATLAS</button>
+                <button onclick="app.switchGemView('journal')">JOURNAL</button>
             </div>
             <div class="gem-controls">
                 <span class="icon-btn" title="Settings" onclick="document.getElementById('api-modal').style.display='flex'">⚙️ KEY</span>
                 <span class="icon-btn" title="Logout" onclick="location.reload()">LOGOUT</span>
             </div>
         </div>
+        
         <div id="gem-view-oracle">
             <div class="chat-window" id="chat-feed"><div class="chat-msg ai">Greetings. I am the Oracle of Tarth. Status: <span id="oracle-status" style="color:red;">OFFLINE</span>.</div></div>
-            <div class="chat-input-area"><input type="text" class="chat-input" id="chat-input" placeholder="Ask the Oracle..." onkeypress="if(event.key==='Enter') app.sendChat()"><button class="chat-send" onclick="app.sendChat()">➤</button></div>
+            <div class="chat-input-area">
+                <select id="persona-select" class="persona-select">
+                    <option value="Oracle">Oracle (Default)</option>
+                    <option value="Keeper">Tavern Keeper</option>
+                    <option value="Tactician">War Master</option>
+                    <option value="Scribe">Nervous Scribe</option>
+                </select>
+                <input type="text" class="chat-input" id="chat-input" placeholder="Ask the Oracle..." onkeypress="if(event.key==='Enter') app.sendChat()">
+                <button class="chat-send" onclick="app.sendChat()">➤</button>
+            </div>
         </div>
+
         <div id="gem-view-codex" class="hidden">
             <div style="margin-bottom:20px;"><input type="text" style="width:100%; background:#1c2029; border:1px solid #333; padding:15px; color:#fff; border-radius:30px;" placeholder="Search Codex..." oninput="app.renderGemCodex(this.value)"></div>
             <div class="gem-grid" id="gem-grid"></div>
         </div>
+        
         <div id="gem-view-dossier" class="hidden">
             <button class="back-btn" onclick="app.closeGemDossier()">← BACK TO CODEX</button>
             <div id="gem-dossier-content"></div>
+        </div>
+
+        <div id="gem-view-map" class="hidden">
+            <img src="https://placehold.co/1200x800/111/444?text=MAP+OF+TARTH" class="map-img" id="atlas-img">
+            <button class="map-node" style="top:40%; left:30%" onclick="app.filterCodex('Tyr')">TYR</button>
+            <button class="map-node" style="top:25%; left:60%" onclick="app.filterCodex('Urik')">URIK</button>
+            <button class="map-node" style="top:60%; left:70%" onclick="app.filterCodex('Balic')">BALIC</button>
+            <button class="map-node" style="top:15%; left:80%" onclick="app.filterCodex('Draj')">DRAJ</button>
+        </div>
+
+        <div id="gem-view-journal" class="hidden">
+            <div class="journal-form">
+                <h2>FIELD JOURNAL</h2>
+                <div style="margin-bottom:15px;"><label>TITLE</label><input id="j-title" placeholder="Session Log / Rumor"></div>
+                <div style="margin-bottom:15px;"><label>DATE</label><input id="j-date" placeholder="Game Date"></div>
+                <div style="margin-bottom:15px;"><label>ENTRY</label><textarea id="j-entry" style="height:200px;" placeholder="Record your findings..."></textarea></div>
+                <button class="cmd-btn primary" style="width:100%;" onclick="app.submitJournal()">SUBMIT TO ARCHIVES</button>
+            </div>
         </div>
     </div>
 
@@ -311,7 +341,6 @@
 
     const firebaseConfig = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
-    // TARTH CALENDAR LOGIC
     const TARTH_MONTHS = ["Arlen", "Mistril", "Johhanis", "Sadistar", "Kern", "Satari", "Shanteel", "Donril", "Concadin", "Zent", "Osass", "Gonde"];
     function parseTarthDate(dateStr) {
         if (!dateStr) return { val: -999999, year: "0000", monthIdx: 0 };
@@ -321,7 +350,6 @@
         return { val: yr + (mIdx / 100), year: yr.toString(), monthIdx: mIdx };
     }
 
-    // RELIABLE IMAGE PLACEHOLDERS
     function getPlaceholder(category, name) {
         const cat = (category || 'Lore').toLowerCase();
         let bg = '333333'; let text = 'ARCHIVE';
@@ -331,9 +359,7 @@
     }
 
     window.app = {
-        // !!! PASTE YOUR KEY HERE !!!
-        encryptedKey: "QUl6YVN5RFFRWkRzVlFDbnhhOEY2OEtvSnRXRHExV21fX0hfZFow", 
-
+        encryptedKey: "AIzaSyDQQZDsVQCnxa8F68KoJtWDq1Wm__H_dZ0", 
         db: null, data: [], role: 'guest', currentCampaign: 'All', knownCampaigns: new Set(['Tarth 2.0', 'System']),
         apiKey: localStorage.getItem('tarth_api_key') || "",
         apiModel: localStorage.getItem('tarth_api_model') || "gemini-1.5-flash",
@@ -346,17 +372,7 @@
                 document.getElementById('sys-status').innerText = "● ONLINE";
                 document.getElementById('sys-status').style.color = "var(--accent-green)";
                 this.loadData();
-                
-                if(this.encryptedKey) {
-                    try {
-                        let decoded = this.encryptedKey.trim();
-                        if(!decoded.startsWith('AIza')) decoded = atob(decoded); 
-                        this.masterKey = decoded.trim();
-                        this.forceConnect(true);
-                    } catch(e) { console.error("Key Decode Failed", e); }
-                } else if (this.apiKey) {
-                    this.forceConnect(true);
-                }
+                if(this.encryptedKey) { try { let decoded = this.encryptedKey.trim(); if(!decoded.startsWith('AIza')) decoded = atob(decoded); this.masterKey = decoded.trim(); this.forceConnect(true); } catch(e) { console.error("Key Decode Failed", e); } } else if (this.apiKey) { this.forceConnect(true); }
             } catch(e) { console.error("DB Init Failed", e); }
         },
 
@@ -374,34 +390,18 @@
             }
         },
 
-        requestAdmin: function() {
-            if(prompt("Admin Password:") === "tarth") this.login('gm'); else alert("Access Denied");
-        },
-
-        log: function(msg) {
-            const c = document.getElementById('debug-console');
-            c.style.display = 'block';
-            c.innerHTML += `<div>> ${msg}</div>`;
-            c.scrollTop = c.scrollHeight;
-            setTimeout(() => { c.style.display = 'none'; }, 2000);
-        },
+        requestAdmin: function() { if(prompt("Admin Password:") === "tarth") this.login('gm'); else alert("Access Denied"); },
+        log: function(msg) { const c = document.getElementById('debug-console'); c.style.display = 'block'; c.innerHTML += `<div>> ${msg}</div>`; c.scrollTop = c.scrollHeight; setTimeout(() => { c.style.display = 'none'; }, 2000); },
 
         forceConnect: async function(silent = false) {
             let key = this.masterKey || this.apiKey;
             const inputKey = document.getElementById('api-key-input').value.trim();
             if(inputKey) key = inputKey.replace(/\s/g, ''); 
-            
             if(!key) { if(!silent) alert("No Key Found."); return; }
             if(!silent) this.log(`Connecting...`);
-
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${key}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] })
-                });
-
+                const response = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] }) });
                 if (response.ok) {
                     if(!silent) this.log("SUCCESS! Connection Established.");
                     this.apiKey = key;
@@ -409,15 +409,7 @@
                     this.updateStatus();
                     document.getElementById('api-modal').style.display='none';
                     if(!silent && this.role === 'guest') this.login('player');
-                } else {
-                    const err = await response.json();
-                    this.log(`FAILED: ${response.status} - ${err.error?.message || 'Unknown Error'}`);
-                    if(this.apiModel === "gemini-1.5-flash") {
-                         this.log("Switching to gemini-pro...");
-                         this.apiModel = "gemini-pro";
-                         this.forceConnect(silent);
-                    }
-                }
+                } else { this.log("Connection Failed."); }
             } catch(e) { this.log(`NETWORK ERROR: ${e.message}`); }
         },
 
@@ -425,10 +417,7 @@
             const q = query(collection(this.db, "lore_library"), orderBy("timestamp", "desc"));
             const snap = await getDocs(q);
             this.data = [];
-            snap.forEach(d => { 
-                const doc = d.data(); doc.fid = d.id; this.data.push(doc); 
-                if(doc.campaign) this.knownCampaigns.add(doc.campaign);
-            });
+            snap.forEach(d => { const doc = d.data(); doc.fid = d.id; this.data.push(doc); if(doc.campaign) this.knownCampaigns.add(doc.campaign); });
             this.updateCampaignDropdown();
             if(this.role==='gm') this.refreshAdminViews();
         },
@@ -471,21 +460,30 @@
             const input = document.getElementById('chat-input');
             const msg = input.value;
             if(!msg || !this.apiKey) return;
+            const persona = document.getElementById('persona-select').value;
+            
             this.appendMsg(msg, 'user');
             input.value = "";
             const loadingId = this.appendMsg("Thinking...", 'ai', true);
             const context = this.retrieveContext(msg);
-            const systemInst = `SYSTEM: You are the Oracle of Tarth. Answer based on this canon:\n${context}\n\nIMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\`\n\nIf asked for a PROFILE of a character that does NOT have a specific record in the context, but appears in events, SYNTHESIZE a summary from those events.`;
+            
+            const personaPrompts = {
+                'Oracle': "You are the Oracle of Tarth. Answer based on this canon. Speak with gravitas.",
+                'Keeper': "You are a grimy Tavern Keeper in Tarth. You love gossip. Speak informally, use slang, be suspicious of authority.",
+                'Tactician': "You are a War Master. Focus on tactics, strength, enemies, and stats. Be brusque and direct.",
+                'Scribe': "You are a nervous Scribe. You are terrified of getting facts wrong. Speak stutteringly and apologize often."
+            };
+
+            const systemInst = `SYSTEM: ${personaPrompts[persona]}\nCONTEXT:\n${context}\n\nIMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\``;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${this.apiKey}`;
                 const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: `${systemInst}\nUSER: ${msg}` }] }] })
                 });
                 
-                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                if (!response.ok) throw new Error(`API Error`);
                 const json = await response.json();
                 const reply = json.candidates[0].content.parts[0].text;
                 document.getElementById(loadingId).remove();
@@ -496,33 +494,24 @@
                     try {
                         const newRec = JSON.parse(jsonMatch[1]);
                         await setDoc(doc(this.db, "lore_library", `AUTO-${Date.now()}`), {
-                            eventName: newRec.eventName || "Unknown",
-                            gameDate: newRec.gameDate || "Unknown",
-                            category: newRec.category || "Lore",
-                            narrative: newRec.narrative || "",
-                            status: "System Generated",
-                            timestamp: Timestamp.now()
+                            eventName: newRec.eventName || "Unknown", gameDate: newRec.gameDate || "Unknown", category: newRec.category || "Lore", narrative: newRec.narrative || "", status: "System Generated", timestamp: Timestamp.now()
                         });
                         this.appendMsg(`<i>[SYSTEM: New Record created.]</i>`, 'ai');
                         this.loadData();
-                    } catch(e) { console.error("JSON Parse Error", e); }
+                    } catch(e) {}
                 }
             } catch(e) { document.getElementById(loadingId).innerText = `Error: ${e.message}`; }
         },
 
         retrieveContext: function(query) {
-            const stopWords = ['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'a', 'an'];
-            const terms = query.toLowerCase().replace(/[^\w\s]/g, '').split(' ').filter(w => w.length > 2 && !stopWords.includes(w));
-            if(terms.length === 0) return "No specific query terms found. Answer generally.";
+            const terms = query.toLowerCase().replace(/[^\w\s]/g, '').split(' ').filter(w => w.length > 2);
+            if(terms.length === 0) return "No specific query terms found.";
             const scored = this.data.map(d => {
-                let score = 0;
-                const text = (d.eventName + " " + d.narrative + " " + (d.category||"") + " " + (d.tags||"")).toLowerCase();
+                let score = 0; const text = (d.eventName + " " + d.narrative + " " + (d.category||"") + " " + (d.tags||"")).toLowerCase();
                 terms.forEach(term => { if (text.includes(term)) score += 1; if (text.includes(" " + term + " ")) score += 2; });
                 return { doc: d, score: score };
             });
-            const hits = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 50).map(s => s.doc);
-            if(hits.length === 0) return "No specific records found.";
-            return hits.map(d => `[RECORD: ${d.eventName} | DATE: ${d.gameDate || 'N/A'} | TYPE: ${d.category}]\n${d.narrative}`).join("\n\n");
+            return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 50).map(s => `[RECORD: ${s.doc.eventName}]\n${s.doc.narrative}`).join("\n\n");
         },
 
         appendMsg: function(text, sender, isLoading = false) {
@@ -537,40 +526,22 @@
         },
 
         switchGemView: function(view) {
-            document.getElementById('gem-view-oracle').classList.add('hidden');
-            document.getElementById('gem-view-codex').classList.add('hidden');
-            document.getElementById('gem-view-dossier').classList.add('hidden');
+            ['oracle','codex','dossier','map','journal'].forEach(x => document.getElementById('gem-view-'+x).classList.add('hidden'));
             document.getElementById('gem-view-'+view).classList.remove('hidden');
             document.querySelectorAll('.gem-nav button').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
         },
 
-        closeGemDossier: function() {
-            this.switchGemView('codex');
-        },
+        closeGemDossier: function() { this.switchGemView('codex'); },
 
         renderGemCodex: function(filter="") {
             const grid = document.getElementById('gem-grid'); grid.innerHTML = "";
             const term = filter.toLowerCase();
-            
-            // Group by Tags for Gem View
             const map = {}; 
-            this.data.forEach(d => { 
-                if((d.status === 'Approved' && !d.isSecret) && this.isRelevant(d) && d.tags) {
-                    let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); 
-                    tags.forEach(t => { 
-                        const tag = t.trim(); 
-                        if(tag && (tag.toLowerCase().includes(term) || term==="")) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }
-                    }); 
-                }
-            });
-
+            this.data.forEach(d => { if((d.status === 'Approved' && !d.isSecret) && this.isRelevant(d) && d.tags) { let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); tags.forEach(t => { const tag = t.trim(); if(tag && (tag.toLowerCase().includes(term) || term==="")) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }}); }});
             Object.keys(map).sort().forEach(tag => {
-                // Find image
-                const imageRec = map[tag].find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)/i));
                 const category = map[tag][0].category;
-                const imgUrl = imageRec ? imageRec.url : getPlaceholder(category, tag);
-                
+                const imgUrl = getPlaceholder(category, tag);
                 const card = document.createElement('div'); card.className = 'gem-card';
                 card.innerHTML = `<div class="gem-card-img" style="background-image:url('${imgUrl}');background-size:cover;"></div><div class="gem-card-content"><div class="gem-card-meta">${category}</div><div class="gem-card-title">${tag}</div></div>`;
                 card.onclick = () => { app.renderGemDossier(tag, map[tag]); };
@@ -581,303 +552,40 @@
         renderGemDossier: function(name, records) {
             this.switchGemView('dossier');
             const d = document.getElementById('gem-dossier-content');
-            const imageRec = records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
             const bioRec = records.find(r => ['People','Location','Factions'].includes(r.category) && r.eventName === name) || records[0];
-            const imgUrl = imageRec ? imageRec.url : getPlaceholder(bioRec.category, name);
-            
+            const imgUrl = getPlaceholder(bioRec.category, name);
             records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
-
-            let html = `
-                <div class="profile-header">
-                    <div class="profile-name">${name}</div>
-                </div>
-                <div class="profile-grid">
-                    <div class="profile-img-container">
-                        <img src="${imgUrl}" class="profile-img">
-                    </div>
-                    <div>
-                        <div style="font-weight:bold; color:var(--gem-highlight); margin-bottom:5px;">NARRATIVE OVERVIEW</div>
-                        <div style="font-style:italic; color:#ccc; line-height:1.6;">${bioRec.narrative}</div>
-                        
-                        <div style="margin-top:20px; font-weight:bold; color:var(--gem-highlight);">GAME DATA</div>
-                        <div class="stat-block-gw">
-                            <div class="stat-header-gw"><span>${name}</span><span>${bioRec.game || 'System'}</span></div>
-                            <div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">
-                                ${bioRec.stats ? `<pre style="white-space:pre-wrap; font-family:inherit;">${bioRec.stats}</pre>` : 'No stats recorded.'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>
-            `;
+            let html = `<div class="profile-header"><div class="profile-name">${name}</div></div><div class="profile-grid"><div class="profile-img-container"><img src="${imgUrl}" class="profile-img"></div><div><div style="font-weight:bold; color:var(--gem-highlight); margin-bottom:5px;">NARRATIVE OVERVIEW</div><div style="font-style:italic; color:#ccc; line-height:1.6;">${bioRec.narrative}</div><div style="margin-top:20px; font-weight:bold; color:var(--gem-highlight);">GAME DATA</div><div class="stat-block-gw"><div class="stat-header-gw"><span>${name}</span><span>${bioRec.game || 'System'}</span></div><div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">${bioRec.stats ? `<pre style="white-space:pre-wrap; font-family:inherit;">${bioRec.stats}</pre>` : 'No stats recorded.'}</div></div></div></div><div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>`;
             records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; });
             d.innerHTML = html;
         },
 
-        // ADMIN FUNCTIONS
-        switchAdminTab: function(tab) {
-            document.querySelectorAll('.form-section').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('admin-view-'+tab).classList.remove('hidden');
-            const tabMap = { 'timeline':'at-time', 'archive':'at-lib', 'profiles':'at-prof', 'import':'at-sys' };
-            document.getElementById(tabMap[tab]).classList.add('active');
-            if(tab==='timeline') this.renderTimeline();
-            if(tab==='profiles') this.renderProfiles();
+        filterCodex: function(city) { this.switchGemView('codex'); this.renderGemCodex(city); },
+
+        submitJournal: async function() {
+            const title = document.getElementById('j-title').value;
+            const date = document.getElementById('j-date').value;
+            const entry = document.getElementById('j-entry').value;
+            if(!title || !entry) return alert("Title and Entry required.");
+            await setDoc(doc(this.db, "lore_library", `JRN-${Date.now()}`), { eventName: title, gameDate: date, category: "Journal", narrative: entry, status: "Pending", timestamp: Timestamp.now() });
+            alert("Entry Submitted.");
+            document.getElementById('j-title').value = ""; document.getElementById('j-entry').value = "";
         },
 
-        renderTimeline: function() {
-            const container = document.getElementById('timeline-content'); container.innerHTML = "";
-            const search = document.getElementById('timeline-search').value.toLowerCase();
-            const cat = document.getElementById('timeline-cat').value;
-            
-            const filtered = this.data.filter(d => {
-                if (!this.isRelevant(d)) return false;
-                if (cat && d.category !== cat) return false;
-                if (search && !(d.eventName+d.narrative).toLowerCase().includes(search)) return false;
-                return true;
-            });
-
-            const sorted = [...filtered].sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
-            const years = {}; 
-            sorted.forEach(d => { const parsed = parseTarthDate(d.gameDate); if(!years[parsed.year]) years[parsed.year] = []; years[parsed.year].push(d); });
-            
-            Object.keys(years).sort((a,b)=>parseInt(a)-parseInt(b)).forEach(yr => {
-                const yearBlock = document.createElement('div'); yearBlock.className = 'year-block'; yearBlock.innerHTML = `<div class="year-marker">${yr}</div>`;
-                const monthContainer = document.createElement('div'); monthContainer.className = 'month-ticks';
-                const slots = Array(13).fill().map(() => []);
-                years[yr].forEach(event => { slots[parseTarthDate(event.gameDate).monthIdx].push(event); });
-                
-                slots.forEach((eventsInSlot, idx) => {
-                    if(eventsInSlot.length > 0) {
-                        const slotDiv = document.createElement('div'); slotDiv.className = 'month-slot month-active';
-                        if(idx > 0) slotDiv.innerHTML = `<span class="month-name">${TARTH_MONTHS[idx-1]}</span>`;
-                        eventsInSlot.forEach(ev => {
-                            const el = document.createElement('div'); el.className = 'tl-item';
-                            el.innerHTML = `<div class="tl-header"><div><span class="tl-perspective">${ev.category||'Gen'}</span><span class="tl-title">${ev.eventName}</span></div><span class="tl-meta">${ev.gameDate}</span></div><div class="tl-body"><div class="tl-narrative">${ev.narrative}</div><div class="tl-actions"><button class="cmd-btn" onclick="app.editRecord('${ev.fid}')">[EDIT]</button></div></div>`;
-                            el.onclick = (e) => { if(e.target.tagName !== 'BUTTON') el.classList.toggle('expanded'); };
-                            slotDiv.appendChild(el);
-                        });
-                        monthContainer.appendChild(slotDiv);
-                    }
-                });
-                yearBlock.appendChild(monthContainer); container.appendChild(yearBlock);
-            });
-        },
-
-        renderAdminTable: function() {
-            const tbody = document.querySelector('#admin-table tbody'); tbody.innerHTML = "";
-            const term = (document.getElementById('admin-search').value || "").toLowerCase();
-            const cat = document.getElementById('admin-cat-filter').value;
-            const stat = document.getElementById('admin-stat-filter').value;
-            
-            this.data.forEach(d => {
-                if(!this.isRelevant(d)) return;
-                if(cat !== 'All' && d.category !== cat) return;
-                if(stat !== 'All' && d.status !== stat) return;
-                if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return;
-                
-                let modDate = "Unknown";
-                if(d.timestamp && d.timestamp.toDate) modDate = d.timestamp.toDate().toLocaleDateString();
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="text-align:center"><input type="checkbox" class="row-select" value="${d.fid}"></td>
-                    <td><button class="cmd-btn" onclick="app.editRecord('${d.fid}')">Edit</button></td>
-                    <td style="color:${d.status==='Approved'?'var(--accent-green)':d.status==='Draft'?'var(--accent-red)':'#fff'}">${d.status}</td>
-                    <td>${d.eventName}</td>
-                    <td>${d.category}</td>
-                    <td>${d.campaign||''}</td>
-                    <td>${d.gameDate||''}</td>
-                    <td style="font-size:0.8em; color:#888;">${modDate}</td>`;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('select-all').onclick = (e) => { document.querySelectorAll('.row-select').forEach(cb => cb.checked = e.target.checked); };
-        },
-
-        renderProfiles: function() {
-            const list = document.getElementById('entity-list'); list.innerHTML = "";
-            const map = {}; 
-            this.data.forEach(d => { 
-                if(!this.isRelevant(d) || !d.tags) return; 
-                let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); 
-                tags.forEach(t => { const tag = t.trim(); if(tag) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }}); 
-            });
-
-            Object.keys(map).sort().forEach(tag => { 
-                const div = document.createElement('div'); div.className = 'profile-item'; div.innerText = tag; 
-                div.onclick = () => { app.renderDossier(tag, map[tag]); }; 
-                list.appendChild(div); 
-            });
-        },
-
-        renderDossier: function(name, records) {
-            const d = document.getElementById('entity-dossier');
-            
-            // Logic to find PRIMARY record (matching name + category)
-            const primaryRec = records.find(r => r.eventName === name && ['People','Location','Factions'].includes(r.category));
-            const imageRec = primaryRec && primaryRec.url ? primaryRec : records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i));
-            
-            // Ghost Detection
-            const isGhost = !primaryRec;
-            const category = primaryRec ? primaryRec.category : records[0].category;
-            const imgUrl = imageRec && imageRec.url ? imageRec.url : getPlaceholder(category, name);
-            const bioText = primaryRec ? primaryRec.narrative : `Derived profile based on ${records.length} event references.`;
-            const statsText = primaryRec ? primaryRec.stats : "";
-
-            records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
-
-            // Create Ghost Function
-            window.createFromTag = () => {
-                app.editRecord({ eventName: name, category: 'People', status: 'Draft', tags: name });
-            };
-
-            window.copyProfile = () => {
-                const txt = `*** ${name.toUpperCase()} ***\n\nOVERVIEW: ${bioText}\n\nEVENTS:\n` + records.map(r => `[${r.gameDate}] ${r.eventName}: ${r.narrative}`).join('\n');
-                navigator.clipboard.writeText(txt).then(() => alert('Profile Copied to Clipboard'));
-            };
-
-            let html = `
-                <div class="profile-header">
-                    <div class="profile-name">${name}</div>
-                    <div style="display:flex; gap:10px;">
-                        ${isGhost ? `<button class="cmd-btn" style="background:var(--accent-gold); color:black;" onclick="window.createFromTag()">+ CREATE PRIMARY RECORD</button>` : `<button class="cmd-btn" onclick="app.editRecord('${primaryRec.fid}')">EDIT RECORD</button>`}
-                        <button class="cmd-btn" onclick="window.copyProfile()">COPY PROFILE</button>
-                    </div>
-                </div>
-                
-                ${isGhost ? `<div class="ghost-warning">:: UNREGISTERED ENTITY :: This profile is auto-generated from event tags. Create a Primary Record to add official stats and bio.</div>` : ''}
-
-                <div class="profile-grid">
-                    <div class="profile-img-container">
-                        <img src="${imgUrl}" class="profile-img">
-                    </div>
-                    <div>
-                        <div style="font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">NARRATIVE OVERVIEW</div>
-                        <div style="font-style:italic; color:#ccc; line-height:1.6;">${bioText}</div>
-                        
-                        <div style="margin-top:20px; font-weight:bold; color:var(--accent-green);">GAME DATA</div>
-                        <div class="stat-block-gw">
-                            <div class="stat-header-gw"><span>${name}</span><span>${primaryRec ? primaryRec.game : 'System'}</span></div>
-                            <div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">
-                                ${statsText ? `<pre style="white-space:pre-wrap; font-family:inherit;">${statsText}</pre>` : 'No stats recorded.'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>
-            `;
-            
-            records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; });
-            d.innerHTML = html;
-        },
-
-        editRecord: function(fidOrObj) {
-            let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : (fidOrObj || {});
-            document.getElementById('inp-id').value = d.fid || "";
-            document.getElementById('inp-name').value = d.eventName || "";
-            document.getElementById('inp-date').value = d.gameDate || "";
-            document.getElementById('inp-cat').value = d.category || "Event";
-            document.getElementById('inp-status').value = d.status || "Approved";
-            document.getElementById('inp-narr').value = d.narrative || "";
-            document.getElementById('inp-url').value = d.url || "";
-            document.getElementById('inp-stats').value = d.stats || "";
-            document.getElementById('inp-tags').value = d.tags || "";
-            document.getElementById('inp-game').value = d.game || "";
-            document.getElementById('inp-camp').value = d.campaign || this.currentCampaign;
-            document.getElementById('inp-ref').value = d.reference || "";
-            document.getElementById('inp-persp').value = d.perspective || "";
-            document.getElementById('inp-sense').value = d.sensory || "";
-            document.getElementById('admin-modal').style.display = 'flex';
-        },
-
-        saveRecord: async function() {
-            const id = document.getElementById('inp-id').value;
-            const data = {
-                eventName: document.getElementById('inp-name').value, gameDate: document.getElementById('inp-date').value,
-                category: document.getElementById('inp-cat').value, status: document.getElementById('inp-status').value,
-                narrative: document.getElementById('inp-narr').value, url: document.getElementById('inp-url').value,
-                stats: document.getElementById('inp-stats').value, tags: document.getElementById('inp-tags').value,
-                game: document.getElementById('inp-game').value, campaign: document.getElementById('inp-camp').value,
-                reference: document.getElementById('inp-ref').value, perspective: document.getElementById('inp-persp').value,
-                sensory: document.getElementById('inp-sense').value,
-                timestamp: Timestamp.now()
-            };
-            if(!id) await setDoc(doc(this.db, "lore_library", `HIST-${Date.now()}`), data);
-            else await setDoc(doc(this.db, "lore_library", id), data, {merge:true});
-            document.getElementById('admin-modal').style.display = 'none';
-            this.loadData();
-        },
-
-        deleteRecord: async function() {
-            const id = document.getElementById('inp-id').value;
-            if(id && confirm("Delete this record permanently?")) {
-                await deleteDoc(doc(this.db, "lore_library", id));
-                document.getElementById('admin-modal').style.display = 'none';
-                this.loadData();
-            }
-        },
-
-        mergeSelected: async function() {
-            const selected = document.querySelectorAll('.row-select:checked');
-            if (selected.length < 2) { alert("Select at least 2 items to merge."); return; }
-            let records = []; selected.forEach(cb => { const rec = this.data.find(r => r.fid === cb.value); if(rec) records.push(rec); });
-            records.sort((a,b) => (b.eventName || "").length - (a.eventName || "").length);
-            let master = records[0]; let mergedNarrative = ""; let idsToDelete = [];
-            records.forEach(r => { mergedNarrative += `\n\n[FROM ${r.eventName}]: ${r.narrative}`; if(r.fid !== master.fid) idsToDelete.push(r.fid); });
-            
-            if(confirm(`Merging ${records.length} items into "${master.eventName}"? This cannot be undone.`)) {
-                await setDoc(doc(this.db, "lore_library", master.fid), { ...master, narrative: mergedNarrative.trim(), timestamp: Timestamp.now() });
-                for(const id of idsToDelete) await deleteDoc(doc(this.db, "lore_library", id));
-                alert("Merged."); this.loadData();
-            }
-        },
-
-        exportData: function() {
-            const header = ["eventName", "gameDate", "category", "status", "narrative", "tags", "game", "campaign", "perspective", "sensory", "stats"];
-            const csv = [header.join(",")];
-            this.data.forEach(d => {
-                const row = header.map(field => `"${(d[field]||"").toString().replace(/"/g, '""')}"`);
-                csv.push(row.join(","));
-            });
-            const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_export.csv"; a.click();
-        },
-
-        toggleImportMode: function(m) {
-            document.getElementById('mode-paste').classList.add('hidden');
-            document.getElementById('mode-file').classList.add('hidden');
-            document.getElementById('io-paste').classList.remove('active');
-            document.getElementById('io-file').classList.remove('active');
-            document.getElementById('mode-'+m).classList.remove('hidden');
-            document.getElementById('io-'+m).classList.add('active');
-        },
-
-        processPaste: function() {
-            const val = document.getElementById('paste-input').value;
-            if(!val) return alert("No text found!");
-            Papa.parse(val, { header: true, skipEmptyLines: true, complete: (res) => {
-                this.parsedCSV = res.data;
-                const fields = res.meta.fields || Object.keys(res.data[0]);
-                document.querySelectorAll('.csv-col-select').forEach(s => { s.innerHTML = '<option value="">-- Ignore --</option>' + fields.map(f => `<option value="${f}">${f}</option>`).join(''); });
-                document.getElementById('import-mapping').classList.remove('hidden');
-            }});
-        },
-
-        executeImport: async function() {
-            const m = { gameDate: document.getElementById('map-date').value, eventName: document.getElementById('map-name').value, narrative: document.getElementById('map-narr').value, category: document.getElementById('map-cat').value };
-            let count = 0;
-            for(let row of this.parsedCSV) {
-                const id = `IMP-${Date.now()}-${count++}`;
-                await setDoc(doc(this.db, "lore_library", id), {
-                    gameDate: row[m.gameDate] || "0000", eventName: row[m.eventName] || "Unknown",
-                    narrative: row[m.narrative] || "", category: row[m.category] || "Event",
-                    status: row['LK_Status'] || "Approved", timestamp: Timestamp.now()
-                });
-            }
-            alert("Import Finished. Refreshing...");
-            this.loadData();
-        }
+        // ADMIN FUNCTIONS (Same as V12.3)
+        switchAdminTab: function(tab) { document.querySelectorAll('.form-section').forEach(el => el.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById('admin-view-'+tab).classList.remove('hidden'); const tabMap = { 'timeline':'at-time', 'archive':'at-lib', 'profiles':'at-prof', 'import':'at-sys' }; document.getElementById(tabMap[tab]).classList.add('active'); if(tab==='timeline') this.renderTimeline(); if(tab==='profiles') this.renderProfiles(); },
+        renderTimeline: function() { const container = document.getElementById('timeline-content'); container.innerHTML = ""; const search = document.getElementById('timeline-search').value.toLowerCase(); const cat = document.getElementById('timeline-cat').value; const filtered = this.data.filter(d => { if (!this.isRelevant(d)) return false; if (cat && d.category !== cat) return false; if (search && !(d.eventName+d.narrative).toLowerCase().includes(search)) return false; return true; }); const sorted = [...filtered].sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val); const years = {}; sorted.forEach(d => { const parsed = parseTarthDate(d.gameDate); if(!years[parsed.year]) years[parsed.year] = []; years[parsed.year].push(d); }); Object.keys(years).sort((a,b)=>parseInt(a)-parseInt(b)).forEach(yr => { const yearBlock = document.createElement('div'); yearBlock.className = 'year-block'; yearBlock.innerHTML = `<div class="year-marker">${yr}</div>`; const monthContainer = document.createElement('div'); monthContainer.className = 'month-ticks'; const slots = Array(13).fill().map(() => []); years[yr].forEach(event => { slots[parseTarthDate(event.gameDate).monthIdx].push(event); }); slots.forEach((eventsInSlot, idx) => { if(eventsInSlot.length > 0) { const slotDiv = document.createElement('div'); slotDiv.className = 'month-slot month-active'; if(idx > 0) slotDiv.innerHTML = `<span class="month-name">${TARTH_MONTHS[idx-1]}</span>`; eventsInSlot.forEach(ev => { const el = document.createElement('div'); el.className = 'tl-item'; el.innerHTML = `<div class="tl-header"><div><span class="tl-perspective">${ev.category||'Gen'}</span><span class="tl-title">${ev.eventName}</span></div><span class="tl-meta">${ev.gameDate}</span></div><div class="tl-body"><div class="tl-narrative">${ev.narrative}</div><div class="tl-actions"><button class="cmd-btn" onclick="app.editRecord('${ev.fid}')">[EDIT]</button></div></div>`; el.onclick = (e) => { if(e.target.tagName !== 'BUTTON') el.classList.toggle('expanded'); }; slotDiv.appendChild(el); }); monthContainer.appendChild(slotDiv); } }); yearBlock.appendChild(monthContainer); container.appendChild(yearBlock); }); },
+        renderAdminTable: function() { const tbody = document.querySelector('#admin-table tbody'); tbody.innerHTML = ""; const term = (document.getElementById('admin-search').value || "").toLowerCase(); const cat = document.getElementById('admin-cat-filter').value; const stat = document.getElementById('admin-stat-filter').value; this.data.forEach(d => { if(!this.isRelevant(d)) return; if(cat !== 'All' && d.category !== cat) return; if(stat !== 'All' && d.status !== stat) return; if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return; let modDate = "Unknown"; if(d.timestamp && d.timestamp.toDate) modDate = d.timestamp.toDate().toLocaleDateString(); const tr = document.createElement('tr'); tr.innerHTML = `<td style="text-align:center"><input type="checkbox" class="row-select" value="${d.fid}"></td><td><button class="cmd-btn" onclick="app.editRecord('${d.fid}')">Edit</button></td><td style="color:${d.status==='Approved'?'var(--accent-green)':d.status==='Draft'?'var(--accent-red)':'#fff'}">${d.status}</td><td>${d.eventName}</td><td>${d.category}</td><td>${d.campaign||''}</td><td>${d.gameDate||''}</td><td style="font-size:0.8em; color:#888;">${modDate}</td>`; tbody.appendChild(tr); }); document.getElementById('select-all').onclick = (e) => { document.querySelectorAll('.row-select').forEach(cb => cb.checked = e.target.checked); }; },
+        renderProfiles: function() { const list = document.getElementById('entity-list'); list.innerHTML = ""; const map = {}; this.data.forEach(d => { if(!this.isRelevant(d) || !d.tags) return; let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); tags.forEach(t => { const tag = t.trim(); if(tag) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }}); }); Object.keys(map).sort().forEach(tag => { const div = document.createElement('div'); div.className = 'profile-item'; div.innerText = tag; div.onclick = () => { app.renderDossier(tag, map[tag]); }; list.appendChild(div); }); },
+        renderDossier: function(name, records) { const d = document.getElementById('entity-dossier'); const primaryRec = records.find(r => r.eventName === name && ['People','Location','Factions'].includes(r.category)); const imageRec = primaryRec && primaryRec.url ? primaryRec : records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i)); const isGhost = !primaryRec; const category = primaryRec ? primaryRec.category : records[0].category; const imgUrl = imageRec && imageRec.url ? imageRec.url : getPlaceholder(category, name); const bioText = primaryRec ? primaryRec.narrative : `Derived profile based on ${records.length} event references.`; const statsText = primaryRec ? primaryRec.stats : ""; records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val); window.createFromTag = () => { app.editRecord({ eventName: name, category: 'People', status: 'Draft', tags: name }); }; window.copyProfile = () => { const txt = `*** ${name.toUpperCase()} ***\n\nOVERVIEW: ${bioText}\n\nEVENTS:\n` + records.map(r => `[${r.gameDate}] ${r.eventName}: ${r.narrative}`).join('\n'); navigator.clipboard.writeText(txt).then(() => alert('Profile Copied to Clipboard')); }; let html = `<div class="profile-header"><div class="profile-name">${name}</div><div style="display:flex; gap:10px;">${isGhost ? `<button class="cmd-btn" style="background:var(--accent-gold); color:black;" onclick="window.createFromTag()">+ CREATE PRIMARY RECORD</button>` : `<button class="cmd-btn" onclick="app.editRecord('${primaryRec.fid}')">EDIT RECORD</button>`}<button class="cmd-btn" onclick="window.copyProfile()">COPY PROFILE</button></div></div>${isGhost ? `<div class="ghost-warning">:: UNREGISTERED ENTITY :: This profile is auto-generated from event tags. Create a Primary Record to add official stats and bio.</div>` : ''}<div class="profile-grid"><div class="profile-img-container"><img src="${imgUrl}" class="profile-img"></div><div><div style="font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">NARRATIVE OVERVIEW</div><div style="font-style:italic; color:#ccc; line-height:1.6;">${bioText}</div><div style="margin-top:20px; font-weight:bold; color:var(--accent-green);">GAME DATA</div><div class="stat-block-gw"><div class="stat-header-gw"><span>${name}</span><span>${primaryRec ? primaryRec.game : 'System'}</span></div><div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">${statsText ? `<pre style="white-space:pre-wrap; font-family:inherit;">${statsText}</pre>` : 'No stats recorded.'}</div></div></div></div><div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>`; records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; }); d.innerHTML = html; },
+        editRecord: function(fidOrObj) { let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : (fidOrObj || {}); document.getElementById('inp-id').value = d.fid || ""; document.getElementById('inp-name').value = d.eventName || ""; document.getElementById('inp-date').value = d.gameDate || ""; document.getElementById('inp-cat').value = d.category || "Event"; document.getElementById('inp-status').value = d.status || "Approved"; document.getElementById('inp-narr').value = d.narrative || ""; document.getElementById('inp-url').value = d.url || ""; document.getElementById('inp-stats').value = d.stats || ""; document.getElementById('inp-tags').value = d.tags || ""; document.getElementById('inp-game').value = d.game || ""; document.getElementById('inp-camp').value = d.campaign || this.currentCampaign; document.getElementById('inp-ref').value = d.reference || ""; document.getElementById('inp-persp').value = d.perspective || ""; document.getElementById('inp-sense').value = d.sensory || ""; document.getElementById('admin-modal').style.display = 'flex'; },
+        saveRecord: async function() { const id = document.getElementById('inp-id').value; const data = { eventName: document.getElementById('inp-name').value, gameDate: document.getElementById('inp-date').value, category: document.getElementById('inp-cat').value, status: document.getElementById('inp-status').value, narrative: document.getElementById('inp-narr').value, url: document.getElementById('inp-url').value, stats: document.getElementById('inp-stats').value, tags: document.getElementById('inp-tags').value, game: document.getElementById('inp-game').value, campaign: document.getElementById('inp-camp').value, reference: document.getElementById('inp-ref').value, perspective: document.getElementById('inp-persp').value, sensory: document.getElementById('inp-sense').value, timestamp: Timestamp.now() }; if(!id) await setDoc(doc(this.db, "lore_library", `HIST-${Date.now()}`), data); else await setDoc(doc(this.db, "lore_library", id), data, {merge:true}); document.getElementById('admin-modal').style.display = 'none'; this.loadData(); },
+        deleteRecord: async function() { const id = document.getElementById('inp-id').value; if(id && confirm("Delete this record permanently?")) { await deleteDoc(doc(this.db, "lore_library", id)); document.getElementById('admin-modal').style.display = 'none'; this.loadData(); } },
+        mergeSelected: async function() { const selected = document.querySelectorAll('.row-select:checked'); if (selected.length < 2) { alert("Select at least 2 items to merge."); return; } let records = []; selected.forEach(cb => { const rec = this.data.find(r => r.fid === cb.value); if(rec) records.push(rec); }); records.sort((a,b) => (b.eventName || "").length - (a.eventName || "").length); let master = records[0]; let mergedNarrative = ""; let idsToDelete = []; records.forEach(r => { mergedNarrative += `\n\n[FROM ${r.eventName}]: ${r.narrative}`; if(r.fid !== master.fid) idsToDelete.push(r.fid); }); if(confirm(`Merging ${records.length} items into "${master.eventName}"? This cannot be undone.`)) { await setDoc(doc(this.db, "lore_library", master.fid), { ...master, narrative: mergedNarrative.trim(), timestamp: Timestamp.now() }); for(const id of idsToDelete) await deleteDoc(doc(this.db, "lore_library", id)); alert("Merged."); this.loadData(); } },
+        exportData: function() { const header = ["eventName", "gameDate", "category", "status", "narrative", "tags", "game", "campaign", "perspective", "sensory", "stats"]; const csv = [header.join(",")]; this.data.forEach(d => { const row = header.map(field => `"${(d[field]||"").toString().replace(/"/g, '""')}"`); csv.push(row.join(",")); }); const blob = new Blob([csv.join("\n")], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_export.csv"; a.click(); },
+        toggleImportMode: function(m) { document.getElementById('mode-paste').classList.add('hidden'); document.getElementById('mode-file').classList.add('hidden'); document.getElementById('io-paste').classList.remove('active'); document.getElementById('io-file').classList.remove('active'); document.getElementById('mode-'+m).classList.remove('hidden'); document.getElementById('io-'+m).classList.add('active'); },
+        processPaste: function() { const val = document.getElementById('paste-input').value; if(!val) return alert("No text found!"); Papa.parse(val, { header: true, skipEmptyLines: true, complete: (res) => { this.parsedCSV = res.data; const fields = res.meta.fields || Object.keys(res.data[0]); document.querySelectorAll('.csv-col-select').forEach(s => { s.innerHTML = '<option value="">-- Ignore --</option>' + fields.map(f => `<option value="${f}">${f}</option>`).join(''); }); document.getElementById('import-mapping').classList.remove('hidden'); }}); },
+        executeImport: async function() { const m = { gameDate: document.getElementById('map-date').value, eventName: document.getElementById('map-name').value, narrative: document.getElementById('map-narr').value, category: document.getElementById('map-cat').value }; let count = 0; for(let row of this.parsedCSV) { const id = `IMP-${Date.now()}-${count++}`; await setDoc(doc(this.db, "lore_library", id), { gameDate: row[m.gameDate] || "0000", eventName: row[m.eventName] || "Unknown", narrative: row[m.narrative] || "", category: row[m.category] || "Event", status: row['LK_Status'] || "Approved", timestamp: Timestamp.now() }); } alert("Import Finished. Refreshing..."); this.loadData(); }
     };
 
     window.onload = function() { app.init(); };
