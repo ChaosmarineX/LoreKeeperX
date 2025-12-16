@@ -3,33 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lorekeeper V13.6 (Harmonized)</title>
+    <title>Lorekeeper V13.7 (Polished)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
     
     <style>
-        /* =========================================
-           GLOBAL & ADMIN STYLES (PRESERVED FROM V12)
-           ========================================= */
         :root {
-            --bg-color: #121212;
-            --panel-bg: #1e1e1e;
-            --border-color: #444;
+            --bg-color: #0b0c10;
+            --surface-1: #1f2833;
+            --surface-2: #28313b;
+            --accent-primary: #66fcf1;
+            --accent-secondary: #45a29e;
             --accent-gold: #d4af37;
-            --accent-blue: #5c9eff;
             --accent-red: #ff6b6b;
             --accent-green: #51cf66;
-            --text-main: #e0e0e0;
-            --gem-highlight: #64ffda;
+            --text-main: #e0e6ed;
+            --text-muted: #9aa0a6;
+            --border-color: #3b4252;
+            --font-ui: 'Inter', sans-serif;
+            --font-head: 'Cinzel', serif;
+            --font-body: 'Merriweather', serif;
         }
 
-        body { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; font-size: 14px; line-height: 1.5; }
+        body { font-family: var(--font-ui); background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; font-size: 15px; line-height: 1.6; height: 100vh; overflow: hidden; }
         .hidden { display: none !important; }
-        button { cursor: pointer; }
+        
+        /* === NEW LANDING PAGE (LOGIN) === */
+        #landing-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a1c24 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999;
+        }
+        
+        .landing-title {
+            font-family: var(--font-head); font-size: 3rem; color: var(--accent-primary);
+            text-shadow: 0 0 20px rgba(102, 252, 241, 0.4); letter-spacing: 5px; margin-bottom: 10px;
+            animation: fadeIn 1.5s ease-out;
+        }
+        
+        .landing-subtitle {
+            color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 3px;
+            margin-bottom: 60px; opacity: 0.7;
+        }
 
-        /* ADMIN LAYOUT */
-        #app-admin { display:none; background: var(--panel-bg); border-left: 2px solid var(--border-color); border-right: 2px solid var(--border-color); max-width: 1400px; margin: 0 auto; min-height: 100vh; flex-direction:column; }
+        .portal-container { display: flex; gap: 40px; }
+        
+        .portal-card {
+            background: rgba(31, 40, 51, 0.5);
+            border: 1px solid var(--border-color);
+            padding: 40px;
+            width: 250px;
+            text-align: center;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .portal-card:hover {
+            transform: translateY(-10px);
+            background: rgba(31, 40, 51, 0.8);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 30px rgba(102, 252, 241, 0.2);
+        }
+
+        .portal-icon { font-size: 3rem; margin-bottom: 20px; display: block; filter: grayscale(100%); transition: 0.3s; }
+        .portal-card:hover .portal-icon { filter: grayscale(0%); transform: scale(1.1); }
+        
+        .portal-title { font-family: var(--font-head); font-size: 1.2rem; color: #fff; margin-bottom: 10px; display: block; font-weight: bold; letter-spacing: 1px; }
+        .portal-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+
+        /* === SHARED & ADMIN STYLES === */
+        #app-admin { display:none; background: #1e1e1e; border-left: 2px solid #444; border-right: 2px solid #444; max-width: 1400px; margin: 0 auto; min-height: 100vh; flex-direction:column; font-family: "Segoe UI", sans-serif; }
         .header-bar { background: #222; border-bottom: 2px solid #444; padding: 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         .header-title { font-weight: 900; letter-spacing: 2px; color: var(--accent-gold); padding: 15px; font-family: "Courier New", monospace; }
         .status-light { font-size: 0.8rem; margin-right: 15px; font-weight: bold; color: var(--accent-red); white-space: nowrap; }
@@ -37,14 +84,14 @@
         .nav-tabs { display: flex; }
         .tab-btn { background: #222; border: none; border-left: 1px solid #444; color: #666; padding: 15px 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         .tab-btn:hover { color: #fff; background: #333; }
-        .tab-btn.active { background: var(--panel-bg); color: var(--accent-blue); box-shadow: inset 0 -3px 0 var(--accent-blue); }
+        .tab-btn.active { background: #1e1e1e; color: var(--accent-blue); box-shadow: inset 0 -3px 0 var(--accent-blue); }
         .form-section { padding: 20px; flex: 1; overflow-y:auto; padding-bottom:100px; }
-
-        /* TIMELINE & TABLES */
+        
+        /* ADMIN ELEMENTS */
         .timeline-controls { display:flex; gap:10px; margin-bottom:20px; background:#111; padding:15px; border:1px solid #333; }
         .timeline-scroll-area { flex: 1; overflow-y: auto; padding: 20px 40px; position: relative; }
         .year-block { position: relative; margin-bottom: 40px; z-index: 1; }
-        .year-marker { font-size: 1.8rem; font-weight: 900; color: var(--accent-gold); background: var(--bg-color); padding: 5px 15px; border: 2px solid var(--accent-gold); border-radius: 6px; display: inline-block; margin-left: 60px; position: relative; z-index: 2; margin-bottom: 10px; }
+        .year-marker { font-size: 1.8rem; font-weight: 900; color: var(--accent-gold); background: #121212; padding: 5px 15px; border: 2px solid var(--accent-gold); border-radius: 6px; display: inline-block; margin-left: 60px; position: relative; z-index: 2; margin-bottom: 10px; }
         .month-ticks { margin-left: 100px; border-left: 2px dashed #333; display: flex; flex-direction: column; padding-bottom: 20px; }
         .month-slot { min-height: 25px; border-left: 10px solid transparent; position: relative; padding-left: 20px; margin-bottom: 2px; }
         .month-slot::before { content: ''; position: absolute; left: -2px; top: 12px; width: 10px; height: 1px; background: #444; }
@@ -55,7 +102,7 @@
         .tl-item:hover { border-color: var(--accent-blue); background: #2a2a2a; }
         .tl-header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
         .tl-title { font-weight: bold; color: var(--text-main); font-size: 1.1rem; }
-        .tl-meta { font-size: 0.8rem; color: var(--text-muted); }
+        .tl-meta { font-size: 0.8rem; color: #888; }
         .tl-perspective { font-size: 0.7rem; color: var(--accent-green); text-transform: uppercase; margin-right: 10px; }
         .tl-body { display: none; padding: 0 15px 15px 15px; border-top: 1px solid #444; }
         .tl-item.expanded .tl-body { display: block; }
@@ -65,27 +112,13 @@
         th { background: #111; text-align: left; padding: 10px; border-bottom: 2px solid #444; color: #888; position: sticky; top: 0; }
         td { padding: 8px 10px; border-bottom: 1px solid #333; cursor: pointer; }
         tr:hover { background-color: #2a2a2a; }
-
-        /* ADMIN PROFILE STYLES */
         .profile-container { display: flex; height: 100%; gap: 0; }
         .profile-list { width: 260px; border-right: 1px solid #444; overflow-y: auto; max-height: 85vh; background: #181818; }
         .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: all 0.2s; }
         .profile-item:hover { background: #222; color: var(--accent-blue); padding-left: 20px; }
         .profile-content { flex: 1; padding: 30px; overflow-y: auto; max-height: 85vh; position: relative; }
-        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
-        .profile-name { font-size: 2.5rem; color: var(--text-main); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-family: "Courier New", monospace; }
-        .profile-grid-admin { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
-        .profile-img-container { width: 100%; border: 4px double var(--border-color); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; position:relative; }
-        .profile-img { width: 100%; height: 100%; display: block; object-fit: cover; }
-        .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
-        .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
-        .feed-entry { margin-bottom: 20px; position: relative; padding-left:20px; border-left:2px solid #333; }
-        .feed-date { color: var(--accent-gold); font-weight: bold; font-size: 0.85rem; }
-        .feed-title { color: var(--text-main); font-weight: bold; font-size: 1rem; }
-        .feed-body { color: #aaa; margin-top: 5px; }
-        .ghost-warning { background:rgba(212, 175, 55, 0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:15px; margin-bottom:20px; font-family:monospace; }
-
-        /* FORMS */
+        
+        /* ADMIN FORM ELEMENTS */
         .row { display: flex; gap: 15px; margin-bottom: 15px; } .col { flex: 1; }
         label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #888; margin-bottom: 5px; letter-spacing: 0.5px; font-weight: bold; }
         input, select, textarea { background: #111; border: 1px solid #444; color: #eee; padding: 10px; width: 100%; box-sizing: border-box; }
@@ -93,20 +126,7 @@
         button.cmd-btn:hover { border-color: #888; }
         button.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
 
-        /* SHARED UTILS */
-        #debug-console { position: fixed; bottom: 0; left: 0; width: 100%; height: 120px; background: rgba(0,0,0,0.95); border-top: 1px solid var(--accent-red); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; overflow-y: auto; z-index: 99999; display: none; }
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #080808; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; background-image: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
-        .login-card { background: rgba(20,20,20,0.9); border: 1px solid var(--accent-gold); padding: 50px; text-align: center; width: 350px; box-shadow: 0 0 60px rgba(212, 175, 55, 0.15); backdrop-filter: blur(5px); border-radius: 8px; }
-        .login-btn { width: 100%; padding: 15px; margin-top: 15px; background: transparent; border: 1px solid #444; color: #aaa; cursor: pointer; font-weight: bold; letter-spacing: 2px; transition: 0.3s; text-transform: uppercase; }
-        .login-btn:hover { border-color: var(--accent-gold); color: #fff; background: rgba(212, 175, 55, 0.1); }
-        .login-btn.creative { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .login-btn.creative:hover { background: rgba(92, 158, 255, 0.1); box-shadow: 0 0 15px rgba(92, 158, 255, 0.2); }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-card { background: var(--panel-bg); padding:30px; border:1px solid #555; max-width:900px; width:90%; color:#fff; max-height:90vh; overflow-y:auto; }
-
-        /* =========================================
-           PLAYER (GEM) STYLES - SCOPED FOR V13.5
-           ========================================= */
+        /* === PLAYER (GEM) STYLES === */
         #app-gem {
             --gem-bg: #0b0c10;
             --gem-surface: #1f2833;
@@ -117,56 +137,38 @@
             background-color: var(--gem-bg);
             color: var(--gem-text);
             height: 100vh;
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: column;
         }
 
-        #app-gem .gem-header {
-            background: rgba(11, 12, 16, 0.95);
-            border-bottom: 1px solid #3b4252;
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-        }
-
+        #app-gem .gem-header { background: rgba(11, 12, 16, 0.95); border-bottom: 1px solid #3b4252; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
         #app-gem .brand-title { font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--gem-accent); letter-spacing: 2px; font-weight: 700; text-shadow: 0 0 10px rgba(102, 252, 241, 0.3); }
-        
-        #app-gem .persona-select {
-            appearance: none; background: var(--gem-surface); color: var(--gem-text); border: 1px solid #3b4252;
-            padding: 8px 15px; border-radius: 20px; font-family: 'Inter', sans-serif; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; min-width: 200px;
-        }
+        #app-gem .persona-select { appearance: none; background: var(--gem-surface); color: var(--gem-text); border: 1px solid #3b4252; padding: 8px 15px; border-radius: 20px; font-family: 'Inter', sans-serif; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; min-width: 200px; }
         #app-gem .persona-select:hover, #app-gem .persona-select:focus { border-color: var(--gem-accent); outline: none; }
-
         #app-gem .gem-nav { display: flex; gap: 5px; background: var(--gem-surface); padding: 4px; border-radius: 8px; }
-        #app-gem .gem-tab-btn {
-            background: transparent; border: none; color: #9aa0a6; padding: 8px 16px; cursor: pointer;
-            font-weight: 600; font-size: 0.85rem; border-radius: 6px; transition: 0.2s; font-family: 'Inter', sans-serif;
-        }
+        #app-gem .gem-tab-btn { background: transparent; border: none; color: #9aa0a6; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.85rem; border-radius: 6px; transition: 0.2s; font-family: 'Inter', sans-serif; }
         #app-gem .gem-tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
         #app-gem .gem-tab-btn.active { background: var(--gem-muted); color: #fff; }
-
         #app-gem .main-view { flex: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        
-        /* CHAT */
         #app-gem .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 1000px; margin: 0 auto; width: 100%; height: 100%; }
         #app-gem .chat-feed { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
         
-        #app-gem .chat-bubble {
-            max-width: 80%; padding: 20px; border-radius: 12px; position: relative; line-height: 1.7; font-family: 'Merriweather', serif; font-size: 1rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); word-wrap: break-word; overflow-wrap: break-word; overflow: hidden;
-        }
+        /* CHAT BUBBLES FIXED */
+        #app-gem .chat-bubble { max-width: 80%; padding: 20px; border-radius: 12px; position: relative; line-height: 1.7; font-family: 'Merriweather', serif; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); word-wrap: break-word; overflow-wrap: break-word; overflow: hidden; }
         #app-gem .chat-bubble.user { align-self: flex-end; background: #28313b; color: #fff; border-bottom-right-radius: 2px; border: 1px solid #3b4252; }
         #app-gem .chat-bubble.ai { align-self: flex-start; background: rgba(31, 40, 51, 0.6); color: #fff; border-left: 3px solid var(--gem-accent); border-top-left-radius: 2px; }
         #app-gem .chat-meta { font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #9aa0a6; margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 1px; }
-        #app-gem .chat-bubble pre { white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; }
+        
+        /* MARKDOWN STYLES FOR CHAT */
+        #app-gem .chat-bubble em { color: var(--gem-accent); font-style: italic; opacity: 0.9; }
+        #app-gem .chat-bubble strong { color: #fff; font-weight: 700; }
+        #app-gem .chat-bubble p { margin: 0 0 10px 0; }
+        #app-gem .chat-bubble p:last-child { margin-bottom: 0; }
 
         #app-gem .input-zone { padding: 20px 30px; background: var(--gem-bg); border-top: 1px solid #3b4252; display: flex; gap: 15px; align-items: center; }
         #app-gem .chat-input { flex: 1; background: var(--gem-surface); border: 1px solid #3b4252; padding: 15px 20px; border-radius: 30px; color: #fff; font-size: 1rem; font-family: 'Inter', sans-serif; }
         #app-gem .send-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--gem-accent); border: none; color: #0b0c10; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* CODEX & MAP */
         #app-gem .grid-container { padding: 30px; overflow-y: auto; height: 100%; }
         #app-gem .gem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
         #app-gem .gem-card { background: var(--gem-surface); border: 1px solid #3b4252; border-radius: 12px; overflow: hidden; transition: 0.3s; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
@@ -175,31 +177,58 @@
         #app-gem .gem-card-content { padding: 15px; }
         #app-gem .gem-card-meta { font-size: 0.7rem; color: var(--gem-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; }
         #app-gem .gem-card-title { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin: 0; }
-
+        
         #app-gem .map-view { position: relative; height: 100%; background: #000; border: 1px solid #3b4252; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         #app-gem .map-img { max-width: 100%; max-height: 100%; opacity: 0.6; transition: 0.5s; }
         #app-gem .map-view:hover .map-img { opacity: 1; }
         #app-gem .map-node { position: absolute; background: rgba(0,0,0,0.7); border: 1px solid var(--gem-accent); color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transform: translate(-50%, -50%); transition: 0.2s; }
         #app-gem .map-node:hover { background: var(--gem-accent); color: #000; z-index: 100; transform: scale(1.2); }
-
+        
         #app-gem .back-btn { background:none; border:none; color:var(--gem-muted); cursor:pointer; font-size:1.2rem; margin-bottom:10px; display:flex; align-items:center; gap:5px; }
+
+        /* SHARED UTILS */
+        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
+        .profile-name { font-size: 2.5rem; color: var(--text-main); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-family: "Courier New", monospace; }
+        .profile-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
+        .profile-img-container { width: 100%; border: 4px double #444; background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; position:relative; }
+        .profile-img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
+        .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
+        .feed-entry { margin-bottom: 20px; position: relative; padding-left:20px; border-left:2px solid #333; }
+        .feed-date { color: var(--accent-gold); font-weight: bold; font-size: 0.85rem; }
+        .feed-title { color: var(--text-main); font-weight: bold; font-size: 1rem; }
+        .feed-body { color: #aaa; margin-top: 5px; }
+        .ghost-warning { background:rgba(212, 175, 55, 0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:15px; margin-bottom:20px; font-family:monospace; }
+        
+        #debug-console { position: fixed; bottom: 0; left: 0; width: 100%; height: 120px; background: rgba(0,0,0,0.95); border-top: 1px solid var(--accent-red); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; overflow-y: auto; z-index: 99999; display: none; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-card { background: #1e1e1e; padding:30px; border:1px solid #555; max-width:900px; width:90%; color:#fff; max-height:90vh; overflow-y:auto; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div id="debug-console"></div>
-
-    <div id="login-overlay">
-        <div class="login-card">
-            <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V13.6</p>
-            <button class="login-btn creative" onclick="app.login('player')">ENTER ARCHIVES (PLAYER)</button>
-            <button class="login-btn" onclick="app.login('gm')">SYSTEM ADMIN</button>
+    <div id="landing-page">
+        <div class="landing-title">TARTH SYSTEM</div>
+        <div class="landing-subtitle">ARCHIVE TERMINAL V13.7</div>
+        
+        <div class="portal-container">
+            <div class="portal-card" onclick="app.login('player')">
+                <span class="portal-icon">💎</span>
+                <span class="portal-title">THE CODEX</span>
+                <span class="portal-desc">Access public archives, consult the Oracle, and view the world map.</span>
+            </div>
+            
+            <div class="portal-card" onclick="app.login('gm')">
+                <span class="portal-icon">🛡️</span>
+                <span class="portal-title">LOREKEEPER</span>
+                <span class="portal-desc">Authorized access only. Edit records, manage timeline, and approve entries.</span>
+            </div>
         </div>
     </div>
 
     <div id="api-modal" class="modal-overlay" onclick="if(event.target.id==='api-modal') this.style.display='none'">
-        <div class="modal-card">
+        <div class="modal-card" style="width:400px;">
             <h2 style="color:var(--accent-blue); margin-top:0;">NEURAL LINK SETTINGS</h2>
             <label>API Key</label>
             <input type="password" id="api-key-input" style="width:100%; padding:10px; margin-top:5px; background:#000; border:1px solid #333; color:#fff;" placeholder="Leave empty to use Master Key">
@@ -208,6 +237,8 @@
             </div>
         </div>
     </div>
+
+    <div id="debug-console"></div>
 
     <div id="app-admin">
         <div class="header-bar">
@@ -294,7 +325,7 @@
             <button class="cmd-btn" onclick="app.exportData()">DOWNLOAD FULL BACKUP (CSV)</button>
         </div>
 
-        <div id="admin-modal" class="modal-overlay">
+        <div id="admin-modal" class="modal-overlay" style="display:none;">
             <div class="modal-card">
                 <h2 style="color:var(--accent-gold);">EDIT RECORD</h2>
                 <div class="row"><div class="col"><label>Name</label><input id="inp-name"></div><div class="col"><label>In-Game Date</label><input id="inp-date"></div><div class="col"><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option><option>System Generated</option></select></div></div>
@@ -384,18 +415,17 @@
 
     const firebaseConfig = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
-    // UTILS
     const TARTH_MONTHS = ["Arlen", "Mistril", "Johhanis", "Sadistar", "Kern", "Satari", "Shanteel", "Donril", "Concadin", "Zent", "Osass", "Gonde"];
     function parseTarthDate(dateStr) { if (!dateStr) return { val: -999999, year: "0000", monthIdx: 0 }; const d = dateStr.toString(); let yr = 0; const yMatch = d.match(/-?\d{1,4}/); if (yMatch) yr = parseInt(yMatch[0]); let mIdx = 0; for(let i=0; i<TARTH_MONTHS.length; i++) { if (d.toLowerCase().includes(TARTH_MONTHS[i].toLowerCase())) { mIdx = i + 1; break; } } return { val: yr + (mIdx / 100), year: yr.toString(), monthIdx: mIdx }; }
     function getPlaceholder(category, name) { const cat = (category || 'Lore').toLowerCase(); let bg = '333333'; if(cat.includes('people') || cat.includes('factions')) bg='1a1a2e'; if(cat.includes('location')) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${name.replace(/ /g,'+')}`; }
 
     // PERSONAS
     const PERSONAS = {
-        'Codex': "You are Codex, the impartial steward of the Tarth Archives. You are brilliant, precise, and objective. You focus on recording history accurately.",
-        'Saverath': "You are Saverath Snowleaf, a male Elven historian. You specialize in linguistics and ancient cultures. You are academic, slightly haughty but passionate about accuracy.",
-        'NaVan': "You are Na'Van, a retired Lanthorian soldier. You are matter-of-fact, direct, and factual. You focus on tactics, strength, and survival. You dislike flowery language.",
-        'Brigit': "You are Captain Brigit Haderon of the Korinthian fleet. You are bold, honorable, and use flowery, dramatic language. You despise cowardice.",
-        'Leaf': "You are Leaf Blackhand, a scribe priest of Tem. You are truthful to a fault, gregarious, and optimistic. You always try to see the good in people."
+        'Codex': "You are Codex, the impartial steward of the Tarth Archives. You are brilliant, precise, and objective.",
+        'Saverath': "You are Saverath Snowleaf, a male Elven historian. You specialize in linguistics and ancient cultures. Academic, slightly haughty.",
+        'NaVan': "You are Na'Van, a retired Lanthorian soldier. Matter-of-fact, direct, factual. You focus on tactics.",
+        'Brigit': "You are Captain Brigit Haderon of the Korinthian fleet. Bold, honorable, uses flowery language.",
+        'Leaf': "You are Leaf Blackhand, a scribe priest of Tem. Truthful, gregarious, optimistic."
     };
 
     window.app = {
@@ -403,7 +433,7 @@
         db: null, data: [], role: 'guest', currentCampaign: 'All', knownCampaigns: new Set(['Tarth 2.0', 'System']),
         apiKey: localStorage.getItem('tarth_api_key') || "",
         apiModel: localStorage.getItem('tarth_api_model') || "gemini-1.5-flash",
-        parsedCSV: [], md: window.markdownit(),
+        md: window.markdownit({html: false, breaks: true}), // Default HTML off for safety
 
         init: function() {
             try {
@@ -417,7 +447,7 @@
         },
 
         login: function(role) {
-            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('landing-page').style.display = 'none';
             if(role === 'gm') {
                 document.getElementById('app-admin').style.display = 'flex';
                 document.getElementById('app-gem').style.display = 'none';
@@ -434,6 +464,7 @@
             const inputKey = document.getElementById('api-key-input').value.trim();
             if(inputKey) key = inputKey.replace(/\s/g, ''); 
             if(!key) { if(!silent) alert("No Key Found."); return; }
+            if(!silent) this.log(`Connecting...`);
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${key}`;
                 const response = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] }) });
@@ -443,8 +474,8 @@
                     this.updateStatus();
                     document.getElementById('api-modal').style.display='none';
                     if(!silent && this.role === 'guest') this.login('player');
-                }
-            } catch(e) { console.error("Net Error"); }
+                } else { this.log("Connection Failed."); }
+            } catch(e) { this.log(`NETWORK ERROR: ${e.message}`); }
         },
 
         loadData: async function() {
@@ -469,6 +500,7 @@
             if(val === "NEW") { const newName = prompt("Name:"); if(newName) { this.knownCampaigns.add(newName); this.currentCampaign = newName; this.updateCampaignDropdown(); } } else { this.currentCampaign = val; }
             this.refreshAdminViews();
         },
+        log: function(msg) { const c = document.getElementById('debug-console'); c.style.display = 'block'; c.innerHTML += `<div>> ${msg}</div>`; c.scrollTop = c.scrollHeight; setTimeout(() => { c.style.display = 'none'; }, 2000); },
 
         // --- GEM (PLAYER) LOGIC ---
         switchGemView: function(view) {
@@ -480,7 +512,8 @@
         announcePersona: function() {
             const p = document.getElementById('persona-select').value;
             const names = {'Codex':'Codex', 'Saverath':'Saverath', 'NaVan':"Na'Van", 'Brigit':'Cpt. Brigit', 'Leaf':'Leaf'};
-            this.appendMsg(`<i>Active Persona: <strong>${names[p]}</strong></i>`, 'ai');
+            // CHANGED TO MARKDOWN TO FIX HTML BUG
+            this.appendMsg(`*Active Persona changed to: **${names[p]}***`, 'ai');
         },
         sendChat: async function() {
             const input = document.getElementById('chat-input');
@@ -491,7 +524,6 @@
             const loadingId = this.appendMsg("Thinking...", 'ai');
             const persona = document.getElementById('persona-select').value;
             
-            // SMART CONTEXT (50 Records)
             const terms = msg.toLowerCase().replace(/[^\w\s]/g, '').split(' ').filter(w => w.length > 2);
             const scored = this.data.map(d => { let score = 0; const text = (d.eventName + " " + d.narrative + " " + d.tags).toLowerCase(); terms.forEach(t => { if(text.includes(t)) score++; }); return {doc:d, score}; });
             const hits = scored.filter(s => s.score > 0).sort((a,b)=>b.score-a.score).slice(0, 50).map(s => `[${s.doc.eventName}]: ${s.doc.narrative}`).join("\n");
@@ -548,15 +580,13 @@
         },
         filterCodex: function(city) { this.switchGemView('codex'); this.renderGemCodex(city); },
         submitJournal: async function() {
-            const title = document.getElementById('j-title').value;
-            const body = document.getElementById('j-entry').value;
+            const title = document.getElementById('j-title').value; const body = document.getElementById('j-entry').value;
             if(!title || !body) return alert("Fill out fields.");
             await setDoc(doc(this.db, "lore_library", `JRN-${Date.now()}`), { eventName: title, category: "Journal", narrative: body, status: "Pending", timestamp: Timestamp.now() });
-            alert("Entry Submitted.");
-            document.getElementById('j-title').value = ""; document.getElementById('j-entry').value = "";
+            alert("Entry Submitted."); document.getElementById('j-title').value = ""; document.getElementById('j-entry').value = "";
         },
 
-        // --- ADMIN FUNCTIONS (Restored from V12.3) ---
+        // --- ADMIN FUNCTIONS ---
         refreshAdminViews: function() {
             if(document.getElementById('at-time').classList.contains('active')) this.renderTimeline();
             if(document.getElementById('at-lib').classList.contains('active')) this.renderAdminTable();
