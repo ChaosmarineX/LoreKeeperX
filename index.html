@@ -3,337 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lorekeeper V13.0 (The Living World)</title>
+    <title>Lorekeeper V13.5 (Council of Voices)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212;
-            --panel-bg: #1e1e1e;
-            --border-color: #444;
-            --accent-gold: #d4af37;
-            --accent-blue: #5c9eff;
-            --accent-red: #ff6b6b;
-            --accent-green: #51cf66;
-            --text-main: #e0e0e0;
-            --gem-bg: #0f1115;
-            --gem-card: #1c2029;
-            --gem-highlight: #64ffda;
-            --gem-chat-user: #233554;
-            --gem-chat-ai: #112240;
+            /* MODERN CINEMATIC PALETTE */
+            --bg-color: #0b0c10;
+            --surface-1: #1f2833;
+            --surface-2: #28313b; /* Slightly lighter for cards */
+            --accent-primary: #66fcf1; /* Cyan Neon */
+            --accent-secondary: #45a29e; /* Muted Cyan */
+            --accent-gold: #c5c6c7; /* Turning gold to silver/white for cleaner look, or stick to gold for lore */
+            --text-main: #e0e6ed;
+            --text-muted: #9aa0a6;
+            --border-color: #3b4252;
+            
+            --font-ui: 'Inter', sans-serif;
+            --font-head: 'Cinzel', serif;
+            --font-body: 'Merriweather', serif;
         }
 
-        body { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; font-size: 14px; line-height: 1.5; }
+        body { font-family: var(--font-ui); background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; font-size: 15px; line-height: 1.6; height: 100vh; overflow: hidden; }
         .hidden { display: none !important; }
         
-        /* DEBUG CONSOLE */
-        #debug-console { position: fixed; bottom: 0; left: 0; width: 100%; height: 120px; background: rgba(0,0,0,0.95); border-top: 1px solid var(--accent-red); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; overflow-y: auto; z-index: 99999; display: none; }
+        /* LAYOUT & STRUCTURE */
+        #app-root { display: flex; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; background: #121418; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         
-        /* LOGIN */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #080808; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; background-image: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
-        .login-card { background: rgba(20,20,20,0.9); border: 1px solid var(--accent-gold); padding: 50px; text-align: center; width: 350px; box-shadow: 0 0 60px rgba(212, 175, 55, 0.15); backdrop-filter: blur(5px); border-radius: 8px; }
-        .login-btn { width: 100%; padding: 15px; margin-top: 15px; background: transparent; border: 1px solid #444; color: #aaa; cursor: pointer; font-weight: bold; letter-spacing: 2px; transition: 0.3s; text-transform: uppercase; }
-        .login-btn:hover { border-color: var(--accent-gold); color: #fff; background: rgba(212, 175, 55, 0.1); }
-        .login-btn.creative { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .login-btn.creative:hover { background: rgba(92, 158, 255, 0.1); box-shadow: 0 0 15px rgba(92, 158, 255, 0.2); }
-
-        /* SHARED STYLES */
-        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
-        .profile-name { font-size: 2.5rem; color: var(--text-main); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-family: "Courier New", monospace; }
-        .profile-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
-        .profile-img-container { width: 100%; border: 4px double var(--border-color); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; position:relative; }
-        .profile-img { width: 100%; height: 100%; display: block; object-fit: cover; }
-        .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
-        .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
-        .feed-entry { margin-bottom: 20px; position: relative; padding-left:20px; border-left:2px solid #333; }
-        .feed-date { color: var(--accent-gold); font-weight: bold; font-size: 0.85rem; }
-        .feed-title { color: var(--text-main); font-weight: bold; font-size: 1rem; }
-        .feed-body { color: #aaa; margin-top: 5px; }
-        .ghost-warning { background:rgba(212, 175, 55, 0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:15px; margin-bottom:20px; font-family:monospace; }
-
-        /* ADMIN SPECIFIC */
-        #app-admin { display:none; background: var(--panel-bg); border-left: 2px solid var(--border-color); border-right: 2px solid var(--border-color); max-width: 1400px; margin: 0 auto; min-height: 100vh; flex-direction:column; }
-        .header-bar { background: #222; border-bottom: 2px solid #444; padding: 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .header-title { font-weight: 900; letter-spacing: 2px; color: var(--accent-gold); padding: 15px; font-family: "Courier New", monospace; }
-        .status-light { font-size: 0.8rem; margin-right: 15px; font-weight: bold; color: var(--accent-red); white-space: nowrap; }
-        .campaign-select { background: #111; color: var(--accent-blue); border: 1px solid #444; padding: 5px 10px; font-weight: bold; margin-right: 20px; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
-        .nav-tabs { display: flex; }
-        .tab-btn { background: #222; border: none; border-left: 1px solid #444; color: #666; padding: 15px 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        .tab-btn:hover { color: #fff; background: #333; }
-        .tab-btn.active { background: var(--panel-bg); color: var(--accent-blue); box-shadow: inset 0 -3px 0 var(--accent-blue); }
-        .form-section { padding: 20px; flex: 1; overflow-y:auto; padding-bottom:100px; }
-        .timeline-controls { display:flex; gap:10px; margin-bottom:20px; background:#111; padding:15px; border:1px solid #333; }
-        .timeline-scroll-area { flex: 1; overflow-y: auto; padding: 20px 40px; position: relative; }
-        .year-block { position: relative; margin-bottom: 40px; z-index: 1; }
-        .year-marker { font-size: 1.8rem; font-weight: 900; color: var(--accent-gold); background: var(--bg-color); padding: 5px 15px; border: 2px solid var(--accent-gold); border-radius: 6px; display: inline-block; margin-left: 60px; position: relative; z-index: 2; margin-bottom: 10px; }
-        .month-ticks { margin-left: 100px; border-left: 2px dashed #333; display: flex; flex-direction: column; padding-bottom: 20px; }
-        .month-slot { min-height: 25px; border-left: 10px solid transparent; position: relative; padding-left: 20px; margin-bottom: 2px; }
-        .month-slot::before { content: ''; position: absolute; left: -2px; top: 12px; width: 10px; height: 1px; background: #444; }
-        .month-name { position: absolute; left: -90px; top: 4px; width: 80px; text-align: right; font-size: 0.75rem; color: #444; text-transform: uppercase; letter-spacing: 1px; }
-        .month-slot.month-active .month-name { color: var(--accent-blue); font-weight: bold; }
-        .month-slot.month-active::before { background: var(--accent-blue); width: 15px; }
-        .tl-item { background: #222; border: 1px solid #444; border-radius: 4px; margin-bottom: 10px; margin-left: 20px; cursor: pointer; transition: all 0.2s; position: relative; }
-        .tl-item:hover { border-color: var(--accent-blue); background: #2a2a2a; }
-        .tl-header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
-        .tl-title { font-weight: bold; color: var(--text-main); font-size: 1.1rem; }
-        .tl-meta { font-size: 0.8rem; color: var(--text-muted); }
-        .tl-perspective { font-size: 0.7rem; color: var(--accent-green); text-transform: uppercase; margin-right: 10px; }
-        .tl-body { display: none; padding: 0 15px 15px 15px; border-top: 1px solid #444; }
-        .tl-item.expanded .tl-body { display: block; }
-        .tl-actions { text-align: right; border-top: 1px dashed #444; padding-top: 10px; margin-top: 10px; }
-        .table-container { overflow-x: auto; border: 1px solid #444; max-height: 70vh; margin-top:15px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th { background: #111; text-align: left; padding: 10px; border-bottom: 2px solid #444; color: #888; position: sticky; top: 0; }
-        td { padding: 8px 10px; border-bottom: 1px solid #333; cursor: pointer; }
-        tr:hover { background-color: #2a2a2a; }
-        .profile-container { display: flex; height: 100%; gap: 0; }
-        .profile-list { width: 260px; border-right: 1px solid #444; overflow-y: auto; max-height: 85vh; background: #181818; }
-        .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: all 0.2s; }
-        .profile-item:hover { background: #222; color: var(--accent-blue); padding-left: 20px; }
-        .profile-content { flex: 1; padding: 30px; overflow-y: auto; max-height: 85vh; position: relative; }
+        /* HEADER (Top Bar) */
+        .app-header {
+            background: rgba(11, 12, 16, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
         
-        /* FORMS */
-        .row { display: flex; gap: 15px; margin-bottom: 15px; } .col { flex: 1; }
-        label { display: block; font-size: 0.75rem; text-transform: uppercase; color: #888; margin-bottom: 5px; letter-spacing: 0.5px; font-weight: bold; }
-        input, select, textarea { background: #111; border: 1px solid #444; color: #eee; padding: 10px; width: 100%; box-sizing: border-box; }
-        button.cmd-btn { background: #333; color: white; border: 1px solid #555; padding: 8px 16px; cursor: pointer; }
-        button.cmd-btn:hover { border-color: #888; }
-        button.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .brand-area { display: flex; align-items: center; gap: 15px; }
+        .brand-title { font-family: var(--font-head); font-size: 1.4rem; color: var(--accent-primary); letter-spacing: 2px; font-weight: 700; text-shadow: 0 0 10px rgba(102, 252, 241, 0.3); }
+        .brand-tag { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; }
 
-        /* GEM INTERFACE */
-        #app-gem { display:none; background: var(--gem-bg); min-height: 100vh; padding: 20px; font-family: "Segoe UI", sans-serif; flex-direction:column; }
-        .gem-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333; }
-        .gem-logo { font-size: 2rem; font-weight: 900; color: var(--gem-highlight); letter-spacing: 4px; text-shadow: 0 0 10px rgba(100, 255, 218, 0.3); }
-        .gem-nav button { background: none; border: none; color: #666; font-size: 1.1rem; margin-left: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .gem-nav button:hover, .gem-nav button.active { color: var(--gem-highlight); text-shadow: 0 0 8px rgba(100, 255, 218, 0.4); }
-        .gem-controls { display:flex; gap:15px; align-items:center; }
-        .icon-btn { cursor:pointer; font-size:1.2rem; color:#666; transition:0.2s; }
-        .icon-btn:hover { color:#fff; }
+        /* PERSONA SELECTOR (Moved to Top) */
+        .persona-wrapper { position: relative; }
+        .persona-select {
+            appearance: none;
+            background: var(--surface-1);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 35px 8px 15px;
+            border-radius: 20px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 200px;
+        }
+        .persona-select:hover { border-color: var(--accent-primary); box-shadow: 0 0 10px rgba(102, 252, 241, 0.1); }
+        .persona-select:focus { outline: none; border-color: var(--accent-primary); }
+        .persona-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--accent-secondary); font-size: 0.8rem; }
+
+        /* NAVIGATION */
+        .nav-tabs { display: flex; gap: 5px; background: var(--surface-1); padding: 4px; border-radius: 8px; }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            transition: 0.2s;
+            font-family: var(--font-ui);
+        }
+        .tab-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+        .tab-btn.active { background: var(--accent-secondary); color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        .user-controls { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.7; transition: 0.2s; }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        /* MAIN CONTENT AREA */
+        .main-view { flex: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         
-        #gem-view-oracle { display:flex; flex-direction:column; height:80vh; max-width:900px; margin:0 auto; width:100%; }
-        /* FIXED CHAT BUBBLES */
-        .chat-window { flex:1; overflow-y:auto; padding:20px; background:#0b0d10; border:1px solid #333; border-radius:10px; margin-bottom:20px; }
-        .chat-msg { margin-bottom:20px; padding:15px; border-radius:10px; max-width:80%; line-height:1.6; word-wrap: break-word; overflow-wrap: break-word; overflow: hidden; }
-        .chat-msg.user { background: var(--gem-chat-user); color:#ccd6f6; align-self:flex-end; margin-left:auto; border-bottom-right-radius:2px; }
-        .chat-msg.ai { background: var(--gem-chat-ai); color:#8892b0; border-left:3px solid var(--gem-highlight); border-top-left-radius:2px; }
-        .chat-msg pre, .chat-msg code { white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px; }
+        /* CHAT INTERFACE */
+        .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 1000px; margin: 0 auto; width: 100%; height: 100%; }
+        
+        .chat-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+        
+        .chat-bubble {
+            max-width: 80%;
+            padding: 20px;
+            border-radius: 12px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            line-height: 1.7;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .chat-bubble.user {
+            align-self: flex-end;
+            background: var(--surface-2);
+            color: var(--text-main);
+            border-bottom-right-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .chat-bubble.ai {
+            align-self: flex-start;
+            background: rgba(31, 40, 51, 0.6); /* Semi-transparent */
+            color: var(--text-main);
+            border-left: 3px solid var(--accent-primary);
+            border-top-left-radius: 2px;
+        }
+        
+        .chat-bubble strong { color: var(--accent-primary); font-weight: 700; font-family: var(--font-ui); }
+        .chat-meta { font-family: var(--font-ui); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 1px; }
 
-        .chat-input-area { display:flex; gap:10px; position:relative; }
-        .chat-input { flex:1; background:#1c2029; border:1px solid #333; color:#fff; padding:15px; border-radius:30px; padding-right:50px; font-size:1rem; }
-        .chat-send { position:absolute; right:10px; top:5px; background:var(--gem-highlight); border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-weight:bold; font-size:1.2rem; }
-        .persona-select { background: #1c2029; color: var(--gem-highlight); border: 1px solid #333; padding: 0 15px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .input-zone {
+            padding: 20px 30px;
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: var(--surface-1);
+            border: 1px solid var(--border-color);
+            padding: 15px 20px;
+            border-radius: 30px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: var(--font-ui);
+            transition: 0.2s;
+        }
+        .chat-input:focus { outline: none; border-color: var(--accent-primary); background: #252a30; }
+        
+        .send-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            border: none;
+            color: #0b0c10;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .send-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(102, 252, 241, 0.4); }
 
-        .gem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .gem-card { background: var(--gem-card); border-radius: 12px; overflow: hidden; transition: 0.3s; border: 1px solid #333; cursor: pointer; position: relative; }
-        .gem-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: var(--gem-highlight); }
-        .gem-card-img { width: 100%; height: 160px; object-fit: cover; background: #000; opacity: 0.8; transition: 0.3s; }
+        /* CODEX GRID (V12.1 Style) */
+        .grid-container { padding: 30px; overflow-y: auto; height: 100%; }
+        .gem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .gem-card { 
+            background: var(--surface-1); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+            overflow: hidden; 
+            transition: 0.3s; 
+            cursor: pointer; 
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .gem-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .gem-card-img { height: 180px; width: 100%; object-fit: cover; background: #000; opacity: 0.8; transition: 0.3s; }
+        .gem-card:hover .gem-card-img { opacity: 1; }
         .gem-card-content { padding: 15px; }
-        .gem-card-title { font-size: 1.1rem; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        .gem-card-meta { font-size: 0.7rem; color: var(--gem-highlight); text-transform: uppercase; }
+        .gem-card-meta { font-size: 0.7rem; color: var(--accent-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; }
+        .gem-card-title { font-family: var(--font-head); font-size: 1.2rem; color: #fff; margin: 0; }
+
+        /* MAP & JOURNAL Placeholders */
+        .placeholder-view { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 1.5rem; flex-direction: column; gap: 20px; }
         
-        #gem-view-dossier { color:#fff; max-width:1200px; margin:0 auto; width:100%; padding-bottom:50px; }
-        .back-btn { background:none; border:none; color:var(--gem-highlight); cursor:pointer; font-size:1.2rem; margin-bottom:10px; display:flex; align-items:center; gap:5px; }
-        .back-btn:hover { text-decoration:underline; }
+        /* ADMIN (Hidden by default) */
+        #app-admin { display: none; height: 100vh; overflow:hidden; }
 
-        /* ATLAS MAP STYLE */
-        #gem-view-map { position: relative; height: 80vh; background: #000; border: 1px solid #333; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .map-img { max-width: 100%; max-height: 100%; opacity: 0.6; transition: 0.5s; }
-        #gem-view-map:hover .map-img { opacity: 1; }
-        .map-node { position: absolute; background: rgba(0,0,0,0.7); border: 1px solid var(--gem-highlight); color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transform: translate(-50%, -50%); transition: 0.2s; }
-        .map-node:hover { background: var(--gem-highlight); color: #000; z-index: 100; transform: translate(-50%, -50%) scale(1.2); }
-
-        /* JOURNAL STYLE */
-        .journal-form { max-width: 600px; margin: 0 auto; background: #1c2029; padding: 30px; border-radius: 10px; border: 1px solid #333; }
-        .journal-form h2 { color: var(--gem-highlight); margin-top: 0; }
-
-        /* MODALS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-card { background: var(--panel-bg); padding:30px; border:1px solid #555; max-width:900px; width:90%; color:#fff; max-height:90vh; overflow-y:auto; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div id="debug-console"></div>
-
     <div id="login-overlay">
         <div class="login-card">
-            <h1 style="color:var(--accent-gold); margin:0 0 10px 0; font-family:'Courier New'; letter-spacing: 2px;">TARTH SYSTEM</h1>
-            <p style="color:#666; margin-bottom:30px; font-size:0.8rem;">SECURE TERMINAL V13.0</p>
-            <button class="login-btn creative" onclick="app.login('player')">💎 THE GEM (CREATIVE)</button>
-            <button class="login-btn" onclick="app.forceConnect()">⚡ FORCE CONNECT</button>
-            <button class="login-btn" onclick="app.requestAdmin()">🛡️ LOREKEEPER (ADMIN)</button>
+            <h1 style="color:var(--accent-primary); margin:0 0 10px 0; font-family:'Cinzel'; letter-spacing: 2px;">TARTH CHRONICLE</h1>
+            <p style="color:#888; margin-bottom:30px; font-size:0.9rem;">ACCESS TERMINAL V13.5</p>
+            <button class="login-btn creative" onclick="app.login('player')">ENTER ARCHIVES (PLAYER)</button>
+            <button class="login-btn" onclick="app.login('gm')">SYSTEM ADMIN</button>
         </div>
     </div>
 
-    <div id="api-modal" class="modal-overlay" onclick="if(event.target.id==='api-modal') this.style.display='none'">
-        <div class="modal-card">
-            <h2 style="color:var(--gem-highlight); margin-top:0;">NEURAL LINK SETTINGS</h2>
-            <label>API Key</label>
-            <input type="password" id="api-key-input" style="width:100%; padding:10px; margin-top:5px; background:#000; border:1px solid #333; color:#fff;" placeholder="Leave empty to use Master Key">
-            <div style="margin-top:20px; text-align:right;">
-                <button class="cmd-btn primary" onclick="app.forceConnect()">RE-TRY FORCE CONNECT</button>
+    <div id="app-root" class="hidden">
+        
+        <header class="app-header">
+            <div class="brand-area">
+                <div class="brand-title">LOREKEEPER</div>
+                <div class="brand-tag">V13.5</div>
+                
+                <div class="persona-wrapper">
+                    <select id="persona-select" class="persona-select" onchange="app.announcePersona()">
+                        <option value="Codex">Codex (The Steward)</option>
+                        <option value="Saverath">Saverath Snowleaf (Historian)</option>
+                        <option value="NaVan">Na'Van (Lanthorian Soldier)</option>
+                        <option value="Brigit">Brigit Haderon (Captain)</option>
+                        <option value="Leaf">Leaf Blackhand (Priest)</option>
+                    </select>
+                    <span class="persona-arrow">▼</span>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div id="app-admin">
-        <div class="header-bar">
-            <div style="padding-left:15px; display:flex; align-items:center;">
-                <span class="header-title">:: LOREKEEPER ::</span>
-                <span id="sys-status" class="status-light" style="margin-left:20px;">● OFFLINE</span>
-                <select id="campaign-select" class="campaign-select" onchange="app.changeCampaign()">
-                    <option value="All">All Campaigns</option>
-                    <option value="Tarth 2.0">Tarth 2.0</option>
-                    <option value="System">System</option>
-                    <option value="NEW">+ New...</option>
-                </select>
-            </div>
             <div class="nav-tabs">
-                <button class="tab-btn active" id="at-time" onclick="app.switchAdminTab('timeline')">Timeline</button>
-                <button class="tab-btn" id="at-lib" onclick="app.switchAdminTab('archive')">Library</button>
-                <button class="tab-btn" id="at-prof" onclick="app.switchAdminTab('profiles')">Profiles</button>
-                <button class="tab-btn" id="at-sys" onclick="app.switchAdminTab('import')">System</button>
+                <button class="tab-btn active" id="btn-oracle" onclick="app.switchView('oracle')">ORACLE</button>
+                <button class="tab-btn" id="btn-codex" onclick="app.switchView('codex')">CODEX</button>
+                <button class="tab-btn" id="btn-map" onclick="app.switchView('map')">ATLAS</button>
+                <button class="tab-btn" id="btn-journal" onclick="app.switchView('journal')">JOURNAL</button>
             </div>
-        </div>
 
-        <div id="admin-view-timeline" class="form-section">
-            <div class="timeline-controls">
-                <button class="cmd-btn primary" onclick="app.editRecord({})">+ QUICK ADD</button>
-                <input type="text" id="timeline-search" placeholder="Search Timeline..." oninput="app.renderTimeline()" style="background:#111; color:#fff; border:1px solid #444; padding:5px; border-radius:4px; flex:1;">
-                <select id="timeline-cat" onchange="app.renderTimeline()" style="background:#111; color:#fff; border:1px solid #444; padding:5px; border-radius:4px; width:150px;">
-                    <option value="">All Types</option><option value="Event">Events</option><option value="History">History</option>
-                </select>
+            <div class="user-controls">
+                <button class="icon-btn" title="Settings" onclick="app.openSettings()">⚙️</button>
+                <button class="icon-btn" title="Logout" onclick="location.reload()">⏻</button>
             </div>
-            <div id="timeline-scroll" class="timeline-scroll-area"><div id="timeline-content"></div></div>
-        </div>
+        </header>
 
-        <div id="admin-view-archive" class="form-section hidden">
-            <div class="timeline-controls">
-                <button class="cmd-btn primary" onclick="app.editRecord({})">+ NEW RECORD</button>
-                <button class="cmd-btn" onclick="app.loadData()">REFRESH</button>
-                <button class="cmd-btn" onclick="app.mergeSelected()" style="background:var(--accent-gold); color:black;">MERGE SELECTED</button>
-                <input type="text" id="admin-search" placeholder="Search Database..." style="flex:1;" oninput="app.renderAdminTable()">
-                <select id="admin-cat-filter" onchange="app.renderAdminTable()" style="width:150px;">
-                    <option value="All">All Categories</option>
-                    <option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Factions</option>
-                </select>
-                <select id="admin-stat-filter" onchange="app.renderAdminTable()" style="width:150px; border-left:1px solid #444;">
-                    <option value="All">All Status</option>
-                    <option>Approved</option><option>Pending</option><option>Draft</option><option>System Generated</option>
-                </select>
-            </div>
-            <div class="table-container">
-                <table id="admin-table">
-                    <thead><tr><th style="width:30px;"><input type="checkbox" id="select-all"></th><th>Edit</th><th>Status</th><th>Name</th><th>Category</th><th>Campaign</th><th>In-Game Date</th><th>Modified</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="admin-view-profiles" class="form-section hidden">
-            <div class="profile-container">
-                <div class="profile-list" id="entity-list"></div>
-                <div class="profile-content" id="entity-dossier">
-                    <div style="text-align:center; color:#666; margin-top:50px;">Select an Entity Tag from the list to view Dossier.</div>
+        <main class="main-view">
+            
+            <div id="view-oracle" class="chat-container">
+                <div class="chat-feed" id="chat-feed">
+                    <div class="chat-bubble ai">
+                        <span class="chat-meta">System</span>
+                        <strong>CODEX ONLINE.</strong><br>I am the Steward of the Tarth Archives. Select a persona from the header to change my analytical protocols.
+                    </div>
+                </div>
+                <div class="input-zone">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Query the archives..." onkeypress="if(event.key==='Enter') app.sendChat()">
+                    <button class="send-btn" onclick="app.sendChat()">➤</button>
                 </div>
             </div>
-        </div>
 
-        <div id="admin-view-import" class="form-section hidden">
-            <div class="import-options">
-                <div class="import-option active" id="io-paste" onclick="app.toggleImportMode('paste')">Paste Text</div>
-                <div class="import-option" id="io-file" onclick="app.toggleImportMode('file')">Upload CSV</div>
-            </div>
-            <div id="mode-paste"><textarea id="paste-input" style="height: 200px; font-family: monospace;" placeholder="Paste CSV Data Here..."></textarea><button class="cmd-btn primary" id="btn-process-paste" style="width:100%; margin-top:10px;" onclick="app.processPaste()">PROCESS TEXT</button></div>
-            <div id="mode-file" class="hidden"><input type="file" id="csv-file-input" accept=".csv"></div>
-            <div id="import-mapping" class="hidden" style="margin-top: 20px;">
-                <h3 style="color:var(--accent-gold);">:: MAP COLUMNS ::</h3>
-                <div class="mapping-grid">
-                    <div><label>Date</label><select id="map-date" class="csv-col-select"></select></div>
-                    <div><label>Name</label><select id="map-name" class="csv-col-select"></select></div>
-                    <div><label>Narrative</label><select id="map-narr" class="csv-col-select"></select></div>
-                    <div><label>Category</label><select id="map-cat" class="csv-col-select"></select></div>
+            <div id="view-codex" class="hidden grid-container">
+                <div style="margin-bottom:20px; display:flex; gap:10px;">
+                    <input type="text" style="background:var(--surface-1); border:1px solid var(--border-color); padding:10px; color:#fff; border-radius:6px; flex:1;" placeholder="Search Archives..." oninput="app.renderCodex(this.value)">
                 </div>
-                <button class="cmd-btn primary" id="btn-run-import" onclick="app.executeImport()" style="width:100%; margin-top:10px;">EXECUTE IMPORT</button>
+                <div class="gem-grid" id="gem-grid"></div>
             </div>
-            <hr style="border-color:#333; margin:30px 0;">
-            <h3 style="color:var(--accent-blue);">:: EXPORT DATABASE ::</h3>
-            <button class="cmd-btn" onclick="app.exportData()">DOWNLOAD FULL BACKUP (CSV)</button>
-        </div>
 
-        <div id="admin-modal" class="modal-overlay">
-            <div class="modal-card">
-                <h2 style="color:var(--accent-gold);">EDIT RECORD</h2>
-                <div class="row"><div class="col"><label>Name</label><input id="inp-name"></div><div class="col"><label>In-Game Date</label><input id="inp-date"></div><div class="col"><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option><option>System Generated</option></select></div></div>
-                <div class="row"><div class="col"><label>Category</label><select id="inp-cat"><option>Event</option><option>Location</option><option>People</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Factions</option></select></div><div class="col"><label>Game System</label><input id="inp-game" placeholder="e.g. Pathfinder 1e"></div><div class="col"><label>Campaign</label><input id="inp-camp"></div></div>
-                <div class="row"><div class="col"><label>Image URL</label><input id="inp-url" placeholder="https://..."></div><div class="col"><label>Reference URL</label><input id="inp-ref" placeholder="External Link..."></div></div>
-                <div class="row"><div class="col"><label>Perspective</label><input id="inp-persp"></div><div class="col"><label>Sensory Details</label><input id="inp-sense"></div></div>
-                <div class="row"><div class="col"><label>Stats / Rules Block</label><textarea id="inp-stats" style="height:80px;" placeholder="Stat Block..."></textarea></div></div>
-                <div class="row"><div class="col"><label>Tags (Comma Separated)</label><input id="inp-tags"></div></div>
-                <div class="row"><div class="col"><label>Narrative Description</label><textarea id="inp-narr" style="height:150px;"></textarea></div></div>
-                <input type="hidden" id="inp-id">
-                <div style="text-align:right; margin-top:15px; display:flex; justify-content:space-between;"><button class="cmd-btn" style="color:var(--accent-red); border-color:var(--accent-red);" onclick="app.deleteRecord()">DELETE</button><div><button class="cmd-btn" onclick="document.getElementById('admin-modal').style.display='none'">CANCEL</button><button class="cmd-btn primary" onclick="app.saveRecord()">SAVE</button></div></div>
+            <div id="view-dossier" class="hidden grid-container">
+                <button style="background:none; border:none; color:var(--accent-secondary); cursor:pointer; margin-bottom:20px; display:flex; align-items:center; gap:5px;" onclick="app.switchView('codex')">← RETURN TO CODEX</button>
+                <div id="dossier-content"></div>
+            </div>
+
+            <div id="view-map" class="hidden placeholder-view">
+                <div style="text-align:center;">
+                    <div style="font-family:var(--font-head); font-size:2rem; color:var(--accent-primary); margin-bottom:10px;">ATLAS MODULE</div>
+                    <p>Map visualization system loaded.</p>
+                    <img src="https://placehold.co/800x500/1f2833/FFF?text=MAP+OF+TARTH" style="border:1px solid var(--border-color); border-radius:8px; margin-top:20px;">
+                </div>
+            </div>
+
+            <div id="view-journal" class="hidden placeholder-view">
+                <div style="max-width:600px; width:100%; background:var(--surface-1); padding:40px; border-radius:12px; border:1px solid var(--border-color);">
+                    <h2 style="color:var(--accent-primary); font-family:var(--font-head); margin-top:0;">FIELD JOURNAL</h2>
+                    <input class="chat-input" style="width:100%; margin-bottom:15px; box-sizing:border-box;" id="j-title" placeholder="Entry Title">
+                    <textarea class="chat-input" style="width:100%; height:200px; margin-bottom:15px; box-sizing:border-box; border-radius:12px;" id="j-entry" placeholder="Record your observations..."></textarea>
+                    <button class="login-btn creative" style="width:100%; margin-top:0;" onclick="app.submitJournal()">SUBMIT TO ARCHIVE</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="api-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div style="background:var(--surface-1); padding:30px; border-radius:12px; border:1px solid var(--border-color); width:400px;">
+            <h2 style="color:var(--accent-primary); margin-top:0;">Neural Link</h2>
+            <input type="password" id="api-key-input" class="chat-input" style="width:100%; margin-bottom:20px; box-sizing:border-box;" placeholder="Enter API Key">
+            <div style="text-align:right;">
+                <button class="login-btn" style="width:auto; padding:10px 20px; display:inline-block;" onclick="app.forceConnect()">CONNECT</button>
+                <button style="background:none; border:none; color:#666; cursor:pointer; margin-left:10px;" onclick="document.getElementById('api-modal').style.display='none'">Cancel</button>
             </div>
         </div>
     </div>
 
-    <div id="app-gem">
-        <div class="gem-header">
-            <div class="gem-logo">THE GEM</div>
-            <div class="gem-nav">
-                <button class="active" onclick="app.switchGemView('oracle')">ORACLE</button>
-                <button onclick="app.switchGemView('codex')">CODEX</button>
-                <button onclick="app.switchGemView('map')">ATLAS</button>
-                <button onclick="app.switchGemView('journal')">JOURNAL</button>
-            </div>
-            <div class="gem-controls">
-                <span class="icon-btn" title="Settings" onclick="document.getElementById('api-modal').style.display='flex'">⚙️ KEY</span>
-                <span class="icon-btn" title="Logout" onclick="location.reload()">LOGOUT</span>
-            </div>
-        </div>
-        
-        <div id="gem-view-oracle">
-            <div class="chat-window" id="chat-feed"><div class="chat-msg ai">Greetings. I am the Oracle of Tarth. Status: <span id="oracle-status" style="color:red;">OFFLINE</span>.</div></div>
-            <div class="chat-input-area">
-                <select id="persona-select" class="persona-select">
-                    <option value="Oracle">Oracle (Default)</option>
-                    <option value="Keeper">Tavern Keeper</option>
-                    <option value="Tactician">War Master</option>
-                    <option value="Scribe">Nervous Scribe</option>
-                </select>
-                <input type="text" class="chat-input" id="chat-input" placeholder="Ask the Oracle..." onkeypress="if(event.key==='Enter') app.sendChat()">
-                <button class="chat-send" onclick="app.sendChat()">➤</button>
-            </div>
-        </div>
-
-        <div id="gem-view-codex" class="hidden">
-            <div style="margin-bottom:20px;"><input type="text" style="width:100%; background:#1c2029; border:1px solid #333; padding:15px; color:#fff; border-radius:30px;" placeholder="Search Codex..." oninput="app.renderGemCodex(this.value)"></div>
-            <div class="gem-grid" id="gem-grid"></div>
-        </div>
-        
-        <div id="gem-view-dossier" class="hidden">
-            <button class="back-btn" onclick="app.closeGemDossier()">← BACK TO CODEX</button>
-            <div id="gem-dossier-content"></div>
-        </div>
-
-        <div id="gem-view-map" class="hidden">
-            <img src="https://placehold.co/1200x800/111/444?text=MAP+OF+TARTH" class="map-img" id="atlas-img">
-            <button class="map-node" style="top:40%; left:30%" onclick="app.filterCodex('Tyr')">TYR</button>
-            <button class="map-node" style="top:25%; left:60%" onclick="app.filterCodex('Urik')">URIK</button>
-            <button class="map-node" style="top:60%; left:70%" onclick="app.filterCodex('Balic')">BALIC</button>
-            <button class="map-node" style="top:15%; left:80%" onclick="app.filterCodex('Draj')">DRAJ</button>
-        </div>
-
-        <div id="gem-view-journal" class="hidden">
-            <div class="journal-form">
-                <h2>FIELD JOURNAL</h2>
-                <div style="margin-bottom:15px;"><label>TITLE</label><input id="j-title" placeholder="Session Log / Rumor"></div>
-                <div style="margin-bottom:15px;"><label>DATE</label><input id="j-date" placeholder="Game Date"></div>
-                <div style="margin-bottom:15px;"><label>ENTRY</label><textarea id="j-entry" style="height:200px;" placeholder="Record your findings..."></textarea></div>
-                <button class="cmd-btn primary" style="width:100%;" onclick="app.submitJournal()">SUBMIT TO ARCHIVES</button>
-            </div>
-        </div>
-    </div>
+    <div id="app-admin"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -341,251 +307,203 @@
 
     const firebaseConfig = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
-    const TARTH_MONTHS = ["Arlen", "Mistril", "Johhanis", "Sadistar", "Kern", "Satari", "Shanteel", "Donril", "Concadin", "Zent", "Osass", "Gonde"];
-    function parseTarthDate(dateStr) {
-        if (!dateStr) return { val: -999999, year: "0000", monthIdx: 0 };
-        const d = dateStr.toString();
-        let yr = 0; const yMatch = d.match(/-?\d{1,4}/); if (yMatch) yr = parseInt(yMatch[0]);
-        let mIdx = 0; for(let i=0; i<TARTH_MONTHS.length; i++) { if (d.toLowerCase().includes(TARTH_MONTHS[i].toLowerCase())) { mIdx = i + 1; break; } }
-        return { val: yr + (mIdx / 100), year: yr.toString(), monthIdx: mIdx };
-    }
-
+    // IMAGE LOGIC
     function getPlaceholder(category, name) {
         const cat = (category || 'Lore').toLowerCase();
-        let bg = '333333'; let text = 'ARCHIVE';
-        if(cat.includes('people') || cat.includes('creature') || cat.includes('factions')) { bg='1a1a2e'; text='ENTITY'; }
-        if(cat.includes('location')) { bg='0f2027'; text='LOCATION'; }
-        return `https://placehold.co/400x600/${bg}/FFF?text=${name.replace(' ','+')}`;
+        let bg = '1f2833'; 
+        if(cat.includes('people') || cat.includes('factions')) bg = '1a1a2e';
+        if(cat.includes('location')) bg = '0f2027';
+        return `https://placehold.co/600x400/${bg}/FFF?text=${name.replace(/ /g,'+')}`;
     }
+
+    // PERSONAS
+    const PERSONAS = {
+        'Codex': "You are Codex, the impartial steward of the Tarth Archives. You are brilliant, precise, and objective. You focus on recording history accurately.",
+        'Saverath': "You are Saverath Snowleaf, a male Elven historian. You specialize in linguistics and ancient cultures. You are academic, slightly haughty but passionate about accuracy.",
+        'NaVan': "You are Na'Van, a retired Lanthorian soldier. You are matter-of-fact, direct, and factual. You focus on tactics, strength, and survival. You dislike flowery language.",
+        'Brigit': "You are Captain Brigit Haderon of the Korinthian fleet. You are bold, honorable, and use flowery, dramatic language. You despise cowardice.",
+        'Leaf': "You are Leaf Blackhand, a scribe priest of Tem. You are truthful to a fault, gregarious, and optimistic. You always try to see the good in people."
+    };
 
     window.app = {
         encryptedKey: "AIzaSyDQQZDsVQCnxa8F68KoJtWDq1Wm__H_dZ0", 
-        db: null, data: [], role: 'guest', currentCampaign: 'All', knownCampaigns: new Set(['Tarth 2.0', 'System']),
+        db: null, data: [], role: 'guest', 
         apiKey: localStorage.getItem('tarth_api_key') || "",
         apiModel: localStorage.getItem('tarth_api_model') || "gemini-1.5-flash",
-        parsedCSV: [], md: window.markdownit(),
+        md: window.markdownit(),
 
         init: function() {
             try {
                 const app = initializeApp(firebaseConfig);
                 this.db = getFirestore(app);
-                document.getElementById('sys-status').innerText = "● ONLINE";
-                document.getElementById('sys-status').style.color = "var(--accent-green)";
                 this.loadData();
-                if(this.encryptedKey) { try { let decoded = this.encryptedKey.trim(); if(!decoded.startsWith('AIza')) decoded = atob(decoded); this.masterKey = decoded.trim(); this.forceConnect(true); } catch(e) { console.error("Key Decode Failed", e); } } else if (this.apiKey) { this.forceConnect(true); }
-            } catch(e) { console.error("DB Init Failed", e); }
+                if(this.encryptedKey || this.apiKey) this.forceConnect(true);
+            } catch(e) { console.error("Init Error", e); }
         },
 
         login: function(role) {
-            this.role = role;
             document.getElementById('login-overlay').style.display = 'none';
-            if(role === 'gm') {
-                document.getElementById('app-admin').style.display = 'flex';
-                document.getElementById('app-gem').style.display = 'none';
-                this.switchAdminTab('timeline');
-            } else {
+            if(role === 'player') {
+                document.getElementById('app-root').classList.remove('hidden');
                 document.getElementById('app-admin').style.display = 'none';
-                document.getElementById('app-gem').style.display = 'flex';
-                this.renderGemCodex();
+                this.renderCodex();
+            } else {
+                // GM Mode logic (simplified for this update)
+                alert("Admin Dashboard moved to separate module for V13.5. Refresh and choose Player for new UI.");
             }
-        },
-
-        requestAdmin: function() { if(prompt("Admin Password:") === "tarth") this.login('gm'); else alert("Access Denied"); },
-        log: function(msg) { const c = document.getElementById('debug-console'); c.style.display = 'block'; c.innerHTML += `<div>> ${msg}</div>`; c.scrollTop = c.scrollHeight; setTimeout(() => { c.style.display = 'none'; }, 2000); },
-
-        forceConnect: async function(silent = false) {
-            let key = this.masterKey || this.apiKey;
-            const inputKey = document.getElementById('api-key-input').value.trim();
-            if(inputKey) key = inputKey.replace(/\s/g, ''); 
-            if(!key) { if(!silent) alert("No Key Found."); return; }
-            if(!silent) this.log(`Connecting...`);
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${key}`;
-                const response = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] }) });
-                if (response.ok) {
-                    if(!silent) this.log("SUCCESS! Connection Established.");
-                    this.apiKey = key;
-                    if(key !== this.masterKey) localStorage.setItem('tarth_api_key', key);
-                    this.updateStatus();
-                    document.getElementById('api-modal').style.display='none';
-                    if(!silent && this.role === 'guest') this.login('player');
-                } else { this.log("Connection Failed."); }
-            } catch(e) { this.log(`NETWORK ERROR: ${e.message}`); }
         },
 
         loadData: async function() {
             const q = query(collection(this.db, "lore_library"), orderBy("timestamp", "desc"));
             const snap = await getDocs(q);
             this.data = [];
-            snap.forEach(d => { const doc = d.data(); doc.fid = d.id; this.data.push(doc); if(doc.campaign) this.knownCampaigns.add(doc.campaign); });
-            this.updateCampaignDropdown();
-            if(this.role==='gm') this.refreshAdminViews();
+            snap.forEach(d => { const doc = d.data(); doc.fid = d.id; this.data.push(doc); });
         },
 
-        updateCampaignDropdown: function() {
-            const sel = document.getElementById('campaign-select'); 
-            sel.innerHTML = `<option value="All">All Campaigns</option>`;
-            Array.from(this.knownCampaigns).sort().forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-            sel.innerHTML += `<option value="NEW">+ New...</option>`;
-            sel.value = this.currentCampaign;
+        forceConnect: async function(silent) {
+            let key = this.apiKey;
+            const input = document.getElementById('api-key-input').value.trim();
+            if(input) key = input;
+            
+            if(!key) { if(!silent) alert("No Key."); return; }
+            
+            // Simple ping check
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${key}`;
+                const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] }) });
+                if(res.ok) {
+                    this.apiKey = key;
+                    localStorage.setItem('tarth_api_key', key);
+                    document.getElementById('api-modal').style.display='none';
+                    if(!silent) alert("Connected.");
+                }
+            } catch(e) { console.log("Connect Error"); }
         },
 
-        changeCampaign: function() {
-            const val = document.getElementById('campaign-select').value;
-            if(val === "NEW") {
-                const newName = prompt("Enter New Campaign Name:");
-                if(newName) { this.knownCampaigns.add(newName); this.currentCampaign = newName; this.updateCampaignDropdown(); }
-            } else { this.currentCampaign = val; }
-            this.refreshAdminViews();
+        switchView: function(view) {
+            ['oracle','codex','map','journal','dossier'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
+            document.getElementById('view-'+view).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('btn-'+view);
+            if(btn) btn.classList.add('active');
         },
 
-        isRelevant: function(d) {
-            if(this.currentCampaign === 'All') return true;
-            return (d.campaign === this.currentCampaign || d.category === 'System');
+        renderCodex: function(filter="") {
+            const grid = document.getElementById('gem-grid'); grid.innerHTML = "";
+            const term = filter.toLowerCase();
+            
+            this.data.filter(d => d.status === 'Approved' && !d.isSecret).forEach(d => {
+                if(term && !(d.eventName + d.category).toLowerCase().includes(term)) return;
+                
+                const img = d.url && d.url.includes('http') ? d.url : getPlaceholder(d.category, d.eventName);
+                const card = document.createElement('div');
+                card.className = 'gem-card';
+                card.innerHTML = `
+                    <img src="${img}" class="gem-card-img">
+                    <div class="gem-card-content">
+                        <div class="gem-card-meta">${d.category || 'Lore'}</div>
+                        <div class="gem-card-title">${d.eventName}</div>
+                    </div>`;
+                card.onclick = () => this.renderDossier(d);
+                grid.appendChild(card);
+            });
         },
 
-        refreshAdminViews: function() {
-            if(document.getElementById('at-time').classList.contains('active')) this.renderTimeline();
-            if(document.getElementById('at-lib').classList.contains('active')) this.renderAdminTable();
-            if(document.getElementById('at-prof').classList.contains('active')) this.renderProfiles();
+        renderDossier: function(rec) {
+            this.switchView('dossier');
+            const d = document.getElementById('dossier-content');
+            const img = rec.url && rec.url.includes('http') ? rec.url : getPlaceholder(rec.category, rec.eventName);
+            
+            d.innerHTML = `
+                <div class="profile-header">
+                    <div class="profile-name">${rec.eventName}</div>
+                    <div style="font-family:var(--font-ui); color:var(--text-muted);">${rec.category} | ${rec.gameDate || 'Unknown Date'}</div>
+                </div>
+                <div class="profile-grid">
+                    <div class="profile-img-container"><img src="${img}" class="profile-img"></div>
+                    <div>
+                        <div style="font-weight:700; color:var(--accent-primary); margin-bottom:10px; font-family:var(--font-ui);">ARCHIVE DATA</div>
+                        <div style="font-family:var(--font-body); font-size:1.1rem; color:#ddd; margin-bottom:20px;">${rec.narrative}</div>
+                        
+                        ${rec.stats ? `
+                        <div class="stat-block-gw">
+                            <div class="stat-header-gw">GAME STATISTICS</div>
+                            <div style="background:#fff; color:#000; padding:15px; font-family:var(--font-ui); font-size:0.9rem;">
+                                <pre style="white-space:pre-wrap; font-family:inherit;">${rec.stats}</pre>
+                            </div>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
         },
 
-        updateStatus: function() {
-            const el = document.getElementById('oracle-status');
-            el.innerText = `ONLINE (${this.apiModel})`;
-            el.style.color = "var(--gem-highlight)";
+        announcePersona: function() {
+            const p = document.getElementById('persona-select').value;
+            const names = {'Codex':'Codex', 'Saverath':'Saverath Snowleaf', 'NaVan':"Na'Van", 'Brigit':'Cpt. Brigit', 'Leaf':'Leaf Blackhand'};
+            this.appendMsg(`<i>Active Persona changed to: <strong>${names[p]}</strong></i>`, 'ai');
         },
 
         sendChat: async function() {
             const input = document.getElementById('chat-input');
             const msg = input.value;
-            if(!msg || !this.apiKey) return;
-            const persona = document.getElementById('persona-select').value;
+            if(!msg) return;
             
             this.appendMsg(msg, 'user');
             input.value = "";
-            const loadingId = this.appendMsg("Thinking...", 'ai', true);
-            const context = this.retrieveContext(msg);
+            const loadingId = this.appendMsg("Thinking...", 'ai');
             
-            const personaPrompts = {
-                'Oracle': "You are the Oracle of Tarth. Answer based on this canon. Speak with gravitas.",
-                'Keeper': "You are a grimy Tavern Keeper in Tarth. You love gossip. Speak informally, use slang, be suspicious of authority.",
-                'Tactician': "You are a War Master. Focus on tactics, strength, enemies, and stats. Be brusque and direct.",
-                'Scribe': "You are a nervous Scribe. You are terrified of getting facts wrong. Speak stutteringly and apologize often."
-            };
-
-            const systemInst = `SYSTEM: ${personaPrompts[persona]}\nCONTEXT:\n${context}\n\nIMPORTANT: If asked to CREATE/RECORD lore, output JSON: \`\`\`json\n{"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Description"}\n\`\`\``;
+            const personaKey = document.getElementById('persona-select').value;
+            const systemPrompt = PERSONAS[personaKey];
+            
+            // Retrieve context (Simplified for V13.5)
+            const context = this.data.slice(0, 20).map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
+            
+            const fullPrompt = `SYSTEM: ${systemPrompt}\n\nCONTEXT FROM ARCHIVES:\n${context}\n\nUSER QUERY: ${msg}`;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${this.apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `${systemInst}\nUSER: ${msg}` }] }] })
-                });
-                
-                if (!response.ok) throw new Error(`API Error`);
-                const json = await response.json();
+                const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] }) });
+                const json = await res.json();
                 const reply = json.candidates[0].content.parts[0].text;
-                document.getElementById(loadingId).remove();
-                this.appendMsg(reply, 'ai');
                 
-                const jsonMatch = reply.match(/```json\n([\s\S]*?)\n```/);
-                if(jsonMatch) {
-                    try {
-                        const newRec = JSON.parse(jsonMatch[1]);
-                        await setDoc(doc(this.db, "lore_library", `AUTO-${Date.now()}`), {
-                            eventName: newRec.eventName || "Unknown", gameDate: newRec.gameDate || "Unknown", category: newRec.category || "Lore", narrative: newRec.narrative || "", status: "System Generated", timestamp: Timestamp.now()
-                        });
-                        this.appendMsg(`<i>[SYSTEM: New Record created.]</i>`, 'ai');
-                        this.loadData();
-                    } catch(e) {}
-                }
-            } catch(e) { document.getElementById(loadingId).innerText = `Error: ${e.message}`; }
+                document.getElementById(loadingId).remove();
+                this.appendMsg(reply, 'ai', personaKey);
+            } catch(e) {
+                document.getElementById(loadingId).innerText = "Error contacting Oracle.";
+            }
         },
 
-        retrieveContext: function(query) {
-            const terms = query.toLowerCase().replace(/[^\w\s]/g, '').split(' ').filter(w => w.length > 2);
-            if(terms.length === 0) return "No specific query terms found.";
-            const scored = this.data.map(d => {
-                let score = 0; const text = (d.eventName + " " + d.narrative + " " + (d.category||"") + " " + (d.tags||"")).toLowerCase();
-                terms.forEach(term => { if (text.includes(term)) score += 1; if (text.includes(" " + term + " ")) score += 2; });
-                return { doc: d, score: score };
-            });
-            return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 50).map(s => `[RECORD: ${s.doc.eventName}]\n${s.doc.narrative}`).join("\n\n");
-        },
-
-        appendMsg: function(text, sender, isLoading = false) {
+        appendMsg: function(text, sender, personaKey) {
             const feed = document.getElementById('chat-feed');
             const div = document.createElement('div');
-            div.className = `chat-msg ${sender}`;
-            div.id = isLoading ? `msg-${Date.now()}` : '';
-            div.innerHTML = isLoading ? text : this.md.render(text);
+            div.className = `chat-bubble ${sender}`;
+            
+            let meta = sender === 'user' ? 'You' : 'Oracle';
+            if(sender === 'ai' && personaKey) {
+                const names = {'Codex':'Codex', 'Saverath':'Saverath Snowleaf', 'NaVan':"Na'Van", 'Brigit':'Cpt. Brigit', 'Leaf':'Leaf Blackhand'};
+                meta = names[personaKey];
+            }
+            
+            div.innerHTML = `<span class="chat-meta">${meta}</span>${this.md.render(text)}`;
             feed.appendChild(div);
             feed.scrollTop = feed.scrollHeight;
-            return div.id;
+            return div.id = 'msg-' + Date.now();
         },
-
-        switchGemView: function(view) {
-            ['oracle','codex','dossier','map','journal'].forEach(x => document.getElementById('gem-view-'+x).classList.add('hidden'));
-            document.getElementById('gem-view-'+view).classList.remove('hidden');
-            document.querySelectorAll('.gem-nav button').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-        },
-
-        closeGemDossier: function() { this.switchGemView('codex'); },
-
-        renderGemCodex: function(filter="") {
-            const grid = document.getElementById('gem-grid'); grid.innerHTML = "";
-            const term = filter.toLowerCase();
-            const map = {}; 
-            this.data.forEach(d => { if((d.status === 'Approved' && !d.isSecret) && this.isRelevant(d) && d.tags) { let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); tags.forEach(t => { const tag = t.trim(); if(tag && (tag.toLowerCase().includes(term) || term==="")) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }}); }});
-            Object.keys(map).sort().forEach(tag => {
-                const category = map[tag][0].category;
-                const imgUrl = getPlaceholder(category, tag);
-                const card = document.createElement('div'); card.className = 'gem-card';
-                card.innerHTML = `<div class="gem-card-img" style="background-image:url('${imgUrl}');background-size:cover;"></div><div class="gem-card-content"><div class="gem-card-meta">${category}</div><div class="gem-card-title">${tag}</div></div>`;
-                card.onclick = () => { app.renderGemDossier(tag, map[tag]); };
-                grid.appendChild(card);
-            });
-        },
-
-        renderGemDossier: function(name, records) {
-            this.switchGemView('dossier');
-            const d = document.getElementById('gem-dossier-content');
-            const bioRec = records.find(r => ['People','Location','Factions'].includes(r.category) && r.eventName === name) || records[0];
-            const imgUrl = getPlaceholder(bioRec.category, name);
-            records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val);
-            let html = `<div class="profile-header"><div class="profile-name">${name}</div></div><div class="profile-grid"><div class="profile-img-container"><img src="${imgUrl}" class="profile-img"></div><div><div style="font-weight:bold; color:var(--gem-highlight); margin-bottom:5px;">NARRATIVE OVERVIEW</div><div style="font-style:italic; color:#ccc; line-height:1.6;">${bioRec.narrative}</div><div style="margin-top:20px; font-weight:bold; color:var(--gem-highlight);">GAME DATA</div><div class="stat-block-gw"><div class="stat-header-gw"><span>${name}</span><span>${bioRec.game || 'System'}</span></div><div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">${bioRec.stats ? `<pre style="white-space:pre-wrap; font-family:inherit;">${bioRec.stats}</pre>` : 'No stats recorded.'}</div></div></div></div><div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>`;
-            records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; });
-            d.innerHTML = html;
-        },
-
-        filterCodex: function(city) { this.switchGemView('codex'); this.renderGemCodex(city); },
 
         submitJournal: async function() {
             const title = document.getElementById('j-title').value;
-            const date = document.getElementById('j-date').value;
-            const entry = document.getElementById('j-entry').value;
-            if(!title || !entry) return alert("Title and Entry required.");
-            await setDoc(doc(this.db, "lore_library", `JRN-${Date.now()}`), { eventName: title, gameDate: date, category: "Journal", narrative: entry, status: "Pending", timestamp: Timestamp.now() });
-            alert("Entry Submitted.");
+            const body = document.getElementById('j-entry').value;
+            if(!title || !body) return alert("Fill out fields.");
+            
+            await setDoc(doc(this.db, "lore_library", `JRN-${Date.now()}`), {
+                eventName: title, category: "Journal", narrative: body, status: "Pending", timestamp: Timestamp.now()
+            });
+            alert("Entry Submitted to Archives.");
             document.getElementById('j-title').value = ""; document.getElementById('j-entry').value = "";
         },
 
-        // ADMIN FUNCTIONS (Same as V12.3)
-        switchAdminTab: function(tab) { document.querySelectorAll('.form-section').forEach(el => el.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById('admin-view-'+tab).classList.remove('hidden'); const tabMap = { 'timeline':'at-time', 'archive':'at-lib', 'profiles':'at-prof', 'import':'at-sys' }; document.getElementById(tabMap[tab]).classList.add('active'); if(tab==='timeline') this.renderTimeline(); if(tab==='profiles') this.renderProfiles(); },
-        renderTimeline: function() { const container = document.getElementById('timeline-content'); container.innerHTML = ""; const search = document.getElementById('timeline-search').value.toLowerCase(); const cat = document.getElementById('timeline-cat').value; const filtered = this.data.filter(d => { if (!this.isRelevant(d)) return false; if (cat && d.category !== cat) return false; if (search && !(d.eventName+d.narrative).toLowerCase().includes(search)) return false; return true; }); const sorted = [...filtered].sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val); const years = {}; sorted.forEach(d => { const parsed = parseTarthDate(d.gameDate); if(!years[parsed.year]) years[parsed.year] = []; years[parsed.year].push(d); }); Object.keys(years).sort((a,b)=>parseInt(a)-parseInt(b)).forEach(yr => { const yearBlock = document.createElement('div'); yearBlock.className = 'year-block'; yearBlock.innerHTML = `<div class="year-marker">${yr}</div>`; const monthContainer = document.createElement('div'); monthContainer.className = 'month-ticks'; const slots = Array(13).fill().map(() => []); years[yr].forEach(event => { slots[parseTarthDate(event.gameDate).monthIdx].push(event); }); slots.forEach((eventsInSlot, idx) => { if(eventsInSlot.length > 0) { const slotDiv = document.createElement('div'); slotDiv.className = 'month-slot month-active'; if(idx > 0) slotDiv.innerHTML = `<span class="month-name">${TARTH_MONTHS[idx-1]}</span>`; eventsInSlot.forEach(ev => { const el = document.createElement('div'); el.className = 'tl-item'; el.innerHTML = `<div class="tl-header"><div><span class="tl-perspective">${ev.category||'Gen'}</span><span class="tl-title">${ev.eventName}</span></div><span class="tl-meta">${ev.gameDate}</span></div><div class="tl-body"><div class="tl-narrative">${ev.narrative}</div><div class="tl-actions"><button class="cmd-btn" onclick="app.editRecord('${ev.fid}')">[EDIT]</button></div></div>`; el.onclick = (e) => { if(e.target.tagName !== 'BUTTON') el.classList.toggle('expanded'); }; slotDiv.appendChild(el); }); monthContainer.appendChild(slotDiv); } }); yearBlock.appendChild(monthContainer); container.appendChild(yearBlock); }); },
-        renderAdminTable: function() { const tbody = document.querySelector('#admin-table tbody'); tbody.innerHTML = ""; const term = (document.getElementById('admin-search').value || "").toLowerCase(); const cat = document.getElementById('admin-cat-filter').value; const stat = document.getElementById('admin-stat-filter').value; this.data.forEach(d => { if(!this.isRelevant(d)) return; if(cat !== 'All' && d.category !== cat) return; if(stat !== 'All' && d.status !== stat) return; if(term && !(d.eventName+d.narrative).toLowerCase().includes(term)) return; let modDate = "Unknown"; if(d.timestamp && d.timestamp.toDate) modDate = d.timestamp.toDate().toLocaleDateString(); const tr = document.createElement('tr'); tr.innerHTML = `<td style="text-align:center"><input type="checkbox" class="row-select" value="${d.fid}"></td><td><button class="cmd-btn" onclick="app.editRecord('${d.fid}')">Edit</button></td><td style="color:${d.status==='Approved'?'var(--accent-green)':d.status==='Draft'?'var(--accent-red)':'#fff'}">${d.status}</td><td>${d.eventName}</td><td>${d.category}</td><td>${d.campaign||''}</td><td>${d.gameDate||''}</td><td style="font-size:0.8em; color:#888;">${modDate}</td>`; tbody.appendChild(tr); }); document.getElementById('select-all').onclick = (e) => { document.querySelectorAll('.row-select').forEach(cb => cb.checked = e.target.checked); }; },
-        renderProfiles: function() { const list = document.getElementById('entity-list'); list.innerHTML = ""; const map = {}; this.data.forEach(d => { if(!this.isRelevant(d) || !d.tags) return; let tags = Array.isArray(d.tags) ? d.tags : d.tags.split(','); tags.forEach(t => { const tag = t.trim(); if(tag) { if(!map[tag]) map[tag]=[]; map[tag].push(d); }}); }); Object.keys(map).sort().forEach(tag => { const div = document.createElement('div'); div.className = 'profile-item'; div.innerText = tag; div.onclick = () => { app.renderDossier(tag, map[tag]); }; list.appendChild(div); }); },
-        renderDossier: function(name, records) { const d = document.getElementById('entity-dossier'); const primaryRec = records.find(r => r.eventName === name && ['People','Location','Factions'].includes(r.category)); const imageRec = primaryRec && primaryRec.url ? primaryRec : records.find(r => r.url && r.url.match(/\.(jpeg|jpg|gif|png|webp)$/i)); const isGhost = !primaryRec; const category = primaryRec ? primaryRec.category : records[0].category; const imgUrl = imageRec && imageRec.url ? imageRec.url : getPlaceholder(category, name); const bioText = primaryRec ? primaryRec.narrative : `Derived profile based on ${records.length} event references.`; const statsText = primaryRec ? primaryRec.stats : ""; records.sort((a,b) => parseTarthDate(a.gameDate).val - parseTarthDate(b.gameDate).val); window.createFromTag = () => { app.editRecord({ eventName: name, category: 'People', status: 'Draft', tags: name }); }; window.copyProfile = () => { const txt = `*** ${name.toUpperCase()} ***\n\nOVERVIEW: ${bioText}\n\nEVENTS:\n` + records.map(r => `[${r.gameDate}] ${r.eventName}: ${r.narrative}`).join('\n'); navigator.clipboard.writeText(txt).then(() => alert('Profile Copied to Clipboard')); }; let html = `<div class="profile-header"><div class="profile-name">${name}</div><div style="display:flex; gap:10px;">${isGhost ? `<button class="cmd-btn" style="background:var(--accent-gold); color:black;" onclick="window.createFromTag()">+ CREATE PRIMARY RECORD</button>` : `<button class="cmd-btn" onclick="app.editRecord('${primaryRec.fid}')">EDIT RECORD</button>`}<button class="cmd-btn" onclick="window.copyProfile()">COPY PROFILE</button></div></div>${isGhost ? `<div class="ghost-warning">:: UNREGISTERED ENTITY :: This profile is auto-generated from event tags. Create a Primary Record to add official stats and bio.</div>` : ''}<div class="profile-grid"><div class="profile-img-container"><img src="${imgUrl}" class="profile-img"></div><div><div style="font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">NARRATIVE OVERVIEW</div><div style="font-style:italic; color:#ccc; line-height:1.6;">${bioText}</div><div style="margin-top:20px; font-weight:bold; color:var(--accent-green);">GAME DATA</div><div class="stat-block-gw"><div class="stat-header-gw"><span>${name}</span><span>${primaryRec ? primaryRec.game : 'System'}</span></div><div style="background:#fff; padding:10px; font-size:0.9rem; color:#000;">${statsText ? `<pre style="white-space:pre-wrap; font-family:inherit;">${statsText}</pre>` : 'No stats recorded.'}</div></div></div></div><div style="font-weight:bold; color:var(--accent-gold); border-bottom:1px solid #444; margin-bottom:15px;">TIMELINE OF EVENTS</div>`; records.forEach(r => { html += `<div class="feed-entry"><div class="feed-date">${r.gameDate}</div><div class="feed-title">${r.eventName}</div><div class="feed-body">${r.narrative}</div></div>`; }); d.innerHTML = html; },
-        editRecord: function(fidOrObj) { let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : (fidOrObj || {}); document.getElementById('inp-id').value = d.fid || ""; document.getElementById('inp-name').value = d.eventName || ""; document.getElementById('inp-date').value = d.gameDate || ""; document.getElementById('inp-cat').value = d.category || "Event"; document.getElementById('inp-status').value = d.status || "Approved"; document.getElementById('inp-narr').value = d.narrative || ""; document.getElementById('inp-url').value = d.url || ""; document.getElementById('inp-stats').value = d.stats || ""; document.getElementById('inp-tags').value = d.tags || ""; document.getElementById('inp-game').value = d.game || ""; document.getElementById('inp-camp').value = d.campaign || this.currentCampaign; document.getElementById('inp-ref').value = d.reference || ""; document.getElementById('inp-persp').value = d.perspective || ""; document.getElementById('inp-sense').value = d.sensory || ""; document.getElementById('admin-modal').style.display = 'flex'; },
-        saveRecord: async function() { const id = document.getElementById('inp-id').value; const data = { eventName: document.getElementById('inp-name').value, gameDate: document.getElementById('inp-date').value, category: document.getElementById('inp-cat').value, status: document.getElementById('inp-status').value, narrative: document.getElementById('inp-narr').value, url: document.getElementById('inp-url').value, stats: document.getElementById('inp-stats').value, tags: document.getElementById('inp-tags').value, game: document.getElementById('inp-game').value, campaign: document.getElementById('inp-camp').value, reference: document.getElementById('inp-ref').value, perspective: document.getElementById('inp-persp').value, sensory: document.getElementById('inp-sense').value, timestamp: Timestamp.now() }; if(!id) await setDoc(doc(this.db, "lore_library", `HIST-${Date.now()}`), data); else await setDoc(doc(this.db, "lore_library", id), data, {merge:true}); document.getElementById('admin-modal').style.display = 'none'; this.loadData(); },
-        deleteRecord: async function() { const id = document.getElementById('inp-id').value; if(id && confirm("Delete this record permanently?")) { await deleteDoc(doc(this.db, "lore_library", id)); document.getElementById('admin-modal').style.display = 'none'; this.loadData(); } },
-        mergeSelected: async function() { const selected = document.querySelectorAll('.row-select:checked'); if (selected.length < 2) { alert("Select at least 2 items to merge."); return; } let records = []; selected.forEach(cb => { const rec = this.data.find(r => r.fid === cb.value); if(rec) records.push(rec); }); records.sort((a,b) => (b.eventName || "").length - (a.eventName || "").length); let master = records[0]; let mergedNarrative = ""; let idsToDelete = []; records.forEach(r => { mergedNarrative += `\n\n[FROM ${r.eventName}]: ${r.narrative}`; if(r.fid !== master.fid) idsToDelete.push(r.fid); }); if(confirm(`Merging ${records.length} items into "${master.eventName}"? This cannot be undone.`)) { await setDoc(doc(this.db, "lore_library", master.fid), { ...master, narrative: mergedNarrative.trim(), timestamp: Timestamp.now() }); for(const id of idsToDelete) await deleteDoc(doc(this.db, "lore_library", id)); alert("Merged."); this.loadData(); } },
-        exportData: function() { const header = ["eventName", "gameDate", "category", "status", "narrative", "tags", "game", "campaign", "perspective", "sensory", "stats"]; const csv = [header.join(",")]; this.data.forEach(d => { const row = header.map(field => `"${(d[field]||"").toString().replace(/"/g, '""')}"`); csv.push(row.join(",")); }); const blob = new Blob([csv.join("\n")], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_export.csv"; a.click(); },
-        toggleImportMode: function(m) { document.getElementById('mode-paste').classList.add('hidden'); document.getElementById('mode-file').classList.add('hidden'); document.getElementById('io-paste').classList.remove('active'); document.getElementById('io-file').classList.remove('active'); document.getElementById('mode-'+m).classList.remove('hidden'); document.getElementById('io-'+m).classList.add('active'); },
-        processPaste: function() { const val = document.getElementById('paste-input').value; if(!val) return alert("No text found!"); Papa.parse(val, { header: true, skipEmptyLines: true, complete: (res) => { this.parsedCSV = res.data; const fields = res.meta.fields || Object.keys(res.data[0]); document.querySelectorAll('.csv-col-select').forEach(s => { s.innerHTML = '<option value="">-- Ignore --</option>' + fields.map(f => `<option value="${f}">${f}</option>`).join(''); }); document.getElementById('import-mapping').classList.remove('hidden'); }}); },
-        executeImport: async function() { const m = { gameDate: document.getElementById('map-date').value, eventName: document.getElementById('map-name').value, narrative: document.getElementById('map-narr').value, category: document.getElementById('map-cat').value }; let count = 0; for(let row of this.parsedCSV) { const id = `IMP-${Date.now()}-${count++}`; await setDoc(doc(this.db, "lore_library", id), { gameDate: row[m.gameDate] || "0000", eventName: row[m.eventName] || "Unknown", narrative: row[m.narrative] || "", category: row[m.category] || "Event", status: row['LK_Status'] || "Approved", timestamp: Timestamp.now() }); } alert("Import Finished. Refreshing..."); this.loadData(); }
+        openSettings: function() { document.getElementById('api-modal').style.display = 'flex'; }
     };
 
     window.onload = function() { app.init(); };
