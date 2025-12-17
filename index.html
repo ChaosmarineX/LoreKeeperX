@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V17.0 (The Monolith)</title>
+    <title>LorekeeperX V18.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
     
     <style>
-        /* === THEME ENGINE === */
         :root {
             --bg: #0b0c10; --panel: #1f2833; --border: #3b4252;
             --cyan: #66fcf1; --gold: #d4af37; --red: #ff6b6b; --green: #51cf66;
@@ -19,236 +18,238 @@
         body { background: var(--bg); color: var(--text); font-family: var(--font-ui); margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
         .hidden { display: none !important; }
         
-        /* === LOGIN SCREEN === */
-        #login-screen { position: fixed; inset: 0; background: radial-gradient(circle, #1f2833 0%, #000 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .login-card { background: rgba(31,40,51,0.8); padding: 40px; border: 1px solid var(--border); border-radius: 12px; width: 300px; text-align: center; backdrop-filter: blur(10px); }
-        .login-title { font-family: var(--font-head); font-size: 2rem; margin-bottom: 5px; color: #fff; }
-        .login-input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--border); color: #fff; text-align: center; border-radius: 4px; box-sizing: border-box; }
-        .login-btn { width: 100%; padding: 10px; background: var(--cyan); border: none; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 10px; }
-        .login-btn:hover { box-shadow: 0 0 10px var(--cyan); }
-
+        /* === GATEKEEPER (LOGIN) === */
+        #gatekeeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; }
+        .gate-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.3s; position: relative; border-right: 1px solid #222; }
+        .gate-panel:hover { background: #111; }
+        .gate-panel.codex { border-right: 1px solid var(--cyan); }
+        .gate-panel.lore { border-left: 1px solid var(--gold); }
+        
+        .gate-icon { font-size: 4rem; margin-bottom: 20px; }
+        .gate-title { font-family: var(--font-head); font-size: 2rem; letter-spacing: 3px; margin-bottom: 10px; }
+        .gate-input { background: #000; border: 1px solid #444; padding: 12px; color: #fff; text-align: center; width: 250px; margin-bottom: 10px; border-radius: 4px; }
+        .gate-btn { padding: 12px 30px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 250px; }
+        
         /* === APP SHELL === */
-        #app-ui { display: none; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: #121418; }
+        #app-ui { display: none; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; background: #121418; border-left: 1px solid #333; border-right: 1px solid #333; }
         
-        /* Header */
         .header { padding: 15px 20px; background: rgba(18,20,24,0.95); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .brand { font-family: var(--font-head); font-size: 1.4rem; font-weight: bold; letter-spacing: 2px; }
-        .brand span { color: var(--cyan); } .brand.admin span { color: var(--gold); }
-        .user-badge { border: 1px solid #444; padding: 2px 8px; font-size: 0.8rem; color: #888; border-radius: 4px; margin-left: 10px; }
-        
-        /* Navigation */
+        .brand { font-family: var(--font-head); font-size: 1.5rem; font-weight: bold; }
         .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; }
         .nav-btn { background: transparent; border: none; color: var(--text-dim); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.2s; }
         .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
-        .nav-btn.active-player { background: var(--cyan); color: #000; }
-        .nav-btn.active-admin { background: var(--gold); color: #000; }
+        .nav-btn.active-codex { background: var(--cyan); color: #000; }
+        .nav-btn.active-lore { background: var(--gold); color: #000; }
 
-        /* Viewport */
         .viewport { flex: 1; overflow: hidden; position: relative; }
-        .scroll-container { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .scroll-y { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
 
-        /* === COMPONENTS === */
+        /* === LIBRARY (ADMIN) === */
+        .filter-dock { display: flex; gap: 10px; margin-bottom: 15px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
+        .filter-input { background: #000; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; }
         
-        /* Library Table */
-        .filter-row { display: flex; gap: 10px; margin-bottom: 10px; position: sticky; top: 0; z-index: 10; background: var(--panel); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .table-wrapper { height: 100%; overflow: auto; border: 1px solid var(--border); }
+        .table-frame { border: 1px solid var(--border); height: calc(100vh - 250px); overflow: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: left; padding: 12px; background: #121418; border-bottom: 2px solid var(--border); color: var(--text-dim); position: sticky; top: 0; }
-        td { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
-        tr:hover { background: var(--panel); }
-        .pill { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #555; }
+        th { background: #121418; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim); position: sticky; top: 0; z-index: 10; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; color: #ccc; }
+        tr:hover td { background: var(--panel); color: #fff; }
+        .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #555; }
+
+        /* === TIMELINE === */
+        .tl-feed { max-width: 1000px; margin: 0 auto; }
+        .tl-node { display: flex; margin-bottom: 10px; background: var(--panel); border-left: 3px solid var(--gold); padding: 15px; cursor: pointer; transition: 0.2s; }
+        .tl-node:hover { transform: translateX(5px); border-color: var(--cyan); }
+        .tl-date { width: 100px; font-weight: bold; color: var(--gold); font-family: monospace; flex-shrink: 0; }
         
-        /* Chat */
-        .chat-layout { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; }
-        .chat-feed { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; }
+        /* === PROFILES === */
+        .profile-layout { display: flex; height: 100%; }
+        .profile-list { width: 250px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; }
+        .profile-item { padding: 10px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; }
+        .profile-item:hover { background: #333; color: #fff; }
+        .profile-view { flex: 1; padding: 30px; overflow-y: auto; }
+        .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
+        .dossier-img { width: 100%; height: 300px; object-fit: cover; border: 4px double var(--border); }
+
+        /* === CHAT === */
+        .chat-wrap { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; }
+        .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; }
         .msg.user { align-self: flex-end; background: var(--panel); border: 1px solid var(--border); }
         .msg.ai { align-self: flex-start; background: rgba(102, 252, 241, 0.05); border-left: 3px solid var(--cyan); }
-        .chat-input-area { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--bg); }
+        .chat-tools { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: #121418; }
+
+        /* === FORMS (SHARED) === */
+        .form-box { max-width: 900px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 10px; border: 1px solid var(--border); }
+        .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .span2 { grid-column: span 2; }
+        .f-label { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        .f-input { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; box-sizing: border-box; font-family: var(--font-ui); }
+        .f-input:focus { outline: none; border-color: var(--cyan); }
         
-        /* Grid (Imagery) */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: 0.2s; }
-        .card:hover { transform: translateY(-5px); border-color: var(--cyan); }
-        .card-img { height: 150px; width: 100%; object-fit: cover; background: #000; }
-        .card-body { padding: 10px; }
-        
-        /* Profiles */
-        .split-view { display: flex; height: 100%; }
-        .list-col { width: 250px; border-right: 1px solid var(--border); overflow-y: auto; background: var(--panel); }
-        .list-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; color: #aaa; }
-        .list-item:hover { background: #333; color: #fff; }
-        .detail-col { flex: 1; padding: 30px; overflow-y: auto; }
-        .dossier-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 20px; }
-        .dossier-name { font-family: var(--font-head); font-size: 2rem; }
-        
-        /* Forms */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .span-2 { grid-column: span 2; }
-        label { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; box-sizing: border-box; font-family: var(--font-ui); }
-        input:focus, textarea:focus { border-color: var(--cyan); outline: none; }
-        
-        /* Modal */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .modal-box { background: var(--panel); width: 900px; max-height: 90vh; overflow-y: auto; padding: 30px; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        
-        /* Buttons */
-        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-green { background: var(--green); color: #000; }
-        .btn-gold { background: var(--gold); color: #000; }
-        .btn-red { background: var(--red); color: #000; }
-        .btn-cyan { background: var(--cyan); color: #000; }
-        
-        /* Utils */
-        .tl-row { display: flex; margin-bottom: 10px; padding: 10px; background: var(--panel); border-left: 2px solid var(--gold); cursor: pointer; }
-        .tl-date { width: 80px; font-weight: bold; color: var(--gold); flex-shrink: 0; }
+        /* === MODAL === */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-body { background: #1a1c24; width: 900px; max-height: 95vh; overflow-y: auto; padding: 30px; border: 1px solid var(--border); border-radius: 10px; }
+
+        /* === UTILS === */
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { opacity: 0.8; }
+        .bg-gold { background: var(--gold); color: #000; }
+        .bg-cyan { background: var(--cyan); color: #000; }
+        .bg-red { background: var(--red); color: #000; }
+        .bg-dark { background: #333; color: #fff; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-card">
-            <div class="login-title">LOREKEEPER<span style="color:var(--cyan)">X</span></div>
-            <div style="color:#888; margin-bottom:20px;">V17.0 (The Monolith)</div>
-            
-            <input id="login-user" class="login-input" placeholder="Identity (Name/Callsign)" autocomplete="off" data-lpignore="true">
-            <input id="login-pass" type="password" class="login-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
-            
-            <button class="login-btn" onclick="app.auth.login()">CONNECT</button>
+    <div id="gatekeeper">
+        <div class="gate-panel codex">
+            <div class="gate-icon" style="color:var(--cyan)">💎</div>
+            <div class="gate-title" style="color:var(--cyan)">CODEX</div>
+            <div style="color:#888; margin-bottom:20px;">PLAYER ACCESS</div>
+            <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
+            <input id="login-player-pass" type="password" class="gate-input" placeholder="Password" autocomplete="off" data-lpignore="true">
+            <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
+        </div>
+        <div class="gate-panel lore">
+            <div class="gate-icon" style="color:var(--gold)">🛡️</div>
+            <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
+            <div style="color:#888; margin-bottom:20px;">ARCHIVIST ACCESS</div>
+            <input id="login-admin-user" class="gate-input" placeholder="Identity" value="Archivist" readonly>
+            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Password" autocomplete="off" data-lpignore="true">
+            <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
     </div>
 
     <div id="app-ui">
         <header class="header">
             <div style="display:flex; align-items:center;">
-                <div class="brand" id="brand-logo">LOREKEEPER<span>X</span></div>
-                <div class="user-badge" id="user-display">GUEST</div>
+                <div class="brand" id="brand-text">LOREKEEPER</div>
+                <div style="color:#666; margin-left:15px; border:1px solid #333; padding:2px 8px; border-radius:4px; font-size:0.8rem;" id="user-display">GUEST</div>
+                <select id="persona-select" class="hidden" style="margin-left:15px; background:#000; color:var(--cyan); border:1px solid var(--border); padding:5px;">
+                    <option value="Codex">Codex (Steward)</option>
+                    <option value="Saverath">Saverath (Historian)</option>
+                    <option value="NaVan">Na'Van (Soldier)</option>
+                    <option value="Brigit">Capt. Brigit</option>
+                    <option value="Leaf">Leaf (Priest)</option>
+                </select>
             </div>
             
-            <div class="nav-bar" id="nav-container">
-                </div>
+            <div class="nav-bar" id="nav-container"></div>
 
             <div style="display:flex; gap:10px;">
-                <select id="persona-select" class="hidden" style="background:#111; border:1px solid #444; width:auto; padding:5px;">
-                    <option value="Codex">Codex</option>
-                    <option value="Saverath">Saverath</option>
-                    <option value="NaVan">Na'Van</option>
-                    <option value="Brigit">Capt. Brigit</option>
-                    <option value="Leaf">Leaf</option>
-                </select>
-                <button class="btn" style="background:transparent; color:#888;" onclick="document.getElementById('key-modal').style.display='flex'">⚙️</button>
-                <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
+                <button id="switch-btn" class="btn bg-dark hidden" onclick="App.auth.switch()">TO ADMIN</button>
+                <button class="btn" style="background:transparent; color:#666;" onclick="location.reload()">⏻</button>
             </div>
         </header>
 
-        <div class="viewport">
-            
-            <div id="view-library" class="scroll-container hidden">
-                <div class="filter-row">
-                    <button class="btn btn-gold" onclick="app.db.load()">REFRESH</button>
-                    <button class="btn btn-green" onclick="app.admin.edit({})">+ NEW</button>
-                    <input id="lib-search" placeholder="Search..." style="width:200px;" oninput="app.admin.renderLib()">
-                    <select id="lib-cat" style="width:150px;" onchange="app.admin.renderLib()">
-                        <option value="All">All Categories</option><option>Event</option><option>People</option><option>Location</option><option>History</option><option>Lore</option><option>Journal</option><option>System</option>
-                    </select>
+        <div id="view-admin-library" class="viewport hidden">
+            <div style="padding:20px; height:100%; display:flex; flex-direction:column;">
+                <div class="filter-dock">
+                    <div class="filter-group"><span class="filter-label">Campaign</span><select id="filt-camp" class="filter-input" onchange="App.admin.renderLib()"><option value="All">All Campaigns</option><option>Tarth 2.0</option><option>System</option></select></div>
+                    <div class="filter-group"><span class="filter-label">Category</span><select id="filt-cat" class="filter-input" onchange="App.admin.renderLib()"><option value="All">All</option><option>Event</option><option>People</option><option>Location</option><option>History</option><option>Lore</option><option>Creature</option><option>Journal</option><option>System</option></select></div>
+                    <div class="filter-group"><span class="filter-label">Status</span><select id="filt-stat" class="filter-input" onchange="App.admin.renderLib()"><option value="All">All</option><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
+                    <div class="filter-group" style="flex:1;"><span class="filter-label">Search</span><input id="filt-search" class="filter-input" placeholder="Title, Description..." oninput="App.admin.renderLib()"></div>
+                    <div class="filter-group"><span class="filter-label">Actions</span><div style="display:flex; gap:5px;"><button class="btn bg-gold" onclick="App.db.load()">REFRESH</button><button class="btn bg-green" onclick="App.admin.edit({})">NEW</button></div></div>
                 </div>
-                <div class="table-wrapper">
-                    <table id="lib-table"><thead><tr><th>Status</th><th>Name</th><th>Category</th><th>Author</th><th>Date</th><th>Modified</th></tr></thead><tbody></tbody></table>
+                <div class="table-frame">
+                    <table id="lib-table"><thead><tr><th>Status</th><th>Name</th><th>Category</th><th>Campaign</th><th>Date</th><th>Author</th></tr></thead><tbody></tbody></table>
                 </div>
             </div>
-
-            <div id="view-timeline" class="scroll-container hidden">
-                <div id="timeline-list"></div>
-            </div>
-
-            <div id="view-profiles" class="hidden" style="height:100%;">
-                <div class="split-view">
-                    <div class="list-col" id="profile-list"></div>
-                    <div class="detail-col" id="profile-view">Select a tag...</div>
-                </div>
-            </div>
-
-            <div id="view-import" class="scroll-container hidden" style="text-align:center;">
-                <textarea id="csv-paste" style="height:200px; max-width:800px;" placeholder="Paste CSV Data..."></textarea><br>
-                <button class="btn btn-green" style="margin-top:10px;" onclick="app.admin.import()">IMPORT DATA</button>
-                <button class="btn btn-gold" style="margin-top:10px;" onclick="app.admin.export()">EXPORT CSV</button>
-            </div>
-
-            <div id="view-chat" class="hidden" style="height:100%;">
-                <div class="chat-layout">
-                    <div class="chat-feed" id="chat-feed"><div class="msg ai"><strong>CODEX ONLINE.</strong><br>I am the Steward. How may I assist?</div></div>
-                    <div class="chat-input-area">
-                        <input id="chat-msg" placeholder="Query Archives..." onkeypress="if(event.key==='Enter') app.player.send()">
-                        <button class="btn btn-cyan" onclick="app.player.send()">SEND</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-imagery" class="scroll-container hidden">
-                <input style="width:100%; margin-bottom:20px;" placeholder="Search Visuals..." oninput="app.player.renderImg(this.value)">
-                <div class="grid" id="img-grid"></div>
-            </div>
-
-            <div id="view-atlas" class="hidden" style="height:100%; background:#000; display:flex; align-items:center; justify-content:center;">
-                <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+FILE+NOT+FOUND'">
-            </div>
-
-            <div id="view-journal" class="scroll-container hidden">
-                <div style="max-width:800px; margin:0 auto; background:var(--panel); padding:30px; border-radius:10px;">
-                    <h2 style="color:var(--cyan); margin-top:0;">FIELD JOURNAL</h2>
-                    <div class="form-grid">
-                        <div class="span-2"><label>Title</label><input id="j-title"></div>
-                        <div><label>Date</label><input id="j-date"></div>
-                        <div><label>Location</label><input id="j-loc"></div>
-                        <div><label>Country</label><input id="j-country"></div>
-                        <div><label>Author</label><input id="j-auth" readonly></div>
-                        <div class="span-2"><label>Participants (Tags)</label><input id="j-tags"></div>
-                    </div>
-                    <label>Entry</label><textarea id="j-narr" style="height:200px;"></textarea>
-                    <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="app.player.submitJ()">SUBMIT</button>
-                </div>
-            </div>
-
         </div>
+
+        <div id="view-admin-timeline" class="viewport hidden">
+            <div class="scroll-y">
+                <div id="timeline-list" class="tl-feed"></div>
+            </div>
+        </div>
+
+        <div id="view-admin-profiles" class="viewport hidden">
+            <div class="profile-layout">
+                <div class="profile-list" id="profile-list"></div>
+                <div class="profile-view" id="profile-detail">Select a type...</div>
+            </div>
+        </div>
+
+        <div id="view-admin-import" class="viewport hidden">
+            <div class="scroll-y" style="text-align:center;">
+                <textarea id="import-text" style="width:100%; height:300px; background:#000; color:#fff; font-family:monospace;" placeholder="Paste CSV Data..."></textarea>
+                <div style="margin-top:20px;">
+                    <button class="btn bg-green" onclick="App.admin.import()">PROCESS IMPORT</button>
+                    <button class="btn bg-gold" onclick="App.admin.export()">EXPORT DATABASE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-codex-chat" class="viewport hidden">
+            <div class="chat-wrap">
+                <div class="chat-area" id="chat-feed"><div class="msg ai"><strong>CODEX ONLINE.</strong><br>I am the Steward. How may I assist?</div></div>
+                <div class="chat-tools">
+                    <input id="chat-input" class="f-input" placeholder="Query Archives..." onkeypress="if(event.key==='Enter') App.codex.send()">
+                    <button class="btn bg-cyan" onclick="App.codex.send()">SEND</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-codex-contribute" class="viewport hidden">
+            <div class="scroll-y">
+                <div class="form-box" style="border-color:var(--cyan);">
+                    <h2 style="color:var(--cyan); margin-top:0;">CONTRIBUTE RECORD</h2>
+                    <p style="color:#888; margin-bottom:20px;">Submissions are flagged as "Pending" for review.</p>
+                    <div class="f-grid">
+                        <div class="span2"><span class="f-label">Title</span><input id="c-title" class="f-input"></div>
+                        <div><span class="f-label">Category</span><select id="c-cat" class="f-input"><option>Journal</option><option>Event</option><option>Person</option><option>Location</option></select></div>
+                        <div><span class="f-label">Game Date</span><input id="c-date" class="f-input"></div>
+                        <div><span class="f-label">Location</span><input id="c-loc" class="f-input"></div>
+                        <div><span class="f-label">Country</span><input id="c-country" class="f-input"></div>
+                        <div><span class="f-label">Author</span><input id="c-auth" class="f-input" readonly></div>
+                        <div><span class="f-label">Tags</span><input id="c-tags" class="f-input" placeholder="Rikus, Sadira..."></div>
+                    </div>
+                    <div style="margin-bottom:15px;"><span class="f-label">Stats / Rules</span><textarea id="c-stats" class="f-input" style="height:80px;"></textarea></div>
+                    <div style="margin-bottom:15px;"><span class="f-label">Narrative / Entry</span><textarea id="c-narr" class="f-input" style="height:200px;"></textarea></div>
+                    <button class="btn bg-cyan" style="width:100%;" onclick="App.codex.submit()">SUBMIT TO ARCHIVES</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-codex-imagery" class="viewport hidden">
+            <div class="scroll-y">
+                <input class="f-input" style="margin-bottom:20px;" placeholder="Search Visuals..." oninput="App.codex.renderImg(this.value)">
+                <div id="img-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:20px;"></div>
+            </div>
+        </div>
+
+        <div id="view-codex-atlas" class="viewport hidden" style="background:#000; display:flex; align-items:center; justify-content:center;">
+            <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+NOT+FOUND'">
+        </div>
+
     </div>
 
     <div id="edit-modal" class="modal">
-        <div class="modal-box">
+        <div class="modal-body">
             <h2 style="color:var(--gold); margin-top:0;">EDIT RECORD</h2>
             <input type="hidden" id="e-id">
-            <div class="form-grid">
-                <div class="span-2"><label>Name</label><input id="e-name"></div>
-                <div><label>Status</label><select id="e-status"><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
-                <div><label>Category</label><select id="e-cat"><option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>Journal</option><option>System</option><option>Factions</option></select></div>
-                <div><label>Game Date</label><input id="e-date"></div>
-                <div><label>Author</label><input id="e-auth"></div>
-                <div><label>Game System</label><input id="e-game"></div>
-                <div><label>Campaign</label><input id="e-camp"></div>
-                <div><label>Perspective</label><input id="e-persp"></div>
-                <div><label>Sensory</label><input id="e-sense"></div>
-                <div class="span-2"><label>Image URL</label><input id="e-url"></div>
-                <div class="span-2"><label>Ref URL</label><input id="e-ref"></div>
-                <div class="span-2"><label>Stats Block</label><textarea id="e-stats" style="height:80px; font-family:monospace;"></textarea></div>
-                <div class="span-2"><label>Tags</label><input id="e-tags"></div>
-                <div class="span-2"><label>Narrative</label><textarea id="e-narr" style="height:150px;"></textarea></div>
+            <div class="f-grid">
+                <div class="span2"><span class="f-label">Name</span><input id="e-name" class="f-input"></div>
+                <div><span class="f-label">Status</span><select id="e-status" class="f-input"><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
+                <div><span class="f-label">Category</span><select id="e-cat" class="f-input"><option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>Journal</option><option>System</option><option>Factions</option></select></div>
+                <div><span class="f-label">Game Date</span><input id="e-date" class="f-input"></div>
+                <div><span class="f-label">Campaign</span><input id="e-camp" class="f-input"></div>
+                <div><span class="f-label">Game System</span><input id="e-game" class="f-input"></div>
+                <div><span class="f-label">Author</span><input id="e-auth" class="f-input"></div>
+                <div class="span2"><span class="f-label">Image URL</span><input id="e-url" class="f-input"></div>
+                <div class="span2"><span class="f-label">Stats</span><textarea id="e-stats" class="f-input" style="height:80px; font-family:monospace;"></textarea></div>
+                <div class="span2"><span class="f-label">Tags</span><input id="e-tags" class="f-input"></div>
+                <div class="span2"><span class="f-label">Narrative</span><textarea id="e-narr" class="f-input" style="height:150px;"></textarea></div>
             </div>
             <div style="display:flex; justify-content:space-between;">
-                <button class="btn btn-red" onclick="app.admin.del()">DELETE</button>
+                <button class="btn bg-red" onclick="App.admin.del()">DELETE</button>
                 <div>
-                    <button class="btn" style="background:#444; color:#fff; margin-right:10px;" onclick="document.getElementById('edit-modal').style.display='none'">CANCEL</button>
-                    <button class="btn btn-gold" onclick="app.admin.save()">SAVE RECORD</button>
+                    <button class="btn bg-dark" style="margin-right:10px;" onclick="document.getElementById('edit-modal').style.display='none'">CANCEL</button>
+                    <button class="btn bg-gold" onclick="App.admin.save()">SAVE RECORD</button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div id="key-modal" class="modal">
-        <div class="modal-box" style="width:400px; height:auto; text-align:center;">
-            <h3>NEURAL LINK KEY</h3>
-            <input id="api-key" type="password" placeholder="Paste Google API Key">
-            <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="app.auth.saveKey()">SAVE</button>
-            <button class="btn" style="margin-top:10px; background:transparent; color:#888;" onclick="document.getElementById('key-modal').style.display='none'">CLOSE</button>
         </div>
     </div>
 
@@ -258,175 +259,177 @@
 
     const cfg = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
-    // SINGLE GLOBAL APP OBJECT
-    window.app = {
-        dbInstance: null,
-        data: [],
-        user: "Guest",
-        role: "guest",
-        key: localStorage.getItem('tarth_key') || "",
-        md: window.markdownit(),
+    // UTILS
+    const PARSE_DATE = (d) => { if(!d) return -9999; const m = d.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
+    const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
 
-        // INITIALIZATION
+    // APP CORE
+    window.App = {
+        dbInstance: null, data: [], user: "Guest", role: "guest",
+        key: localStorage.getItem('tarth_key') || "",
+        md: window.markdownit({html: false, breaks: true}),
+
         init: function() {
             const fApp = initializeApp(cfg);
             this.dbInstance = getFirestore(fApp);
             this.db.load();
         },
 
-        // AUTHENTICATION
+        // 1. AUTHENTICATION
         auth: {
-            login: function() {
-                const u = document.getElementById('login-user').value.trim();
-                const p = document.getElementById('login-pass').value.trim();
-                
-                if(u === "Archivist" && p === "DawkKn1ght") {
-                    app.role = "admin"; app.user = "The Archivist";
-                    app.router.setupAdmin();
-                } else if (p === "codex") {
-                    if(!u) return alert("Callsign Required");
-                    app.role = "player"; app.user = u;
-                    app.router.setupPlayer();
-                } else {
-                    alert("ACCESS DENIED");
-                }
+            loginPlayer: function() {
+                const u = document.getElementById('login-player-name').value.trim();
+                const p = document.getElementById('login-player-pass').value.trim();
+                if(!u) return alert("Callsign Required");
+                if(p !== "codex") return alert("Access Denied");
+                App.role = "player"; App.user = u;
+                App.router.initPlayer();
             },
-            saveKey: function() {
-                const k = document.getElementById('api-key').value.trim();
-                if(k) { app.key = k; localStorage.setItem('tarth_key', k); alert("Key Saved"); document.getElementById('key-modal').style.display='none'; }
+            loginAdmin: function() {
+                const p = document.getElementById('login-admin-pass').value.trim();
+                if(p !== "DawkKn1ght") return alert("Access Denied");
+                App.role = "admin"; App.user = "The Archivist";
+                App.router.initAdmin();
+            },
+            switch: function() {
+                if(prompt("Enter Admin Password:") === "DawkKn1ght") {
+                    App.role = "admin"; App.user = "The Archivist"; App.router.initAdmin();
+                }
             }
         },
 
-        // ROUTER (NAVIGATION)
+        // 2. ROUTING
         router: {
-            setupAdmin: function() {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-ui').style.display = 'flex';
-                document.querySelector('.brand span').style.color = 'var(--gold)';
-                document.getElementById('user-display').innerText = app.user;
-                
-                const nav = document.getElementById('nav-container'); nav.innerHTML = "";
-                ['Library','Timeline','Profiles','Import'].forEach(t => {
-                    nav.innerHTML += `<button class="nav-btn" onclick="app.router.go('${t}')">${t.toUpperCase()}</button>`;
-                });
-                this.go('Library');
-            },
-            setupPlayer: function() {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-ui').style.display = 'flex';
-                document.querySelector('.brand span').style.color = 'var(--cyan)';
-                document.getElementById('user-display').innerText = app.user;
+            initPlayer: function() {
+                document.getElementById('gatekeeper').style.display='none';
+                document.getElementById('app-ui').style.display='flex';
+                document.getElementById('brand-text').style.color = "var(--cyan)";
+                document.getElementById('user-display').innerText = App.user;
                 document.getElementById('persona-select').classList.remove('hidden');
+                document.getElementById('switch-btn').classList.remove('hidden');
                 
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
-                ['Chat','Imagery','Atlas','Journal'].forEach(t => {
-                    nav.innerHTML += `<button class="nav-btn" onclick="app.router.go('${t}')">${t.toUpperCase()}</button>`;
-                });
-                document.getElementById('j-auth').value = app.user;
+                ['Chat','Contribute','Imagery','Atlas'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
+                
+                document.getElementById('c-auth').value = App.user;
                 this.go('Chat');
             },
-            go: function(tab) {
-                // Hide all views
-                document.querySelectorAll('.scroll-container, #view-profiles, #view-atlas, #view-chat').forEach(e => e.classList.add('hidden'));
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-player', 'active-admin'));
+            initAdmin: function() {
+                document.getElementById('gatekeeper').style.display='none';
+                document.getElementById('app-ui').style.display='flex';
+                document.getElementById('brand-text').style.color = "var(--gold)";
+                document.getElementById('user-display').innerText = App.user;
+                document.getElementById('persona-select').classList.add('hidden');
                 
-                // Show Target
-                const id = 'view-' + tab.toLowerCase();
-                const el = document.getElementById(id);
+                const nav = document.getElementById('nav-container'); nav.innerHTML = "";
+                ['Library','Timeline','Profiles','Import'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
+                
+                this.go('Library');
+            },
+            go: function(tab) {
+                document.querySelectorAll('.viewport').forEach(v => v.classList.add('hidden'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-codex','active-lore'));
+                
+                const viewId = `view-${App.role==='admin'?'admin':'codex'}-${tab.toLowerCase()}`;
+                const el = document.getElementById(viewId);
                 if(el) el.classList.remove('hidden');
                 
-                // Highlight Button
-                const activeClass = app.role === 'admin' ? 'active-admin' : 'active-player';
+                const activeClass = App.role==='admin'?'active-lore':'active-codex';
                 Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText === tab.toUpperCase())?.classList.add(activeClass);
 
-                // Trigger Renderers
-                if(tab === 'Library') app.admin.renderLib();
-                if(tab === 'Timeline') app.admin.renderTime();
-                if(tab === 'Profiles') app.admin.renderProf();
-                if(tab === 'Imagery') app.player.renderImg();
+                if(tab==='Library') App.admin.renderLib();
+                if(tab==='Timeline') App.admin.renderTime();
+                if(tab==='Profiles') App.admin.renderProf();
+                if(tab==='Imagery') App.codex.renderImg();
             }
         },
 
-        // DATABASE OPS
+        // 3. DATA
         db: {
             load: async function() {
-                const q = query(collection(app.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
+                const q = query(collection(App.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
                 const snap = await getDocs(q);
-                app.data = [];
-                snap.forEach(d => { 
-                    const obj = d.data(); obj.fid = d.id; 
-                    app.data.push(obj); 
-                });
-                if(app.role === 'admin') app.admin.renderLib();
+                App.data = [];
+                snap.forEach(d => { const o = d.data(); o.fid = d.id; App.data.push(o); });
+                if(App.role === 'admin') App.admin.renderLib();
             }
         },
 
-        // ADMIN MODULE
+        // 4. ADMIN FEATURES
         admin: {
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
-                const term = document.getElementById('lib-search').value.toLowerCase();
-                const cat = document.getElementById('lib-cat').value;
-                app.data.forEach(d => {
+                const term = document.getElementById('filt-search').value.toLowerCase();
+                const cat = document.getElementById('filt-cat').value;
+                const stat = document.getElementById('filt-stat').value;
+                const camp = document.getElementById('filt-camp').value;
+                
+                App.data.forEach(d => {
                     if(cat !== 'All' && d.category !== cat) return;
+                    if(stat !== 'All' && d.status !== stat) return;
+                    if(camp !== 'All' && d.campaign !== camp) return;
                     if(term && !(d.eventName+d.author).toLowerCase().includes(term)) return;
                     
                     const tr = document.createElement('tr');
-                    const mod = d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleDateString() : '-';
-                    tr.innerHTML = `<td><span class="pill" style="color:${d.status=='Approved'?'var(--green)':'#aaa'}">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td style="color:#888">${d.author||'-'}</td><td>${d.gameDate||'-'}</td><td style="color:#666">${mod}</td>`;
+                    tr.innerHTML = `<td><span class="status-tag" style="color:${d.status=='Approved'?'var(--green)':'#aaa'}">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td>${d.campaign||'-'}</td><td>${d.gameDate||'-'}</td><td>${d.author||'System'}</td>`;
                     tr.onclick = () => this.edit(d.fid);
                     t.appendChild(tr);
                 });
             },
             renderTime: function() {
                 const c = document.getElementById('timeline-list'); c.innerHTML = "";
-                const sorted = [...app.data].sort((a,b) => (parseInt(a.gameDate)||0) - (parseInt(b.gameDate)||0));
+                const sorted = [...App.data].sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
                 sorted.forEach(d => {
                     if(['Event','History'].includes(d.category)) {
-                        c.innerHTML += `<div class="tl-row" onclick="app.admin.edit('${d.fid}')"><div class="tl-date">${d.gameDate}</div><div><div style="font-weight:bold; color:#fff;">${d.eventName}</div><div style="color:#aaa;">${d.narrative}</div></div></div>`;
+                        c.innerHTML += `<div class="tl-node" onclick="App.admin.edit('${d.fid}')"><div class="tl-date">${d.gameDate}</div><div><div style="font-weight:bold; color:#fff;">${d.eventName}</div><div style="color:#aaa;">${d.narrative}</div></div></div>`;
                     }
                 });
             },
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
-                const tags = {}; app.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(x => tags[x.trim()]=true); });
-                Object.keys(tags).sort().forEach(t => {
-                    l.innerHTML += `<div class="list-item" onclick="app.admin.showProf('${t}')">${t}</div>`;
+                const tags = new Set(); App.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(x => tags.add(x.trim())); });
+                Array.from(tags).sort().forEach(t => {
+                    l.innerHTML += `<div class="profile-item" onclick="App.admin.showProf('${t}')">${t}</div>`;
                 });
             },
             showProf: function(name) {
-                const v = document.getElementById('profile-view');
-                const recs = app.data.filter(r => r.tags && r.tags.includes(name));
-                const prim = app.data.find(r => r.eventName === name) || {};
-                const img = prim.url || `https://placehold.co/600x400/1a1a2e/FFF?text=${name}`;
+                const v = document.getElementById('profile-detail');
+                const recs = App.data.filter(r => r.tags && r.tags.includes(name)).sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
+                const prim = App.data.find(r => r.eventName === name) || {};
+                const img = prim.url || GET_IMG('People', name);
                 const isGhost = !prim.fid;
+                
                 v.innerHTML = `
-                    <div class="dossier-header"><div class="dossier-name">${name}</div>${isGhost ? `<button class="btn btn-green" onclick="app.admin.edit({eventName:'${name}', category:'People', status:'Draft', tags:'${name}'})">CREATE RECORD</button>` : `<button class="btn" style="background:#333; color:#fff;" onclick="app.admin.edit('${prim.fid}')">EDIT PRIMARY</button>`}</div>
-                    <div style="display:flex; gap:20px;">
-                        <img src="${img}" style="width:200px; height:300px; object-fit:cover; border:1px solid #444;">
-                        <div><h3 style="color:var(--gold)">BIO</h3><p style="color:#ccc;">${prim.narrative||"No primary bio."}</p></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px;">
+                        <h1 style="color:var(--gold); margin:0;">${name}</h1>
+                        ${isGhost ? `<button class="btn bg-green" onclick="App.admin.edit({eventName:'${name}', category:'People', status:'Draft', tags:'${name}'})">CREATE GHOST RECORD</button>` : `<button class="btn bg-gold" onclick="App.admin.edit('${prim.fid}')">EDIT PRIMARY</button>`}
                     </div>
-                    <h3 style="border-bottom:1px solid #333; margin-top:20px;">TIMELINE</h3>
-                    ${recs.map(r=>`<div style="margin-bottom:5px; border-left:2px solid #444; padding-left:10px;"><strong style="color:var(--gold)">${r.gameDate}</strong> ${r.eventName} <span style="color:#666">${r.narrative.substring(0,50)}...</span></div>`).join('')}
+                    ${isGhost ? '<div style="background:rgba(212,175,55,0.1); color:var(--gold); padding:10px; margin:10px 0;">:: GHOST ENTITY (No Primary Record) ::</div>' : ''}
+                    <div class="dossier-grid">
+                        <div><img src="${img}" class="dossier-img"></div>
+                        <div>
+                            <h3 style="color:var(--cyan)">BIO</h3>
+                            <p style="color:#ccc; white-space:pre-wrap;">${prim.narrative || "No biography available. Derived from cross-references."}</p>
+                            ${prim.stats ? `<div style="background:#ddd; color:#000; padding:10px; margin-top:10px; font-family:monospace;">${prim.stats}</div>` : ''}
+                        </div>
+                    </div>
+                    <h3 style="margin-top:30px; border-bottom:1px solid #444;">TIMELINE</h3>
+                    ${recs.map(r => `<div style="margin-bottom:10px; padding-left:10px; border-left:2px solid #444;"><strong style="color:var(--gold)">${r.gameDate}</strong> ${r.eventName}</div>`).join('')}
                 `;
             },
             edit: function(ref) {
-                const d = (typeof ref === 'string') ? app.data.find(r => r.fid === ref) : ref;
-                // Clear
-                ['id','name','date','game','camp','url','ref','persp','sense','stats','tags','narr','auth'].forEach(k => document.getElementById('e-'+k).value = "");
-                // Fill
+                const d = (typeof ref === 'string') ? App.data.find(r => r.fid === ref) : ref;
+                ['id','name','date','status','cat','game','camp','url','auth','stats','tags','narr'].forEach(k => document.getElementById('e-'+k).value = "");
+                
                 document.getElementById('e-id').value = d.fid || "";
                 document.getElementById('e-name').value = d.eventName || "";
                 document.getElementById('e-status').value = d.status || "Approved";
                 document.getElementById('e-cat').value = d.category || "Event";
                 document.getElementById('e-date').value = d.gameDate || "";
-                document.getElementById('e-auth').value = d.author || app.user;
+                document.getElementById('e-auth').value = d.author || App.user;
                 document.getElementById('e-game').value = d.game || "";
                 document.getElementById('e-camp').value = d.campaign || "";
                 document.getElementById('e-url').value = d.url || "";
-                document.getElementById('e-ref').value = d.reference || "";
-                document.getElementById('e-persp').value = d.perspective || "";
-                document.getElementById('e-sense').value = d.sensory || "";
                 document.getElementById('e-stats').value = d.stats || "";
                 document.getElementById('e-tags').value = d.tags || "";
                 document.getElementById('e-narr').value = d.narrative || "";
@@ -435,97 +438,100 @@
             },
             save: async function() {
                 const id = document.getElementById('e-id').value;
-                const obj = {
+                const d = {
                     eventName: document.getElementById('e-name').value, status: document.getElementById('e-status').value,
                     category: document.getElementById('e-cat').value, gameDate: document.getElementById('e-date').value,
                     author: document.getElementById('e-auth').value, game: document.getElementById('e-game').value,
                     campaign: document.getElementById('e-camp').value, url: document.getElementById('e-url').value,
-                    reference: document.getElementById('e-ref').value, perspective: document.getElementById('e-persp').value,
-                    sensory: document.getElementById('e-sense').value, stats: document.getElementById('e-stats').value,
-                    tags: document.getElementById('e-tags').value, narrative: document.getElementById('e-narr').value,
-                    timestamp: Timestamp.now()
+                    stats: document.getElementById('e-stats').value, tags: document.getElementById('e-tags').value,
+                    narrative: document.getElementById('e-narr').value, timestamp: Timestamp.now()
                 };
-                if(!id) await setDoc(doc(app.dbInstance, "lore_library", `REC-${Date.now()}`), obj);
-                else await setDoc(doc(app.dbInstance, "lore_library", id), obj, {merge:true});
+                if(!id) await setDoc(doc(App.dbInstance, "lore_library", `REC-${Date.now()}`), d);
+                else await setDoc(doc(App.dbInstance, "lore_library", id), d, {merge:true});
                 document.getElementById('edit-modal').style.display = 'none';
-                app.db.load();
+                App.db.load();
             },
             del: async function() {
                 const id = document.getElementById('e-id').value;
-                if(id && confirm("Delete?")) { await deleteDoc(doc(app.dbInstance, "lore_library", id)); document.getElementById('edit-modal').style.display = 'none'; app.db.load(); }
+                if(id && confirm("Delete?")) { await deleteDoc(doc(App.dbInstance, "lore_library", id)); document.getElementById('edit-modal').style.display = 'none'; App.db.load(); }
             },
             import: function() {
-                const val = document.getElementById('csv-paste').value;
+                const val = document.getElementById('import-text').value;
                 if(!val) return;
-                Papa.parse(val, { header:true, skipEmptyLines:true, complete: async (res) => {
+                Papa.parse(val, { header: true, skipEmptyLines: true, complete: async (res) => {
                     let c=0; for(let row of res.data) {
-                        await setDoc(doc(app.dbInstance, "lore_library", `IMP-${Date.now()}-${c++}`), {
-                            eventName: row['Name']||row['eventName']||"Unknown", gameDate: row['Date']||row['gameDate']||"",
-                            category: row['Category']||row['category']||"Event", narrative: row['Narrative']||row['narrative']||"",
-                            status: "Approved", author: app.user, timestamp: Timestamp.now()
+                        await setDoc(doc(App.dbInstance, "lore_library", `IMP-${Date.now()}-${c++}`), {
+                            eventName: row['Name']||"Unknown", gameDate: row['Date']||"", category: row['Category']||"Event",
+                            narrative: row['Narrative']||"", status: "Approved", author: App.user, timestamp: Timestamp.now()
                         });
                     }
-                    alert("Imported "+c); app.db.load();
+                    alert("Imported "+c); App.db.load();
                 }});
             },
             export: function() {
-                const h = ["eventName","gameDate","category","status","narrative","tags","game","campaign","perspective","sensory","stats","author"];
+                const h = ["eventName","gameDate","category","status","narrative","tags","game","campaign","stats","author"];
                 const csv = [h.join(",")];
-                app.data.forEach(d => { csv.push(h.map(k => `"${(d[k]||"").toString().replace(/"/g,'""')}"`).join(",")); });
+                App.data.forEach(d => { csv.push(h.map(k => `"${(d[k]||"").toString().replace(/"/g,'""')}"`).join(",")); });
                 const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_export.csv"; a.click();
             }
         },
 
-        // PLAYER MODULE
-        player: {
+        // 5. CODEX FEATURES
+        codex: {
             renderImg: function(filter="") {
                 const g = document.getElementById('img-grid'); g.innerHTML = "";
-                app.data.filter(d => d.status === 'Approved').forEach(d => {
-                    if(filter && !(d.eventName+d.category).toLowerCase().includes(filter.toLowerCase())) return;
-                    const img = d.url && d.url.includes('http') ? d.url : `https://placehold.co/400x600/333/FFF?text=${d.eventName}`;
-                    g.innerHTML += `<div class="card"><img src="${img}" class="card-img"><div class="card-body"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
+                const term = (filter||"").toLowerCase();
+                App.data.filter(d => d.status === 'Approved').forEach(d => {
+                    if(term && !(d.eventName+d.category).toLowerCase().includes(term)) return;
+                    const img = d.url && d.url.includes('http') ? d.url : GET_IMG(d.category, d.eventName);
+                    g.innerHTML += `<div style="background:#1f2833; border-radius:8px; overflow:hidden;"><img src="${img}" style="width:100%; height:150px; object-fit:cover;"><div style="padding:10px;"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
+                });
+            },
+            submit: function() {
+                const d = {
+                    eventName: document.getElementById('c-title').value, category: document.getElementById('c-cat').value,
+                    gameDate: document.getElementById('c-date').value, location: document.getElementById('c-loc').value,
+                    country: document.getElementById('c-country').value, author: App.user,
+                    tags: document.getElementById('c-tags').value, stats: document.getElementById('c-stats').value,
+                    narrative: document.getElementById('c-narr').value, status: "Pending", timestamp: Timestamp.now()
+                };
+                if(!d.eventName) return alert("Title Required");
+                setDoc(doc(App.dbInstance, "lore_library", `SUB-${Date.now()}`), d).then(() => {
+                    alert("Submitted for Review."); App.router.go('Chat');
                 });
             },
             send: async function() {
-                const inp = document.getElementById('chat-msg');
-                const txt = inp.value; if(!txt || !app.key) return;
-                this.addMsg(txt, 'user'); inp.value = "";
-                const loadId = this.addMsg("Thinking...", 'ai');
+                const inp = document.getElementById('chat-input');
+                const msg = inp.value; if(!msg || !App.key) return;
+                this.msg(msg, 'user'); inp.value = "";
+                const load = this.msg("Thinking...", 'ai');
                 
-                const hits = app.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(txt.toLowerCase())).slice(0, 15);
+                const hits = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 15);
                 const ctx = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
                 const sys = document.getElementById('persona-select').value;
+                const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
                 
                 try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${app.key}`;
-                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `SYSTEM: You are ${sys}.\nCTX:\n${ctx}\nUSER: ${txt}` }] }] }) });
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${App.key}`;
+                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }] }) });
                     const json = await res.json();
-                    document.getElementById(loadId).remove();
-                    this.addMsg(json.candidates[0].content.parts[0].text, 'ai');
-                } catch(e) { document.getElementById(loadId).innerText = "Error connecting."; }
+                    document.getElementById(load).remove();
+                    this.msg(json.candidates[0].content.parts[0].text, 'ai');
+                } catch(e) { document.getElementById(load).innerText = "Error connecting."; }
             },
-            addMsg: function(t, s) {
-                const d = document.createElement('div'); d.className = `msg ${s}`; d.innerHTML = app.md.render(t);
+            msg: function(t, s) {
+                const d = document.createElement('div'); d.className = `msg ${s}`; d.innerHTML = App.md.render(t);
                 const f = document.getElementById('chat-feed'); f.appendChild(d); f.scrollTop = f.scrollHeight;
-                return d.id = 'msg-'+Date.now();
-            },
-            submitJ: async function() {
-                const d = {
-                    eventName: document.getElementById('j-title').value, gameDate: document.getElementById('j-date').value,
-                    location: document.getElementById('j-loc').value, country: document.getElementById('j-country').value,
-                    author: app.user, tags: document.getElementById('j-tags').value, narrative: document.getElementById('j-narr').value,
-                    category: "Journal", status: "Pending", timestamp: Timestamp.now()
-                };
-                if(!d.eventName) return alert("Title Required");
-                await setDoc(doc(app.dbInstance, "lore_library", `JRN-${Date.now()}`), d);
-                alert("Submitted."); app.db.load();
+                return d.id = 'm-'+Date.now();
             }
         }
     };
 
-    window.onload = function() { app.init(); };
+    window.onload = function() { App.init(); };
+    // --- API KEY ---
+    // App.key = "PASTE_YOUR_KEY_HERE"; 
 </script>
 </body>
 </html>
