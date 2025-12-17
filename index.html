@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LorekeeperX V15.0</title>
+    <title>LorekeeperX V15.1 (Restoration)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
             --bg-color: #0b0c10;
             --surface-1: #1f2833;
             --surface-2: #28313b;
-            --accent-primary: #66fcf1; /* Cyan */
+            --accent-primary: #66fcf1;
             --accent-secondary: #45a29e;
             --accent-gold: #d4af37;
             --accent-red: #ff6b6b;
@@ -26,7 +26,7 @@
             --font-body: 'Merriweather', serif;
         }
 
-        body { font-family: var(--font-ui); background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; font-size: 15px; line-height: 1.6; height: 100vh; overflow: hidden; }
+        body { font-family: var(--font-ui); background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; font-size: 14px; line-height: 1.6; height: 100vh; overflow: hidden; }
         .hidden { display: none !important; }
         
         /* === LANDING PAGE === */
@@ -46,7 +46,8 @@
         .portal-icon { font-size: 3rem; margin-bottom: 15px; filter: grayscale(100%); transition: 0.3s; }
         .portal-card:hover .portal-icon { filter: grayscale(0%); transform: scale(1.1); }
         .portal-title { font-family: var(--font-head); font-size: 1.4rem; color: #fff; margin-bottom: 10px; font-weight: bold; letter-spacing: 2px; }
-        .portal-input { width: 100%; background: #000; border: 1px solid #444; padding: 12px; color: #fff; text-align: center; margin-top: 20px; border-radius: 6px; font-family: var(--font-ui); }
+        
+        .portal-input, .portal-select { width: 100%; background: #000; border: 1px solid #444; padding: 12px; color: #fff; text-align: center; margin-top: 15px; border-radius: 6px; font-family: var(--font-ui); }
         .portal-btn { margin-top: 15px; width: 100%; padding: 12px; background: var(--accent-primary); border: none; color: #000; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; transition: 0.3s; }
         .portal-btn.admin { background: var(--accent-gold); }
 
@@ -69,28 +70,26 @@
         /* === CHAT (CODEX) === */
         .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 1000px; margin: 0 auto; width: 100%; height: 100%; }
         .chat-feed { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
-        .chat-bubble { max-width: 80%; padding: 20px; border-radius: 12px; line-height: 1.7; font-family: var(--font-body); font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); word-wrap: break-word; }
+        .chat-bubble { max-width: 80%; padding: 20px; border-radius: 12px; line-height: 1.7; font-family: var(--font-body); font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); word-wrap: break-word; overflow-wrap: break-word; }
         .chat-bubble.user { align-self: flex-end; background: var(--surface-2); color: #fff; border-bottom-right-radius: 2px; }
         .chat-bubble.ai { align-self: flex-start; background: rgba(31, 40, 51, 0.6); color: #fff; border-left: 3px solid var(--accent-primary); border-top-left-radius: 2px; }
+        .chat-bubble p { margin: 0 0 10px 0; } .chat-bubble p:last-child { margin:0; }
+        
         .input-zone { padding: 20px 30px; background: var(--bg-color); border-top: 1px solid var(--border-color); display: flex; gap: 15px; align-items: center; }
         .chat-input { flex: 1; background: var(--surface-1); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 30px; color: #fff; font-size: 1rem; }
         .send-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--accent-primary); border: none; font-size: 1.2rem; cursor: pointer; }
         
         .persona-select { background: var(--surface-1); color: var(--accent-primary); border: 1px solid var(--border-color); padding: 5px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
-        /* === IMAGERY (GRID) === */
-        .gem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        .gem-card { background: var(--surface-1); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; transition: 0.3s; cursor: pointer; position: relative; }
-        .gem-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        .gem-card-img { height: 180px; width: 100%; object-fit: cover; background: #000; opacity: 0.8; transition: 0.3s; }
-        .gem-card:hover .gem-card-img { opacity: 1; }
-        .gem-card-content { padding: 15px; }
-        .gem-card-title { font-family: var(--font-head); font-size: 1.2rem; color: #fff; margin: 0; }
-        .gem-card-meta { font-size: 0.7rem; color: var(--accent-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
-
-        /* === ATLAS (MAP) === */
-        #view-map { position: relative; height: 100%; background: #0b0c10; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        /* === ATLAS & IMAGERY === */
+        #view-codex-atlas { position: relative; height: 100%; background: #0b0c10; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .map-img { max-width: 100%; max-height: 100%; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .gem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .gem-card { background: var(--surface-1); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; transition: 0.3s; cursor: pointer; }
+        .gem-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); }
+        .gem-card-img { height: 180px; width: 100%; object-fit: cover; background: #000; opacity: 0.8; }
+        .gem-card-content { padding: 15px; }
+        .gem-card-title { font-family: var(--font-head); font-size: 1.2rem; color: #fff; }
 
         /* === JOURNAL === */
         .journal-form { max-width: 800px; margin: 0 auto; background: var(--surface-1); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); }
@@ -99,7 +98,7 @@
         label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
         input, textarea, select { width: 100%; background: #121418; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 6px; box-sizing: border-box; font-family: var(--font-ui); }
         
-        /* === ADMIN TABLES & TIMELINE (LOREKEEPER) === */
+        /* === ADMIN TABLES & PROFILES (V12.3 Logic Restored) === */
         .admin-controls { display:flex; justify-content:space-between; margin-bottom:20px; background:var(--surface-1); padding:15px; border-radius:8px; border:1px solid var(--border-color); }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { background: #121418; text-align: left; padding: 12px; border-bottom: 2px solid var(--border-color); color: var(--text-muted); position: sticky; top: 0; }
@@ -109,10 +108,15 @@
         
         .tl-item { background: var(--surface-1); border-left: 2px solid var(--accent-gold); padding: 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0; }
         
-        /* UTILS */
-        .profile-view { max-width:1200px; margin:0 auto; padding:30px; }
-        .profile-img-lg { width:100%; max-height:400px; object-fit:cover; border:1px solid var(--border-color); margin-bottom:20px; }
-        
+        /* DOSSIER (V12.3 Style) */
+        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 15px;}
+        .profile-name { font-size: 2.5rem; color: var(--text-main); font-family: var(--font-head); }
+        .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 30px; }
+        .profile-img-lg { width: 100%; height: 100%; object-fit: cover; border: 4px double var(--border-color); }
+        .stat-block-gw { background: #e0e0e0; color: #111; padding: 2px; margin-bottom: 20px; border: 2px solid #333; font-family: "Arial", sans-serif; }
+        .stat-header-gw { background: #333; color: #fff; padding: 5px 10px; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
+        .ghost-warning { background:rgba(212, 175, 55, 0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:15px; margin-bottom:20px; }
+
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
     </style>
 </head>
@@ -120,14 +124,19 @@
 
     <div id="landing-page">
         <div class="landing-title">LOREKEEPER<span style="color:#fff;">X</span></div>
-        <div class="landing-subtitle">ARCHIVE TERMINAL V15.0</div>
+        <div class="landing-subtitle">ARCHIVE TERMINAL V15.1</div>
         
         <div class="portal-container">
             <div class="portal-card">
                 <span class="portal-icon">💎</span>
                 <span class="portal-title">THE CODEX</span>
-                <span style="font-size:0.8rem; color:#aaa;">CREATIVE & STORY</span>
-                <input id="login-player-name" class="portal-input" placeholder="ENTER CALLSIGN">
+                <span style="font-size:0.8rem; color:#aaa;">CREATIVE ACCESS</span>
+                <select id="login-player-select" class="portal-select">
+                    <option value="">SELECT USER</option>
+                    <option value="Guest">Guest</option>
+                    <option value="NEW">Create New...</option>
+                </select>
+                <input id="login-player-pass" type="password" class="portal-input" placeholder="PASSWORD (codex)">
                 <button class="portal-btn" onclick="app.attemptLogin('player')">ACCESS</button>
             </div>
             
@@ -135,7 +144,7 @@
                 <span class="portal-icon" style="color:var(--accent-gold);">🛡️</span>
                 <span class="portal-title" style="color:var(--accent-gold);">THE LOREKEEPER</span>
                 <span style="font-size:0.8rem; color:#aaa;">ARCHIVIST ACCESS</span>
-                <input id="login-admin-pass" type="password" class="portal-input" placeholder="ENTER PASSWORD">
+                <input id="login-admin-pass" type="password" class="portal-input" placeholder="PASSWORD">
                 <button class="portal-btn admin" onclick="app.attemptLogin('gm')">AUTHORIZE</button>
             </div>
         </div>
@@ -146,20 +155,17 @@
             <div style="display:flex; align-items:center; gap:15px;">
                 <div class="brand-title" id="app-title">LOREKEEPER<span style="color:#fff;">X</span></div>
                 <div class="brand-subtitle" id="user-badge">GUEST</div>
-                
                 <div id="persona-wrapper" class="hidden">
                     <select id="persona-select" class="persona-select" onchange="app.announcePersona()">
                         <option value="Codex">Codex (The Steward)</option>
-                        <option value="Saverath">Saverath Snowleaf (Historian)</option>
-                        <option value="NaVan">Na'Van (Lanthorian Soldier)</option>
-                        <option value="Brigit">Brigit Haderon (Captain)</option>
-                        <option value="Leaf">Leaf Blackhand (Priest)</option>
+                        <option value="Saverath">Saverath Snowleaf</option>
+                        <option value="NaVan">Na'Van</option>
+                        <option value="Brigit">Brigit Haderon</option>
+                        <option value="Leaf">Leaf Blackhand</option>
                     </select>
                 </div>
             </div>
-
             <div class="nav-tabs" id="nav-container"></div>
-
             <div style="display:flex; gap:15px;">
                 <button style="background:none; border:none; color:#666; font-size:1.2rem; cursor:pointer;" onclick="location.reload()">⏻</button>
             </div>
@@ -194,21 +200,10 @@
             <div class="form-section">
                 <div class="journal-form">
                     <h2 style="color:var(--accent-primary); font-family:var(--font-head); margin-top:0;">FIELD JOURNAL</h2>
-                    <div class="form-row">
-                        <div class="form-col"><label>Title</label><input id="j-title"></div>
-                        <div class="form-col"><label>Date</label><input id="j-date"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col"><label>Location</label><input id="j-loc"></div>
-                        <div class="form-col"><label>Country</label><input id="j-country"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col"><label>Author</label><input id="j-author" readonly></div>
-                        <div class="form-col"><label>Participants (Tags)</label><input id="j-tags" placeholder="Agatha, Rikus..."></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col"><label>Details</label><textarea id="j-details" style="height:200px;"></textarea></div>
-                    </div>
+                    <div class="form-row"><div class="form-col"><label>Title</label><input id="j-title"></div><div class="form-col"><label>Date</label><input id="j-date"></div></div>
+                    <div class="form-row"><div class="form-col"><label>Location</label><input id="j-loc"></div><div class="form-col"><label>Country</label><input id="j-country"></div></div>
+                    <div class="form-row"><div class="form-col"><label>Author</label><input id="j-author" readonly></div><div class="form-col"><label>Participants (Tags)</label><input id="j-tags"></div></div>
+                    <div class="form-row"><div class="form-col"><label>Details</label><textarea id="j-details" style="height:200px;"></textarea></div></div>
                     <button class="portal-btn" onclick="app.submitJournal()">SUBMIT TO ARCHIVES</button>
                 </div>
             </div>
@@ -249,15 +244,37 @@
         </div>
 
         <div id="record-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; justify-content:center; align-items:center;">
-            <div style="background:var(--surface-1); padding:30px; width:800px; max-height:90vh; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px;">
+            <div style="background:var(--surface-1); padding:30px; width:900px; max-height:90vh; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px;">
                 <h2 style="color:var(--accent-gold);">EDIT RECORD</h2>
                 <input type="hidden" id="inp-id">
-                <div class="form-row"><div class="form-col"><label>Name</label><input id="inp-name"></div><div class="form-col"><label>Date</label><input id="inp-date"></div><div class="form-col"><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option></select></div></div>
-                <div class="form-row"><div class="form-col"><label>Category</label><select id="inp-cat"><option>Event</option><option>Location</option><option>People</option><option>Creature</option><option>Journal</option><option>Factions</option></select></div><div class="form-col"><label>Image URL</label><input id="inp-url"></div></div>
+                <div class="form-row">
+                    <div class="form-col"><label>Name</label><input id="inp-name"></div>
+                    <div class="form-col"><label>Date</label><input id="inp-date"></div>
+                    <div class="form-col"><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>Category</label><select id="inp-cat"><option>Event</option><option>Location</option><option>People</option><option>Creature</option><option>Journal</option><option>Factions</option><option>System</option></select></div>
+                    <div class="form-col"><label>Game System</label><input id="inp-game"></div>
+                    <div class="form-col"><label>Campaign</label><input id="inp-camp"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>Image URL</label><input id="inp-url"></div>
+                    <div class="form-col"><label>Ref URL</label><input id="inp-ref"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>Perspective</label><input id="inp-persp"></div>
+                    <div class="form-col"><label>Sensory</label><input id="inp-sense"></div>
+                </div>
+                <div class="form-row"><div class="form-col"><label>Stats Block</label><textarea id="inp-stats" style="height:80px;"></textarea></div></div>
+                <div class="form-row"><div class="form-col"><label>Tags</label><input id="inp-tags"></div></div>
                 <div class="form-row"><div class="form-col"><label>Narrative</label><textarea id="inp-narr" style="height:150px;"></textarea></div></div>
-                <div style="text-align:right; margin-top:20px;">
-                    <button class="portal-btn" style="width:auto; background:#333;" onclick="document.getElementById('record-modal').style.display='none'">CANCEL</button>
-                    <button class="portal-btn admin" style="width:auto;" onclick="app.saveRecord()">SAVE RECORD</button>
+                
+                <div style="text-align:right; margin-top:20px; display:flex; justify-content:space-between;">
+                    <button class="portal-btn" style="width:auto; background:var(--accent-red);" onclick="app.deleteRecord()">DELETE</button>
+                    <div>
+                        <button class="portal-btn" style="width:auto; background:#333;" onclick="document.getElementById('record-modal').style.display='none'">CANCEL</button>
+                        <button class="portal-btn admin" style="width:auto;" onclick="app.saveRecord()">SAVE RECORD</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -272,21 +289,15 @@
     
     // UTILS
     const TARTH_MONTHS = ["Arlen", "Mistril", "Johhanis", "Sadistar", "Kern", "Satari", "Shanteel", "Donril", "Concadin", "Zent", "Osass", "Gonde"];
-    function parseTarthDate(dateStr) { if (!dateStr) return { val: -999999, year: "0000", monthIdx: 0 }; const d = dateStr.toString(); let yr = 0; const yMatch = d.match(/-?\d{1,4}/); if (yMatch) yr = parseInt(yMatch[0]); let mIdx = 0; for(let i=0; i<TARTH_MONTHS.length; i++) { if (d.toLowerCase().includes(TARTH_MONTHS[i].toLowerCase())) { mIdx = i + 1; break; } } return { val: yr + (mIdx / 100), year: yr.toString(), monthIdx: mIdx }; }
-    function getPlaceholder(category, name) { const cat = (category || 'Lore').toLowerCase(); let bg = '333333'; if(cat.includes('people') || cat.includes('factions')) bg='1a1a2e'; if(cat.includes('location')) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${name.replace(/ /g,'+')}`; }
+    function parseTarthDate(dateStr) { if (!dateStr) return { val: -999999, year: "0000" }; const d = dateStr.toString(); let yr = 0; const yMatch = d.match(/-?\d{1,4}/); if (yMatch) yr = parseInt(yMatch[0]); return { val: yr, year: yr }; }
+    function getPlaceholder(category, name) { const cat = (category || 'Lore').toLowerCase(); let bg = '333333'; if(cat.includes('people')) bg='1a1a2e'; if(cat.includes('location')) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${name.replace(/ /g,'+')}`; }
 
     // PERSONAS
-    const PERSONAS = {
-        'Codex': "You are Codex, the impartial steward of the Tarth Archives. Precise and objective.",
-        'Saverath': "You are Saverath Snowleaf, Elven historian. Academic, haughty, focus on history.",
-        'NaVan': "You are Na'Van, Lanthorian soldier. Direct, factual, tactical.",
-        'Brigit': "You are Captain Brigit Haderon. Bold, honorable, flowery language.",
-        'Leaf': "You are Leaf Blackhand, Priest of Tem. Truthful, optimistic."
-    };
+    const PERSONAS = { 'Codex': "You are Codex, Steward of Tarth.", 'Saverath': "You are Saverath Snowleaf, Elven Historian.", 'NaVan': "You are Na'Van, Lanthorian Soldier.", 'Brigit': "You are Captain Brigit Haderon.", 'Leaf': "You are Leaf Blackhand, Priest of Tem." };
 
     window.app = {
         db: null, data: [], currentUser: 'Guest', currentRole: 'guest',
-        apiKey: localStorage.getItem('tarth_api_key') || "AIzaSyDQQZDsVQCnxa8F68KoJtWDq1Wm__H_dZ0", // Fallback key
+        apiKey: localStorage.getItem('tarth_api_key') || "AIzaSyDQQZDsVQCnxa8F68KoJtWDq1Wm__H_dZ0",
         apiModel: "gemini-1.5-flash", md: window.markdownit({html: false, breaks: true}),
 
         init: function() {
@@ -297,19 +308,36 @@
             } catch(e) { console.error("Init Error", e); }
         },
 
-        // --- AUTH & NAVIGATION ---
+        // --- AUTH & DATA ---
+        loadData: async function() {
+            const q = query(collection(this.db, "lore_library"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            this.data = [];
+            const authors = new Set(['Guest']);
+            snap.forEach(d => { 
+                const doc = d.data(); doc.fid = d.id; this.data.push(doc); 
+                if(doc.author) authors.add(doc.author);
+            });
+            // Populate Player Dropdown
+            const sel = document.getElementById('login-player-select');
+            sel.innerHTML = '<option value="">SELECT USER</option><option value="NEW">+ Create New...</option>';
+            Array.from(authors).sort().forEach(a => sel.innerHTML += `<option value="${a}">${a}</option>`);
+            
+            if(this.currentRole === 'gm') this.renderLibrary(); 
+        },
+
         attemptLogin: function(role) {
             if(role === 'player') {
-                const name = document.getElementById('login-player-name').value.trim();
-                if(!name) return alert("Callsign Required");
-                this.currentUser = name;
-                this.login('player');
+                let name = document.getElementById('login-player-select').value;
+                if(name === 'NEW') name = prompt("Enter New Callsign:");
+                const pass = document.getElementById('login-player-pass').value;
+                if(!name) return alert("User Required");
+                if(pass !== 'codex') return alert("Access Denied");
+                this.currentUser = name; this.login('player');
             } else if(role === 'gm') {
-                const pass = document.getElementById('login-admin-pass').value.trim();
-                if(pass === "tarth") {
-                    this.currentUser = "The Archivist";
-                    this.login('gm');
-                } else { alert("Access Denied"); }
+                const pass = document.getElementById('login-admin-pass').value;
+                if(pass === "tarth") { this.currentUser = "The Archivist"; this.login('gm'); } 
+                else { alert("Access Denied"); }
             }
         },
 
@@ -318,69 +346,41 @@
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('app-main').style.display = 'flex';
             document.getElementById('user-badge').innerText = this.currentUser;
-            
-            const nav = document.getElementById('nav-container');
-            nav.innerHTML = '';
+            const nav = document.getElementById('nav-container'); nav.innerHTML = '';
 
             if(role === 'player') {
                 document.getElementById('app-title').innerHTML = `CODEX<span style="color:var(--accent-primary)">X</span>`;
                 document.getElementById('persona-wrapper').classList.remove('hidden');
-                ['CODEX', 'IMAGERY', 'ATLAS', 'JOURNAL'].forEach(tab => {
-                    nav.innerHTML += `<button class="tab-btn" onclick="app.switchTab('codex-${tab.toLowerCase()}')">${tab}</button>`;
-                });
+                ['CODEX', 'IMAGERY', 'ATLAS', 'JOURNAL'].forEach(tab => nav.innerHTML += `<button class="tab-btn" onclick="app.switchTab('codex-${tab.toLowerCase()}')">${tab}</button>`);
                 this.switchTab('codex-chat');
                 document.getElementById('j-author').value = this.currentUser;
             } else {
                 document.getElementById('app-title').innerHTML = `LOREKEEPER<span style="color:var(--accent-gold)">X</span>`;
-                ['TIMELINE', 'LIBRARY', 'PROFILES', 'IMPORT'].forEach(tab => {
-                    nav.innerHTML += `<button class="tab-btn" onclick="app.switchTab('admin-${tab.toLowerCase()}')" style="color:${tab==='IMPORT'?'var(--accent-gold)':''};">${tab}</button>`;
-                });
+                ['TIMELINE', 'LIBRARY', 'PROFILES', 'IMPORT'].forEach(tab => nav.innerHTML += `<button class="tab-btn" onclick="app.switchTab('admin-${tab.toLowerCase()}')" style="color:${tab==='IMPORT'?'var(--accent-gold)':''};">${tab}</button>`);
                 this.switchTab('admin-timeline');
             }
         },
 
         switchTab: function(tabName) {
             document.querySelectorAll('.main-view').forEach(el => el.classList.add('hidden'));
-            const view = document.getElementById('view-'+tabName);
-            if(view) view.classList.remove('hidden');
-            
-            // Render specific views
+            document.getElementById('view-'+tabName).classList.remove('hidden');
             if(tabName === 'admin-library') this.renderLibrary();
             if(tabName === 'admin-timeline') this.renderTimeline();
             if(tabName === 'admin-profiles') this.renderProfiles();
             if(tabName === 'codex-imagery') this.renderImagery();
         },
 
-        // --- DATA LAYER ---
-        loadData: async function() {
-            try {
-                const q = query(collection(this.db, "lore_library"), orderBy("timestamp", "desc"));
-                const snap = await getDocs(q);
-                this.data = [];
-                snap.forEach(d => { const doc = d.data(); doc.fid = d.id; this.data.push(doc); });
-                console.log("Loaded records:", this.data.length);
-                if(this.currentRole === 'gm') this.renderLibrary(); // Refresh if active
-            } catch(e) { console.error("Load Error", e); }
-        },
-
         // --- CODEX FUNCTIONS ---
-        announcePersona: function() {
-            const p = document.getElementById('persona-select').value;
-            this.appendMsg(`*Persona Active: **${p}***`, 'ai');
-        },
+        announcePersona: function() { this.appendMsg(`*Persona Active: **${document.getElementById('persona-select').value}***`, 'ai'); },
         sendChat: async function() {
             const input = document.getElementById('chat-input');
             const msg = input.value; if(!msg) return;
             this.appendMsg(msg, 'user'); input.value = "";
             const loadingId = this.appendMsg("Thinking...", 'ai');
-            const persona = document.getElementById('persona-select').value;
+            const hits = this.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 30);
+            const context = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
             
-            // Context Logic
-            const terms = msg.toLowerCase().split(' ').filter(w => w.length > 2);
-            const hits = this.data.filter(d => terms.some(t => (d.eventName+d.narrative).toLowerCase().includes(t))).slice(0, 30);
-            const contextText = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
-
-            const prompt = `SYSTEM: ${PERSONAS[persona]}\nCONTEXT:\n${contextText}\n\nUSER: ${msg}\n\n(If generating new lore, output JSON: {"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Text"})`;
+            const prompt = `SYSTEM: ${PERSONAS[document.getElementById('persona-select').value]}\nCTX:\n${context}\nUSER: ${msg}\n\n(If new lore, JSON: {"eventName": "Title", "gameDate": "Date", "category": "Event", "narrative": "Text"})`;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.apiModel}:generateContent?key=${this.apiKey}`;
@@ -389,38 +389,29 @@
                 const reply = json.candidates[0].content.parts[0].text;
                 document.getElementById(loadingId).remove();
                 this.appendMsg(reply, 'ai');
-                
-                const jsonMatch = reply.match(/\{[\s\S]*"eventName"[\s\S]*\}/);
-                if(jsonMatch) {
-                    const newRec = JSON.parse(jsonMatch[0]);
+                if(reply.includes('```json')) {
+                    const newRec = JSON.parse(reply.match(/\{[\s\S]*\}/)[0]);
                     await setDoc(doc(this.db, "lore_library", `AUTO-${Date.now()}`), { ...newRec, status: "System Generated", author: this.currentUser, timestamp: Timestamp.now() });
-                    this.appendMsg(`*New Record Created by ${this.currentUser}*`, 'ai');
-                    this.loadData();
+                    this.appendMsg(`*New Record Created*`, 'ai'); this.loadData();
                 }
-            } catch(e) { document.getElementById(loadingId).innerText = "Error contacting Oracle."; }
+            } catch(e) { document.getElementById(loadingId).innerText = "Error."; }
         },
         appendMsg: function(txt, sender) {
             const div = document.createElement('div'); div.className = `chat-bubble ${sender}`;
             div.innerHTML = this.md.render(txt);
-            document.getElementById('chat-feed').appendChild(div);
+            const feed = document.getElementById('chat-feed'); feed.appendChild(div); feed.scrollTop = feed.scrollHeight;
             return div.id = 'msg-'+Date.now();
         },
         submitJournal: async function() {
             const d = {
-                eventName: document.getElementById('j-title').value,
-                gameDate: document.getElementById('j-date').value,
-                location: document.getElementById('j-loc').value,
-                country: document.getElementById('j-country').value,
-                author: this.currentUser,
-                tags: document.getElementById('j-tags').value,
-                narrative: document.getElementById('j-details').value,
+                eventName: document.getElementById('j-title').value, gameDate: document.getElementById('j-date').value,
+                location: document.getElementById('j-loc').value, country: document.getElementById('j-country').value,
+                author: this.currentUser, tags: document.getElementById('j-tags').value, narrative: document.getElementById('j-details').value,
                 category: "Journal", status: "Pending", timestamp: Timestamp.now()
             };
-            if(!d.eventName || !d.narrative) return alert("Title and Details required.");
+            if(!d.eventName || !d.narrative) return alert("Missing Info");
             await setDoc(doc(this.db, "lore_library", `JRN-${Date.now()}`), d);
-            alert("Journal Entry Submitted.");
-            document.querySelectorAll('.journal-form input, .journal-form textarea').forEach(i => { if(i.id !== 'j-author') i.value = ''; });
-            this.loadData();
+            alert("Submitted."); document.querySelectorAll('.journal-form input').forEach(i => { if(i.id!=='j-author') i.value=''; }); this.loadData();
         },
         renderImagery: function(filter="") {
             const grid = document.getElementById('imagery-grid'); grid.innerHTML = "";
@@ -438,16 +429,8 @@
             const term = document.getElementById('lib-search').value.toLowerCase();
             this.data.forEach(d => {
                 if(term && !(d.eventName+d.author).toLowerCase().includes(term)) return;
-                let statusColor = d.status === 'Approved' ? 'var(--accent-green)' : (d.status === 'Pending' ? 'var(--accent-gold)' : '#666');
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><span class="status-pill" style="color:${statusColor}; border:1px solid ${statusColor}">${d.status}</span></td>
-                    <td style="font-weight:bold; color:#fff;">${d.eventName}</td>
-                    <td>${d.category}</td>
-                    <td style="color:var(--text-muted);">${d.author || 'System'}</td>
-                    <td>${d.gameDate || '-'}</td>
-                    <td><button class="portal-btn admin" style="padding:5px 10px; font-size:0.7rem;" onclick="app.editRecord('${d.fid}')">EDIT</button></td>
-                `;
+                row.innerHTML = `<td><span class="status-pill">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td style="color:#888">${d.author||'System'}</td><td>${d.gameDate||'-'}</td><td><button class="portal-btn admin" style="padding:5px; margin:0;" onclick="app.editRecord('${d.fid}')">EDIT</button></td>`;
                 tbody.appendChild(row);
             });
         },
@@ -473,44 +456,65 @@
             const recs = this.data.filter(r => r.tags && r.tags.includes(name));
             const primary = this.data.find(r => r.eventName === name) || {};
             const img = primary.url || getPlaceholder('People', name);
+            const isGhost = !primary.fid;
+            
             d.innerHTML = `
-                <div style="display:flex; gap:20px;">
-                    <img src="${img}" style="width:200px; height:300px; object-fit:cover; border:1px solid #444;">
+                <div class="profile-header"><div class="profile-name">${name}</div> ${isGhost ? '<button class="portal-btn admin" style="width:auto;" onclick="app.editRecord({eventName:\''+name+'\', category:\'People\', status:\'Draft\'})">CREATE RECORD</button>' : ''}</div>
+                ${isGhost ? '<div class="ghost-warning">:: UNREGISTERED ENTITY ::</div>' : ''}
+                <div class="profile-grid">
+                    <div><img src="${img}" class="profile-img-lg"></div>
                     <div>
-                        <h1 style="color:var(--accent-gold); margin-top:0;">${name}</h1>
-                        <p style="color:#ccc;">${primary.narrative || "No primary bio record found."}</p>
-                        <hr style="border-color:#444;">
-                        <h3>TIMELINE APPEARANCES</h3>
-                        ${recs.map(r => `<div style="margin-bottom:10px;"><strong style="color:var(--accent-primary)">${r.gameDate}</strong> - ${r.eventName}<br><span style="color:#888">${r.narrative}</span></div>`).join('')}
+                        <h3 style="color:var(--accent-primary)">NARRATIVE</h3>
+                        <p style="color:#ccc;">${primary.narrative || "No primary bio. Derived from tags."}</p>
+                        ${primary.stats ? `<div class="stat-block-gw"><div class="stat-header-gw">STATS</div><pre style="padding:10px; color:#000;">${primary.stats}</pre></div>` : ''}
                     </div>
                 </div>
+                <hr style="border-color:#444;">
+                <h3>TIMELINE FEED</h3>
+                ${recs.map(r => `<div style="margin-bottom:10px;"><strong style="color:var(--accent-gold)">${r.gameDate}</strong> - ${r.eventName}<br><span style="color:#888">${r.narrative}</span></div>`).join('')}
             `;
         },
         
         // --- EDITING ---
         editRecord: function(fidOrObj) {
             let d = (typeof fidOrObj === 'string') ? this.data.find(r => r.fid === fidOrObj) : (fidOrObj || {});
+            ['id','name','date','status','cat','game','camp','url','ref','persp','sense','stats','tags','narr'].forEach(k => document.getElementById('inp-'+k).value = ""); // Clear
+            
             document.getElementById('inp-id').value = d.fid || "";
             document.getElementById('inp-name').value = d.eventName || "";
             document.getElementById('inp-date').value = d.gameDate || "";
-            document.getElementById('inp-cat').value = d.category || "Event";
             document.getElementById('inp-status').value = d.status || "Approved";
+            document.getElementById('inp-cat').value = d.category || "Event";
+            document.getElementById('inp-game').value = d.game || "";
+            document.getElementById('inp-camp').value = d.campaign || "";
             document.getElementById('inp-url').value = d.url || "";
+            document.getElementById('inp-ref').value = d.reference || "";
+            document.getElementById('inp-persp').value = d.perspective || "";
+            document.getElementById('inp-sense').value = d.sensory || "";
+            document.getElementById('inp-stats').value = d.stats || "";
+            document.getElementById('inp-tags').value = d.tags || "";
             document.getElementById('inp-narr').value = d.narrative || "";
             document.getElementById('record-modal').style.display = 'flex';
         },
         saveRecord: async function() {
             const id = document.getElementById('inp-id').value;
-            const data = {
+            const d = {
                 eventName: document.getElementById('inp-name').value, gameDate: document.getElementById('inp-date').value,
-                category: document.getElementById('inp-cat').value, status: document.getElementById('inp-status').value,
-                url: document.getElementById('inp-url').value, narrative: document.getElementById('inp-narr').value,
-                author: this.currentUser, timestamp: Timestamp.now()
+                status: document.getElementById('inp-status').value, category: document.getElementById('inp-cat').value,
+                game: document.getElementById('inp-game').value, campaign: document.getElementById('inp-camp').value,
+                url: document.getElementById('inp-url').value, reference: document.getElementById('inp-ref').value,
+                perspective: document.getElementById('inp-persp').value, sensory: document.getElementById('inp-sense').value,
+                stats: document.getElementById('inp-stats').value, tags: document.getElementById('inp-tags').value,
+                narrative: document.getElementById('inp-narr').value, author: this.currentUser, timestamp: Timestamp.now()
             };
-            if(!id) await setDoc(doc(this.db, "lore_library", `REC-${Date.now()}`), data);
-            else await setDoc(doc(this.db, "lore_library", id), data, {merge:true});
+            if(!id) await setDoc(doc(this.db, "lore_library", `REC-${Date.now()}`), d);
+            else await setDoc(doc(this.db, "lore_library", id), d, {merge:true});
             document.getElementById('record-modal').style.display = 'none';
             this.loadData();
+        },
+        deleteRecord: async function() {
+            const id = document.getElementById('inp-id').value;
+            if(id && confirm("Delete permanently?")) { await deleteDoc(doc(this.db, "lore_library", id)); document.getElementById('record-modal').style.display = 'none'; this.loadData(); }
         }
     };
 
