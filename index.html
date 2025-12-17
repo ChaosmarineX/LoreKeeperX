@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LorekeeperX V16.3 (Secure)</title>
+    <title>LorekeeperX V16.4 (Stable)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -57,10 +57,10 @@
         .landing-btn:hover { box-shadow: 0 0 15px rgba(102, 252, 241, 0.4); }
 
         /* === LIBRARY TABLE (ADMIN) === */
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 10px; background: var(--surface-light); padding: 10px; border-radius: 8px; position: sticky; top: 0; z-index: 20; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 10px; background: var(--surface-light); padding: 10px; border-radius: 8px; position: sticky; top: 0; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .table-wrap { overflow-x: auto; flex: 1; border: 1px solid var(--border); position:relative; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        thead th { position: sticky; top: 0; background: var(--surface-light); color: var(--text-dim); padding: 12px; text-align: left; border-bottom: 2px solid var(--border); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        thead th { position: sticky; top: 0; background: var(--surface-dark); color: var(--text-dim); padding: 12px; text-align: left; border-bottom: 2px solid var(--border); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         td { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; color: #ddd; }
         tr:hover td { background: var(--surface-light); color: #fff; }
         .pill { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #444; }
@@ -69,7 +69,7 @@
 
         /* === TIMELINE === */
         .tl-item { display: flex; margin-bottom: 10px; background: var(--surface-light); border-left: 3px solid var(--accent-gold); padding: 15px; cursor: pointer; transition: 0.2s; }
-        .tl-item:hover { background: #2c3540; }
+        .tl-item:hover { background: #2c3540; border-color: var(--accent-cyan); }
         .tl-date { width: 80px; font-weight: bold; color: var(--accent-gold); font-family: monospace; flex-shrink: 0; }
         .tl-content { flex: 1; }
         .tl-title { font-weight: bold; color: #fff; font-size: 1rem; }
@@ -112,13 +112,13 @@
     <div id="landing">
         <div class="landing-card">
             <div style="font-family: 'Cinzel'; font-size: 2rem; color: var(--accent-cyan); margin-bottom: 5px;">LOREKEEPER<span style="color:#fff">X</span></div>
-            <div style="color: #888; font-size: 0.8rem; margin-bottom: 30px;">SECURE ARCHIVE V16.3</div>
+            <div style="color: #888; font-size: 0.8rem; margin-bottom: 30px;">SECURE ARCHIVE V16.4</div>
             
             <select id="login-id" style="width:100%; margin-bottom:10px; text-align:center; height:40px;">
                 <option value="Guest">Guest (Player)</option>
                 <option value="Archivist">The Archivist (Admin)</option>
             </select>
-            <input id="secure-token" type="password" placeholder="ACCESS TOKEN" autocomplete="off" data-lpignore="true" style="width:100%; margin-bottom:20px; text-align:center;">
+            <input id="secure-token" type="password" placeholder="ACCESS CODE" autocomplete="off" data-lpignore="true" style="width:100%; margin-bottom:20px; text-align:center;">
             
             <button class="landing-btn" onclick="App.Auth.login()">INITIALIZE LINK</button>
         </div>
@@ -156,7 +156,7 @@
                     <button class="btn-action" style="background:var(--accent-green);" onclick="App.Lorekeeper.openEditor({})">+ NEW</button>
                     <input id="lib-search" placeholder="Search..." oninput="App.Lorekeeper.renderLibrary()">
                     <select id="lib-cat" onchange="App.Lorekeeper.renderLibrary()">
-                        <option value="All">All Categories</option><option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Journal</option>
+                        <option value="All">All Categories</option><option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Journal</option><option>Factions</option>
                     </select>
                 </div>
                 <div class="table-wrap">
@@ -304,14 +304,8 @@
     
     // --- APP NAMESPACE ---
     window.App = {
-        Core: {},
-        Lorekeeper: {},
-        Codex: {},
-        Auth: {},
-        db: null,
-        data: [],
-        user: "Guest",
-        role: "guest",
+        Core: {}, Lorekeeper: {}, Codex: {}, Auth: {},
+        db: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || "",
         md: window.markdownit({html: false, breaks: true})
     };
@@ -326,60 +320,39 @@
         return `https://placehold.co/600x400/${bg}/FFF?text=${(name||'IMG').replace(/ /g,'+')}`; 
     };
 
-    // --- CRYPTO (HASHING) ---
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    // --- AUTH MODULE ---
+    // --- AUTH MODULE (SIMPLE) ---
     App.Auth = {
-        login: async function() {
+        login: function() {
             const user = document.getElementById('login-id').value;
             const pass = document.getElementById('secure-token').value.trim();
-            const hash = await sha256(pass);
-
-            // HASHES FOR SECURITY (DawkKn1ght & codex)
-            const ADMIN_HASH = "805629532028607e0350348c42b2046894c795907409226f96620907483664d6"; 
-            const PLAYER_HASH = "275466e0f63c235767873832822a578972773233301777259251525095066927";
-
-            // ADMIN LOGIN
-            if (user === "Archivist" && hash === ADMIN_HASH) {
+            
+            if (user === "Archivist" && pass === "DawkKn1ght") {
                 App.role = "gm"; App.user = "The Archivist";
                 this.initUI("LOREKEEPER", "var(--accent-gold)", ['LIBRARY','TIMELINE','PROFILES','IMPORT']);
                 document.getElementById('module-admin').classList.remove('hidden');
                 App.Lorekeeper.renderLibrary();
-            } 
-            // PLAYER LOGIN
-            else if (hash === PLAYER_HASH) {
-                let name = prompt("Enter your Character Name / Callsign:");
+            } else if (pass === "codex") {
+                let name = user === 'Guest' ? prompt("Enter Callsign:") : user;
                 if(!name) return;
                 App.role = "player"; App.user = name;
-                this.initUI("CODEX", "var(--accent-cyan)", ['CODEX','IMAGERY','ATLAS','JOURNAL']);
+                this.initUI("CODEX", "var(--accent-cyan)", ['CHAT','IMAGERY','ATLAS','JOURNAL']);
                 document.getElementById('module-codex').classList.remove('hidden');
                 document.getElementById('persona-wrapper').classList.remove('hidden');
                 document.getElementById('j-author').value = name;
-            } 
-            else { alert("INVALID CREDENTIALS"); }
+            } else { alert("ACCESS DENIED"); }
         },
         initUI: function(title, color, tabs) {
             document.getElementById('landing').style.display = 'none';
             document.getElementById('app-shell').style.display = 'flex';
             document.querySelector('.logo-x').style.color = color;
             document.getElementById('user-badge').innerText = App.user;
-            
-            const nav = document.getElementById('nav-container');
-            nav.innerHTML = '';
+            const nav = document.getElementById('nav-container'); nav.innerHTML = '';
             tabs.forEach(t => {
                 const btn = document.createElement('button');
-                btn.className = 'nav-btn';
-                btn.innerText = t;
+                btn.className = 'nav-btn'; btn.innerText = t;
                 btn.onclick = () => App.Core.switchTab(t.toLowerCase());
                 nav.appendChild(btn);
             });
-            // Auto select first tab. If Codex, ensure 'chat' view is targeted
             App.Core.switchTab(tabs[0].toLowerCase());
         }
     };
@@ -401,17 +374,13 @@
         switchTab: function(tab) {
             document.querySelectorAll('.viewport').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active', 'admin-active'));
-            
-            // Map 'codex' tab to 'chat' view
-            let targetView = tab === 'codex' ? 'chat' : tab;
-            
+            let targetView = tab === 'chat' ? 'chat' : tab;
             let viewId = `view-${App.role === 'gm' ? 'admin' : 'codex'}-${targetView}`;
             const view = document.getElementById(viewId);
             if(view) view.classList.remove('hidden');
-
             const btns = document.querySelectorAll('.nav-btn');
             btns.forEach(b => { if(b.innerText.toLowerCase() === tab) b.classList.add(App.role === 'gm' ? 'admin-active' : 'active'); });
-
+            
             if(tab === 'library') App.Lorekeeper.renderLibrary();
             if(tab === 'timeline') App.Lorekeeper.renderTimeline();
             if(tab === 'profiles') App.Lorekeeper.renderProfiles();
@@ -440,20 +409,12 @@
             const tbody = document.querySelector('#library-table tbody'); tbody.innerHTML = "";
             const term = document.getElementById('lib-search').value.toLowerCase();
             const catFilter = document.getElementById('lib-cat').value;
-            
             App.data.forEach(d => {
                 if(catFilter !== 'All' && d.category !== catFilter) return;
                 if(term && !(d.eventName+d.author).toLowerCase().includes(term)) return;
-                
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><span class="pill ${d.status.toLowerCase()}">${d.status}</span></td>
-                    <td style="font-weight:bold; color:#fff;">${d.eventName}</td>
-                    <td>${d.category}</td>
-                    <td style="color:#888">${d.author||'System'}</td>
-                    <td>${d.gameDate||''}</td>
-                    <td style="font-size:0.8rem; color:#666;">${d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleDateString() : '-'}</td>
-                `;
+                const modDate = d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleDateString() : '-';
+                tr.innerHTML = `<td><span class="pill ${d.status.toLowerCase()}">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td style="color:#888">${d.author||'System'}</td><td>${d.gameDate||''}</td><td style="color:#666">${modDate}</td>`;
                 tr.onclick = () => this.openEditor(d.fid);
                 tbody.appendChild(tr);
             });
@@ -485,35 +446,22 @@
             const primary = App.data.find(r => r.eventName === name) || {};
             const img = primary.url || getImg('People', name);
             const isGhost = !primary.fid;
-            
             d.innerHTML = `
                 <div class="profile-header"><div class="profile-name">${name}</div>${isGhost ? `<button class="btn-action btn-save" onclick="App.Lorekeeper.openEditor({eventName:'${name}', category:'People', status:'Draft', tags:'${name}'})">CREATE RECORD</button>` : `<button class="btn-action" style="background:#333; color:#fff;" onclick="App.Lorekeeper.openEditor('${primary.fid}')">EDIT PRIMARY</button>`}</div>
                 ${isGhost ? '<div class="ghost-warning">:: UNREGISTERED ENTITY (GHOST) ::</div>' : ''}
-                <div class="dossier-grid">
-                    <div><img src="${img}" class="dossier-img"></div>
-                    <div>
-                        <h3 style="color:var(--accent-gold)">BIO / OVERVIEW</h3>
-                        <p style="color:#ccc; white-space:pre-wrap;">${primary.narrative || "No primary record. Bio derived from event context."}</p>
-                        ${primary.stats ? `<div class="stat-box">${primary.stats}</div>` : ''}
-                    </div>
-                </div>
-                <h3 style="border-bottom:1px solid #333; padding-bottom:10px;">TIMELINE APPEARANCES</h3>
-                ${recs.map(r => `<div style="margin-bottom:10px; border-left:2px solid #444; padding-left:10px;"><strong style="color:var(--accent-gold)">${r.gameDate}</strong> <span style="color:#fff">${r.eventName}</span><br><span style="color:#888; font-size:0.9rem;">${r.narrative}</span></div>`).join('')}
+                <div class="dossier-grid"><div><img src="${img}" class="dossier-img"></div><div><h3 style="color:var(--accent-gold)">BIO / OVERVIEW</h3><p style="color:#ccc; white-space:pre-wrap;">${primary.narrative || "No primary record. Bio derived from event context."}</p>${primary.stats ? `<div class="stat-box">${primary.stats}</div>` : ''}</div></div>
+                <h3 style="border-bottom:1px solid #333; padding-bottom:10px;">TIMELINE APPEARANCES</h3>${recs.map(r => `<div style="margin-bottom:10px; border-left:2px solid #444; padding-left:10px;"><strong style="color:var(--accent-gold)">${r.gameDate}</strong> <span style="color:#fff">${r.eventName}</span><br><span style="color:#888; font-size:0.9rem;">${r.narrative}</span></div>`).join('')}
             `;
         },
-        // --- EDITING ---
         openEditor: function(fidOrObj) {
             let d = (typeof fidOrObj === 'string') ? App.data.find(r => r.fid === fidOrObj) : (fidOrObj || {});
             ['id','name','date','game','camp','url','ref','persp','sense','stats','tags','narr'].forEach(k => document.getElementById('inp-'+k).value = "");
-            
             document.getElementById('inp-id').value = d.fid || "";
             document.getElementById('inp-name').value = d.eventName || "";
             document.getElementById('inp-status').value = d.status || "Approved";
             document.getElementById('inp-date').value = d.gameDate || "";
             document.getElementById('inp-cat').value = d.category || "Event";
             document.getElementById('inp-author').value = d.author || App.user;
-            
-            // Extended Fields
             document.getElementById('inp-game').value = d.game || "";
             document.getElementById('inp-camp').value = d.campaign || "";
             document.getElementById('inp-url').value = d.url || "";
@@ -523,7 +471,6 @@
             document.getElementById('inp-stats').value = d.stats || "";
             document.getElementById('inp-tags').value = d.tags || "";
             document.getElementById('inp-narr').value = d.narrative || "";
-            
             document.getElementById('edit-modal').style.display = 'flex';
         },
         saveRecord: async function() {
@@ -547,7 +494,6 @@
             const id = document.getElementById('inp-id').value;
             if(id && confirm("Delete Permanently?")) { await deleteDoc(doc(App.db, "lore_library", id)); document.getElementById('edit-modal').style.display = 'none'; App.Core.loadData(); }
         },
-        // --- IMPORT ---
         parseImport: function() {
             const val = document.getElementById('import-paste').value;
             if(!val) return alert("Paste CSV data first.");
@@ -573,7 +519,7 @@
         }
     };
 
-    // --- CODEX (PLAYER) MODULE ---
+    // --- CODEX MODULE ---
     App.Codex = {
         renderImagery: function(filter="") {
             const grid = document.getElementById('gem-grid'); grid.innerHTML = "";
@@ -602,12 +548,7 @@
             const msg = input.value; if(!msg || !App.key) return;
             this.addMsg(msg, 'user'); input.value = "";
             const loadId = this.addMsg("Thinking...", 'ai');
-            
-            // Context
-            const hits = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 20);
-            const context = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
-            
-            // Personas
+            const persona = document.getElementById('persona-select').value;
             const personas = {
                 'Codex': "You are Codex, Steward of Tarth. Precise, objective.",
                 'Saverath': "You are Saverath Snowleaf, Elven historian. Academic, haughty.",
@@ -615,17 +556,15 @@
                 'Brigit': "You are Capt. Brigit Haderon. Bold, honorable.",
                 'Leaf': "You are Leaf Blackhand, Priest of Tem. Optimistic."
             };
-            const sys = personas[document.getElementById('persona-select').value] || personas['Codex'];
+            const context = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 20).map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
+            const prompt = `SYSTEM: ${personas[persona] || personas['Codex']}\nCTX:\n${context}\nUSER: ${msg}`;
             
-            const prompt = `SYSTEM: ${sys}\nCONTEXT:\n${context}\nUSER: ${msg}`;
-
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${App.key}`;
                 const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 const json = await res.json();
-                const reply = json.candidates[0].content.parts[0].text;
                 document.getElementById(loadId).remove();
-                this.addMsg(reply, 'ai');
+                this.addMsg(json.candidates[0].content.parts[0].text, 'ai');
             } catch(e) { document.getElementById(loadId).innerText = "Connection Error."; }
         },
         addMsg: function(txt, sender) {
