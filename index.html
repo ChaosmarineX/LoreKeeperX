@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V20.3 [OPEN]</title>
+    <title>LorekeeperX V21.0 [AUTO-LINK]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V20.3</div>
+            <div class="gate-version">V21.0</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
             <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
@@ -122,7 +122,7 @@
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V20.3</div>
+            <div class="gate-version">V21.0</div>
             <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
@@ -279,9 +279,11 @@
 
     const cfg = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
+    // UTILS
     const PARSE_DATE = (d) => { if(!d) return -9999; const m = d.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
 
+    // APP CORE
     window.App = {
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
@@ -293,6 +295,7 @@
             this.db.load();
         },
 
+        // 1. AUTHENTICATION
         auth: {
             loginPlayer: function() {
                 const u = document.getElementById('login-player-name').value.trim();
@@ -318,6 +321,7 @@
             }
         },
 
+        // 2. ROUTING
         router: {
             initPlayer: function() {
                 document.getElementById('gatekeeper').style.display='none';
@@ -375,6 +379,7 @@
             }
         },
 
+        // 3. DATA
         db: {
             load: async function() {
                 const q = query(collection(App.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
@@ -385,6 +390,7 @@
             }
         },
 
+        // 4. ADMIN FEATURES
         admin: {
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
@@ -553,41 +559,48 @@
             send: async function() {
                 const inp = document.getElementById('chat-input');
                 const msg = inp.value; 
-                if(!App.key) return alert("API Key Missing.");
-                if(!msg) return;
                 
+                if(!App.key) {
+                    App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai');
+                    return;
+                }
+                
+                if(!msg) return;
                 this.msg(msg, 'user'); inp.value = "";
-                const load = this.msg("Thinking...", 'ai');
+                const loadId = this.msg("Thinking...", 'ai');
                 
                 const hits = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 15);
                 const ctx = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
                 const sys = document.getElementById('persona-select').value;
                 const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
                 
-                // V20.3 SMART FALLBACK SYSTEM
-                const tryModel = async (modelName) => {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${App.key}`;
-                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }] }) });
-                    if (!res.ok) throw new Error(res.statusText);
-                    return await res.json();
-                };
+                // AUTO-NEGOTIATION LOGIC
+                const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+                let success = false;
 
-                try {
-                    // ATTEMPT 1: Standard Flash
-                    let json = await tryModel('gemini-1.5-flash');
-                    document.getElementById(load).remove();
-                    this.msg(json.candidates[0].content.parts[0].text, 'ai');
-                } catch(e1) {
-                    console.warn("Flash failed, trying Pro...", e1);
+                for (const model of models) {
                     try {
-                        // ATTEMPT 2: Fallback to Pro
-                        let json = await tryModel('gemini-pro');
-                        document.getElementById(load).remove();
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${App.key}`;
+                        const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }] }) });
+                        
+                        if (!res.ok) throw new Error(res.statusText);
+                        
+                        const json = await res.json();
+                        if (json.error) throw new Error(json.error.message);
+                        
+                        document.getElementById(loadId).remove();
                         this.msg(json.candidates[0].content.parts[0].text, 'ai');
-                    } catch(e2) {
-                        const bubble = document.getElementById(load);
-                        bubble.innerHTML = `⚠️ <strong>Connection Error:</strong> ${e2.message}`;
+                        success = true;
+                        break; // Stop loop if successful
+                    } catch(e) {
+                        console.warn(`Model ${model} failed:`, e);
+                        // Continue to next model
                     }
+                }
+
+                if (!success) {
+                    const bubble = document.getElementById(loadId);
+                    bubble.innerHTML = `⚠️ <strong>Connection Error:</strong> All models failed. Check API Key.`;
                 }
             },
             msg: function(t, s) {
