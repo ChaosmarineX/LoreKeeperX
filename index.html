@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V18.1</title>
+    <title>LorekeeperX V18.3 [CHAT FIX]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
     
     <style>
+        /* === [LOCKED] CORE THEME === */
         :root {
             --bg: #0b0c10; --panel: #1f2833; --border: #3b4252;
             --cyan: #66fcf1; --gold: #d4af37; --red: #ff6b6b; --green: #51cf66;
@@ -18,7 +19,7 @@
         body { background: var(--bg); color: var(--text); font-family: var(--font-ui); margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
         .hidden { display: none !important; }
         
-        /* === GATEKEEPER (LOGIN) === */
+        /* === [LOCKED] GATEKEEPER (LOGIN) === */
         #gatekeeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; }
         .gate-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.3s; position: relative; border-right: 1px solid #222; }
         .gate-panel:hover { background: #111; }
@@ -27,11 +28,12 @@
         
         .gate-icon { font-size: 4rem; margin-bottom: 20px; }
         .gate-title { font-family: var(--font-head); font-size: 2rem; letter-spacing: 3px; margin-bottom: 10px; }
+        .gate-version { font-size: 0.8rem; color: #666; margin-bottom: 20px; letter-spacing: 1px; font-family: var(--font-ui); border: 1px solid #333; padding: 2px 8px; border-radius: 4px; }
         .gate-input { background: #000; border: 1px solid #444; padding: 12px; color: #fff; text-align: center; width: 250px; margin-bottom: 10px; border-radius: 4px; }
         .gate-btn { padding: 12px 30px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 250px; transition:0.2s; }
         .gate-btn:hover { transform: scale(1.05); }
         
-        /* === APP SHELL === */
+        /* === [LOCKED] APP SHELL === */
         #app-ui { display: none; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; background: #121418; border-left: 1px solid #333; border-right: 1px solid #333; }
         
         .header { padding: 15px 20px; background: rgba(18,20,24,0.95); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
@@ -45,7 +47,7 @@
         .viewport { flex: 1; overflow: hidden; position: relative; }
         .scroll-y { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
 
-        /* === LIBRARY (ADMIN) === */
+        /* === [LOCKED] LIBRARY (ADMIN) === */
         .filter-dock { display: flex; gap: 10px; margin-bottom: 15px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
         .filter-group { display: flex; flex-direction: column; }
         .filter-label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
@@ -58,13 +60,13 @@
         tr:hover td { background: var(--panel); color: #fff; }
         .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #555; }
 
-        /* === TIMELINE === */
+        /* === [LOCKED] TIMELINE === */
         .tl-feed { max-width: 1000px; margin: 0 auto; }
         .tl-node { display: flex; margin-bottom: 10px; background: var(--panel); border-left: 3px solid var(--gold); padding: 15px; cursor: pointer; transition: 0.2s; }
         .tl-node:hover { transform: translateX(5px); border-color: var(--cyan); }
         .tl-date { width: 100px; font-weight: bold; color: var(--gold); font-family: monospace; flex-shrink: 0; }
         
-        /* === PROFILES === */
+        /* === [LOCKED] PROFILES === */
         .profile-layout { display: flex; height: 100%; overflow: hidden; }
         .profile-list { width: 250px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; height: 100%; }
         .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: 0.2s; }
@@ -73,7 +75,7 @@
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
         .dossier-img { width: 100%; height: 300px; object-fit: cover; border: 4px double var(--border); }
 
-        /* === CHAT === */
+        /* === [LOCKED] CHAT === */
         .chat-wrap { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; }
         .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; }
@@ -81,7 +83,7 @@
         .msg.ai { align-self: flex-start; background: rgba(102, 252, 241, 0.05); border-left: 3px solid var(--cyan); }
         .chat-tools { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: #121418; }
 
-        /* === FORMS (SHARED) === */
+        /* === [LOCKED] FORMS === */
         .form-box { max-width: 900px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 10px; border: 1px solid var(--border); }
         .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .span2 { grid-column: span 2; }
@@ -89,11 +91,11 @@
         .f-input { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; box-sizing: border-box; font-family: var(--font-ui); }
         .f-input:focus { outline: none; border-color: var(--cyan); }
         
-        /* === MODAL === */
+        /* === [LOCKED] MODAL === */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
         .modal-body { background: #1a1c24; width: 900px; max-height: 95vh; overflow-y: auto; padding: 30px; border: 1px solid var(--border); border-radius: 10px; }
 
-        /* === UTILS === */
+        /* === [LOCKED] UTILS === */
         .btn { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:hover { opacity: 0.8; }
         .bg-gold { background: var(--gold); color: #000; }
@@ -108,7 +110,7 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div style="color:#888; margin-bottom:20px;">PLAYER ACCESS</div>
+            <div class="gate-version">V18.3 [CHAT FIX]</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
             <input id="login-player-pass" type="password" class="gate-input" placeholder="Password (codex)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
@@ -116,8 +118,8 @@
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div style="color:#888; margin-bottom:20px;">ARCHIVIST ACCESS</div>
-            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Password" autocomplete="off" data-lpignore="true">
+            <div class="gate-version">V18.3 [LOCKED]</div>
+            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Password (DawkKn1ght)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
     </div>
@@ -271,7 +273,8 @@
     // APP CORE
     window.App = {
         dbInstance: null, data: [], user: "Guest", role: "guest",
-        key: localStorage.getItem('tarth_key') || "",
+        // LEGACY KEY CHECK: Supports both old tarth_api_key and new tarth_key
+        key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "",
         md: window.markdownit({html: false, breaks: true}),
 
         init: function() {
@@ -286,7 +289,7 @@
                 const u = document.getElementById('login-player-name').value.trim();
                 const p = document.getElementById('login-player-pass').value.trim();
                 if(!u) return alert("Callsign Required");
-                if(p.toLowerCase() !== "codex") return alert("Access Denied"); // Case insensitive check
+                if(p.toLowerCase() !== "codex") return alert("Access Denied");
                 App.role = "player"; App.user = u;
                 App.router.initPlayer();
             },
@@ -397,7 +400,6 @@
                 if(tags.size === 0) { l.innerHTML = "<div style='padding:20px; color:#666'>No tags found.</div>"; return; }
 
                 Array.from(tags).sort().forEach(t => {
-                    // SAFE ESCAPING for names like Na'Van
                     const safeName = ESCAPE(t);
                     l.innerHTML += `<div class="profile-item" onclick="App.admin.showProf('${safeName}')">${t}</div>`;
                 });
@@ -515,7 +517,11 @@
             },
             send: async function() {
                 const inp = document.getElementById('chat-input');
-                const msg = inp.value; if(!msg || !App.key) return;
+                const msg = inp.value; 
+                // ERROR CHECK: If key is missing, alert the user.
+                if(!App.key) return alert("API Key Missing. Click Gear Icon to Connect.");
+                if(!msg) return;
+                
                 this.msg(msg, 'user'); inp.value = "";
                 const load = this.msg("Thinking...", 'ai');
                 
