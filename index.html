@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V19.0</title>
+    <title>LorekeeperX V19.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -38,7 +38,10 @@
         
         .header { padding: 15px 20px; background: rgba(18,20,24,0.95); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .brand { font-family: var(--font-head); font-size: 1.5rem; font-weight: bold; }
-        .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; flex-wrap:wrap; }
+        
+        /* RESTORED TAB LAYOUT (No Wrap) */
+        .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; overflow-x: auto; white-space: nowrap; }
+        
         .nav-btn { background: transparent; border: none; color: var(--text-dim); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.2s; }
         .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
         .nav-btn.active-codex { background: var(--cyan); color: #000; }
@@ -81,6 +84,8 @@
         .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; }
         .msg.user { align-self: flex-end; background: var(--panel); border: 1px solid var(--border); }
         .msg.ai { align-self: flex-start; background: rgba(102, 252, 241, 0.05); border-left: 3px solid var(--cyan); }
+        /* Fix for HTML buttons in chat */
+        .msg button { cursor: pointer; } 
         .chat-tools { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: #121418; }
 
         /* === FORMS (SHARED) === */
@@ -110,7 +115,7 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V19.0 (Secure)</div>
+            <div class="gate-version">V19.1 (PATCHED)</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
             <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
@@ -118,7 +123,7 @@
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V19.0 (Secure)</div>
+            <div class="gate-version">V19.1 (PATCHED)</div>
             <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
@@ -199,7 +204,18 @@
             </div>
         </div>
 
-        <div id="view-codex-contribute" class="viewport hidden">
+        <div id="view-codex-imagery" class="viewport hidden">
+            <div class="scroll-y">
+                <input class="f-input" style="margin-bottom:20px;" placeholder="Search Visuals..." oninput="App.codex.renderImg(this.value)">
+                <div id="img-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:20px;"></div>
+            </div>
+        </div>
+
+        <div id="view-codex-atlas" class="viewport hidden" style="background:#000; display:flex; align-items:center; justify-content:center;">
+            <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+NOT+FOUND'">
+        </div>
+
+        <div id="view-codex-journal" class="viewport hidden">
             <div class="scroll-y">
                 <div class="form-box" style="border-color:var(--cyan);">
                     <h2 style="color:var(--cyan); margin-top:0;">CONTRIBUTE RECORD</h2>
@@ -218,17 +234,6 @@
                     <button class="btn bg-cyan" style="width:100%;" onclick="App.codex.submit()">SUBMIT TO ARCHIVES</button>
                 </div>
             </div>
-        </div>
-
-        <div id="view-codex-imagery" class="viewport hidden">
-            <div class="scroll-y">
-                <input class="f-input" style="margin-bottom:20px;" placeholder="Search Visuals..." oninput="App.codex.renderImg(this.value)">
-                <div id="img-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:20px;"></div>
-            </div>
-        </div>
-
-        <div id="view-codex-atlas" class="viewport hidden" style="background:#000; display:flex; align-items:center; justify-content:center;">
-            <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+NOT+FOUND'">
         </div>
 
     </div>
@@ -283,8 +288,8 @@
     // APP CORE
     window.App = {
         dbInstance: null, data: [], user: "Guest", role: "guest",
-        key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", // CHECKS BOTH LEGACY AND NEW
-        md: window.markdownit({html: false, breaks: true}),
+        key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
+        md: window.markdownit({html: true, breaks: true}), // ENABLED HTML FOR BUTTONS
 
         init: function() {
             const fApp = initializeApp(cfg);
@@ -330,7 +335,7 @@
                 document.getElementById('switch-btn').classList.remove('hidden');
                 
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
-                ['Chat','Contribute','Imagery','Atlas'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
+                ['Chat','Imagery','Atlas','Journal'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
                 
                 document.getElementById('c-auth').value = App.user;
                 this.go('Chat');
@@ -351,7 +356,11 @@
                 document.querySelectorAll('.viewport').forEach(v => v.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-codex','active-lore'));
                 
-                const viewId = `view-${App.role==='admin'?'admin':'codex'}-${tab.toLowerCase()}`;
+                // Codex Tab Mapping Fix
+                let target = tab;
+                if(tab === 'Journal') target = 'codex-contribute'; // Player Journal maps to Contribute View
+                
+                const viewId = `view-${App.role==='admin'?'admin':'codex'}-${target.toLowerCase()}`;
                 const el = document.getElementById(viewId);
                 if(el) el.classList.remove('hidden');
                 
@@ -409,6 +418,9 @@
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const tags = new Set(); App.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(x => tags.add(x.trim())); });
+                
+                if(tags.size === 0) { l.innerHTML = "<div style='padding:20px; color:#666'>No tags found.</div>"; return; }
+
                 Array.from(tags).sort().forEach(t => {
                     const safeName = ESCAPE(t);
                     l.innerHTML += `<div class="profile-item" onclick="App.admin.showProf('${safeName}')">${t}</div>`;
@@ -529,14 +541,13 @@
                 const inp = document.getElementById('chat-input');
                 const msg = inp.value; 
                 
-                // --- V19 FIX: DIRECT CONNECT BUTTON IF MISSING KEY ---
+                // V19.1 FIX: Show button in chat if key missing
                 if(!App.key) {
                     App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai');
                     return;
                 }
                 
                 if(!msg) return;
-                
                 this.msg(msg, 'user'); inp.value = "";
                 const load = this.msg("Thinking...", 'ai');
                 
@@ -551,7 +562,9 @@
                     const json = await res.json();
                     document.getElementById(load).remove();
                     this.msg(json.candidates[0].content.parts[0].text, 'ai');
-                } catch(e) { document.getElementById(load).innerText = "Error connecting."; }
+                } catch(e) { 
+                    document.getElementById(load).innerText = `Error: ${e.message || 'Connection failed'}`; 
+                }
             },
             msg: function(t, s) {
                 const d = document.createElement('div'); d.className = `msg ${s}`; d.innerHTML = App.md.render(t);
