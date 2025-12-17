@@ -2,580 +2,530 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LorekeeperX V16.4 (Stable)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LorekeeperX V17.0 (The Monolith)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
     
     <style>
-        /* === CORE THEME === */
+        /* === THEME ENGINE === */
         :root {
-            --bg-root: #0b0c10;
-            --surface-dark: #121418;
-            --surface-light: #1f2833;
-            --accent-cyan: #66fcf1;
-            --accent-teal: #45a29e;
-            --accent-gold: #d4af37;
-            --accent-red: #ff6b6b;
-            --accent-green: #51cf66;
-            --text-primary: #e0e6ed;
-            --text-dim: #9aa0a6;
-            --border: #3b4252;
-            
-            --font-ui: 'Inter', sans-serif;
-            --font-head: 'Cinzel', serif;
-            --font-body: 'Merriweather', serif;
+            --bg: #0b0c10; --panel: #1f2833; --border: #3b4252;
+            --cyan: #66fcf1; --gold: #d4af37; --red: #ff6b6b; --green: #51cf66;
+            --text: #e0e6ed; --text-dim: #9aa0a6;
+            --font-ui: 'Inter', sans-serif; --font-head: 'Cinzel', serif; --font-body: 'Merriweather', serif;
         }
-
-        body { font-family: var(--font-ui); background-color: var(--bg-root); color: var(--text-primary); margin: 0; padding: 0; font-size: 14px; line-height: 1.6; height: 100vh; overflow: hidden; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-ui); margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
         .hidden { display: none !important; }
-        button { cursor: pointer; font-family: var(--font-ui); }
-        input, select, textarea { font-family: var(--font-ui); background: #000; color: #fff; border: 1px solid var(--border); padding: 8px; border-radius: 4px; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-cyan); }
-
-        /* === LAYOUT === */
-        #app-shell { display:none; height: 100vh; flex-direction:column; max-width: 1600px; margin: 0 auto; background: var(--surface-dark); border-left:1px solid #333; border-right:1px solid #333; }
         
-        .top-bar { background: rgba(11, 12, 16, 0.95); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        .app-logo { font-family: var(--font-head); font-size: 1.5rem; color: #fff; font-weight: 700; letter-spacing: 2px; }
-        .logo-x { color: var(--accent-cyan); } .logo-x.admin { color: var(--accent-gold); }
+        /* === LOGIN SCREEN === */
+        #login-screen { position: fixed; inset: 0; background: radial-gradient(circle, #1f2833 0%, #000 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-card { background: rgba(31,40,51,0.8); padding: 40px; border: 1px solid var(--border); border-radius: 12px; width: 300px; text-align: center; backdrop-filter: blur(10px); }
+        .login-title { font-family: var(--font-head); font-size: 2rem; margin-bottom: 5px; color: #fff; }
+        .login-input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--border); color: #fff; text-align: center; border-radius: 4px; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 10px; background: var(--cyan); border: none; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 10px; }
+        .login-btn:hover { box-shadow: 0 0 10px var(--cyan); }
+
+        /* === APP SHELL === */
+        #app-ui { display: none; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: #121418; }
         
-        .nav-group { display: flex; gap: 5px; background: var(--surface-light); padding: 4px; border-radius: 8px; }
-        .nav-btn { background: transparent; border: none; color: var(--text-dim); padding: 8px 16px; font-weight: 600; font-size: 0.8rem; border-radius: 6px; transition: 0.2s; }
-        .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
-        .nav-btn.active { background: var(--accent-teal); color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .nav-btn.admin-active { background: var(--accent-gold); color: #000; }
+        /* Header */
+        .header { padding: 15px 20px; background: rgba(18,20,24,0.95); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-family: var(--font-head); font-size: 1.4rem; font-weight: bold; letter-spacing: 2px; }
+        .brand span { color: var(--cyan); } .brand.admin span { color: var(--gold); }
+        .user-badge { border: 1px solid #444; padding: 2px 8px; font-size: 0.8rem; color: #888; border-radius: 4px; margin-left: 10px; }
+        
+        /* Navigation */
+        .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; }
+        .nav-btn { background: transparent; border: none; color: var(--text-dim); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.2s; }
+        .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .nav-btn.active-player { background: var(--cyan); color: #000; }
+        .nav-btn.active-admin { background: var(--gold); color: #000; }
 
-        .viewport { flex: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .scroll-view { padding: 20px; height: 100%; overflow-y: auto; box-sizing: border-box; padding-bottom: 80px; }
+        /* Viewport */
+        .viewport { flex: 1; overflow: hidden; position: relative; }
+        .scroll-container { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
 
-        /* === LANDING PAGE === */
-        #landing { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1f2833 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-        .landing-card { background: rgba(31, 40, 51, 0.7); border: 1px solid var(--border); padding: 40px; border-radius: 16px; width: 320px; text-align: center; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
-        .landing-btn { width: 100%; padding: 12px; margin-top: 15px; background: var(--accent-cyan); color: #000; font-weight: bold; border: none; border-radius: 4px; text-transform: uppercase; transition: 0.3s; }
-        .landing-btn:hover { box-shadow: 0 0 15px rgba(102, 252, 241, 0.4); }
-
-        /* === LIBRARY TABLE (ADMIN) === */
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 10px; background: var(--surface-light); padding: 10px; border-radius: 8px; position: sticky; top: 0; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .table-wrap { overflow-x: auto; flex: 1; border: 1px solid var(--border); position:relative; overflow-y: auto; }
+        /* === COMPONENTS === */
+        
+        /* Library Table */
+        .filter-row { display: flex; gap: 10px; margin-bottom: 10px; position: sticky; top: 0; z-index: 10; background: var(--panel); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+        .table-wrapper { height: 100%; overflow: auto; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        thead th { position: sticky; top: 0; background: var(--surface-dark); color: var(--text-dim); padding: 12px; text-align: left; border-bottom: 2px solid var(--border); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        td { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; color: #ddd; }
-        tr:hover td { background: var(--surface-light); color: #fff; }
-        .pill { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #444; }
-        .pill.approved { color: var(--accent-green); border-color: var(--accent-green); }
-        .pill.draft { color: var(--accent-red); border-color: var(--accent-red); }
-
-        /* === TIMELINE === */
-        .tl-item { display: flex; margin-bottom: 10px; background: var(--surface-light); border-left: 3px solid var(--accent-gold); padding: 15px; cursor: pointer; transition: 0.2s; }
-        .tl-item:hover { background: #2c3540; border-color: var(--accent-cyan); }
-        .tl-date { width: 80px; font-weight: bold; color: var(--accent-gold); font-family: monospace; flex-shrink: 0; }
-        .tl-content { flex: 1; }
-        .tl-title { font-weight: bold; color: #fff; font-size: 1rem; }
-        .tl-desc { color: #aaa; font-size: 0.9rem; margin-top: 5px; }
-
-        /* === PROFILES === */
-        .profile-layout { display: flex; height: 100%; gap: 0; }
-        .profile-sidebar { width: 250px; background: var(--surface-light); overflow-y: auto; border-right: 1px solid var(--border); }
-        .profile-row { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: 0.2s; }
-        .profile-row:hover { background: #333; color: #fff; padding-left: 20px; }
-        .profile-main { flex: 1; padding: 30px; overflow-y: auto; }
-        .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
-        .dossier-img { width: 100%; height: 400px; object-fit: cover; border: 4px double var(--border); background: #000; }
-        .stat-box { background: #dcdcdc; color: #111; padding: 10px; font-family: monospace; margin-top: 15px; border: 2px solid #555; white-space: pre-wrap; }
-
-        /* === CHAT === */
-        .chat-layout { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; width: 100%; }
+        th { text-align: left; padding: 12px; background: #121418; border-bottom: 2px solid var(--border); color: var(--text-dim); position: sticky; top: 0; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        tr:hover { background: var(--panel); }
+        .pill { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #555; }
+        
+        /* Chat */
+        .chat-layout { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; }
         .chat-feed { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; font-size: 1rem; word-wrap: break-word; }
-        .msg.user { align-self: flex-end; background: var(--surface-light); border: 1px solid var(--border); color: #fff; }
-        .msg.ai { align-self: flex-start; background: rgba(69, 162, 158, 0.1); border-left: 3px solid var(--accent-teal); color: #e0e6ed; }
-        .msg strong { color: #fff; } .msg em { color: var(--accent-cyan); }
-        .chat-input-bar { padding: 20px; background: var(--surface-dark); border-top: 1px solid var(--border); display: flex; gap: 10px; }
-
-        /* === FORMS (ADMIN & JOURNAL) === */
+        .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; }
+        .msg.user { align-self: flex-end; background: var(--panel); border: 1px solid var(--border); }
+        .msg.ai { align-self: flex-start; background: rgba(102, 252, 241, 0.05); border-left: 3px solid var(--cyan); }
+        .chat-input-area { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--bg); }
+        
+        /* Grid (Imagery) */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: 0.2s; }
+        .card:hover { transform: translateY(-5px); border-color: var(--cyan); }
+        .card-img { height: 150px; width: 100%; object-fit: cover; background: #000; }
+        .card-body { padding: 10px; }
+        
+        /* Profiles */
+        .split-view { display: flex; height: 100%; }
+        .list-col { width: 250px; border-right: 1px solid var(--border); overflow-y: auto; background: var(--panel); }
+        .list-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; color: #aaa; }
+        .list-item:hover { background: #333; color: #fff; }
+        .detail-col { flex: 1; padding: 30px; overflow-y: auto; }
+        .dossier-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 20px; }
+        .dossier-name { font-family: var(--font-head); font-size: 2rem; }
+        
+        /* Forms */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .full-width { grid-column: span 2; }
-        label { display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
-        .btn-action { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; }
-        .btn-save { background: var(--accent-green); color: #000; }
-        .btn-del { background: var(--accent-red); color: #000; }
-
-        /* === MODAL === */
-        .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-win { background: var(--surface-light); padding: 30px; width: 900px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+        .span-2 { grid-column: span 2; }
+        label { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; box-sizing: border-box; font-family: var(--font-ui); }
+        input:focus, textarea:focus { border-color: var(--cyan); outline: none; }
+        
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-box { background: var(--panel); width: 900px; max-height: 90vh; overflow-y: auto; padding: 30px; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        
+        /* Buttons */
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-green { background: var(--green); color: #000; }
+        .btn-gold { background: var(--gold); color: #000; }
+        .btn-red { background: var(--red); color: #000; }
+        .btn-cyan { background: var(--cyan); color: #000; }
+        
+        /* Utils */
+        .tl-row { display: flex; margin-bottom: 10px; padding: 10px; background: var(--panel); border-left: 2px solid var(--gold); cursor: pointer; }
+        .tl-date { width: 80px; font-weight: bold; color: var(--gold); flex-shrink: 0; }
     </style>
 </head>
 <body>
 
-    <div id="landing">
-        <div class="landing-card">
-            <div style="font-family: 'Cinzel'; font-size: 2rem; color: var(--accent-cyan); margin-bottom: 5px;">LOREKEEPER<span style="color:#fff">X</span></div>
-            <div style="color: #888; font-size: 0.8rem; margin-bottom: 30px;">SECURE ARCHIVE V16.4</div>
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-title">LOREKEEPER<span style="color:var(--cyan)">X</span></div>
+            <div style="color:#888; margin-bottom:20px;">V17.0 (The Monolith)</div>
             
-            <select id="login-id" style="width:100%; margin-bottom:10px; text-align:center; height:40px;">
-                <option value="Guest">Guest (Player)</option>
-                <option value="Archivist">The Archivist (Admin)</option>
-            </select>
-            <input id="secure-token" type="password" placeholder="ACCESS CODE" autocomplete="off" data-lpignore="true" style="width:100%; margin-bottom:20px; text-align:center;">
+            <input id="login-user" class="login-input" placeholder="Identity (Name/Callsign)" autocomplete="off" data-lpignore="true">
+            <input id="login-pass" type="password" class="login-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
             
-            <button class="landing-btn" onclick="App.Auth.login()">INITIALIZE LINK</button>
+            <button class="login-btn" onclick="app.auth.login()">CONNECT</button>
         </div>
     </div>
 
-    <div id="app-shell">
-        <header class="top-bar">
-            <div style="display:flex; align-items:center; gap:15px;">
-                <div class="app-logo" id="logo-text">LOREKEEPER<span class="logo-x">X</span></div>
-                <div id="user-badge" style="border:1px solid #444; padding:2px 8px; border-radius:4px; font-size:0.8rem; color:#aaa;">GUEST</div>
-                
-                <select id="persona-select" class="hidden" style="background:var(--surface-light); border-color:var(--border);">
-                    <option value="Codex">Codex (Steward)</option>
-                    <option value="Saverath">Saverath (Historian)</option>
-                    <option value="NaVan">Na'Van (Soldier)</option>
-                    <option value="Brigit">Capt. Brigit</option>
-                    <option value="Leaf">Leaf (Priest)</option>
-                </select>
+    <div id="app-ui">
+        <header class="header">
+            <div style="display:flex; align-items:center;">
+                <div class="brand" id="brand-logo">LOREKEEPER<span>X</span></div>
+                <div class="user-badge" id="user-display">GUEST</div>
             </div>
-
-            <div class="nav-group" id="nav-container">
+            
+            <div class="nav-bar" id="nav-container">
                 </div>
 
-            <div>
-                <button class="nav-btn" onclick="document.getElementById('api-modal').style.display='flex'">⚙️ KEY</button>
-                <button class="nav-btn" onclick="location.reload()">⏻</button>
+            <div style="display:flex; gap:10px;">
+                <select id="persona-select" class="hidden" style="background:#111; border:1px solid #444; width:auto; padding:5px;">
+                    <option value="Codex">Codex</option>
+                    <option value="Saverath">Saverath</option>
+                    <option value="NaVan">Na'Van</option>
+                    <option value="Brigit">Capt. Brigit</option>
+                    <option value="Leaf">Leaf</option>
+                </select>
+                <button class="btn" style="background:transparent; color:#888;" onclick="document.getElementById('key-modal').style.display='flex'">⚙️</button>
+                <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
             </div>
         </header>
 
-        <div id="module-admin" class="hidden" style="height:100%;">
+        <div class="viewport">
             
-            <div id="view-admin-library" class="viewport hidden">
-                <div class="filter-bar">
-                    <button class="btn-action" style="background:var(--accent-gold);" onclick="App.Core.loadData()">REFRESH</button>
-                    <button class="btn-action" style="background:var(--accent-green);" onclick="App.Lorekeeper.openEditor({})">+ NEW</button>
-                    <input id="lib-search" placeholder="Search..." oninput="App.Lorekeeper.renderLibrary()">
-                    <select id="lib-cat" onchange="App.Lorekeeper.renderLibrary()">
-                        <option value="All">All Categories</option><option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>System</option><option>Journal</option><option>Factions</option>
+            <div id="view-library" class="scroll-container hidden">
+                <div class="filter-row">
+                    <button class="btn btn-gold" onclick="app.db.load()">REFRESH</button>
+                    <button class="btn btn-green" onclick="app.admin.edit({})">+ NEW</button>
+                    <input id="lib-search" placeholder="Search..." style="width:200px;" oninput="app.admin.renderLib()">
+                    <select id="lib-cat" style="width:150px;" onchange="app.admin.renderLib()">
+                        <option value="All">All Categories</option><option>Event</option><option>People</option><option>Location</option><option>History</option><option>Lore</option><option>Journal</option><option>System</option>
                     </select>
                 </div>
-                <div class="table-wrap">
-                    <table id="library-table">
-                        <thead><tr><th>Status</th><th>Name</th><th>Category</th><th>Author</th><th>Game Date</th><th>Modified</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
+                <div class="table-wrapper">
+                    <table id="lib-table"><thead><tr><th>Status</th><th>Name</th><th>Category</th><th>Author</th><th>Date</th><th>Modified</th></tr></thead><tbody></tbody></table>
                 </div>
             </div>
 
-            <div id="view-admin-timeline" class="viewport hidden">
-                <div class="scroll-view">
-                    <div id="timeline-feed"></div>
+            <div id="view-timeline" class="scroll-container hidden">
+                <div id="timeline-list"></div>
+            </div>
+
+            <div id="view-profiles" class="hidden" style="height:100%;">
+                <div class="split-view">
+                    <div class="list-col" id="profile-list"></div>
+                    <div class="detail-col" id="profile-view">Select a tag...</div>
                 </div>
             </div>
 
-            <div id="view-admin-profiles" class="viewport hidden">
-                <div class="profile-layout">
-                    <div class="profile-sidebar" id="profile-list"></div>
-                    <div class="profile-main" id="profile-detail">Select a Tag...</div>
-                </div>
+            <div id="view-import" class="scroll-container hidden" style="text-align:center;">
+                <textarea id="csv-paste" style="height:200px; max-width:800px;" placeholder="Paste CSV Data..."></textarea><br>
+                <button class="btn btn-green" style="margin-top:10px;" onclick="app.admin.import()">IMPORT DATA</button>
+                <button class="btn btn-gold" style="margin-top:10px;" onclick="app.admin.export()">EXPORT CSV</button>
             </div>
 
-            <div id="view-admin-import" class="viewport hidden">
-                <div class="scroll-view" style="max-width:800px; margin:0 auto;">
-                    <h2>DATA IMPORT</h2>
-                    <textarea id="import-paste" style="width:100%; height:200px;" placeholder="Paste CSV Data Here..."></textarea>
-                    <button class="btn-action btn-save" style="width:100%; margin-top:10px;" onclick="App.Lorekeeper.parseImport()">PROCESS</button>
-                    <div id="import-map-ui" class="hidden" style="margin-top:20px; border:1px solid var(--border); padding:20px;">
-                        <h3>MAP COLUMNS</h3>
-                        <div class="form-grid">
-                            <div><label>Name</label><select id="map-name" class="map-sel"></select></div>
-                            <div><label>Date</label><select id="map-date" class="map-sel"></select></div>
-                            <div><label>Category</label><select id="map-cat" class="map-sel"></select></div>
-                            <div><label>Narrative</label><select id="map-narr" class="map-sel"></select></div>
-                        </div>
-                        <button class="btn-action btn-save" style="width:100%;" onclick="App.Lorekeeper.runImport()">EXECUTE IMPORT</button>
-                    </div>
-                    <hr style="border-color:#333; margin:40px 0;">
-                    <button class="btn-action" style="background:#333; color:#fff; width:100%;" onclick="App.Core.exportData()">EXPORT DATABASE (CSV)</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="module-codex" class="hidden" style="height:100%;">
-            
-            <div id="view-codex-chat" class="viewport hidden">
+            <div id="view-chat" class="hidden" style="height:100%;">
                 <div class="chat-layout">
-                    <div class="chat-feed" id="chat-feed">
-                        <div class="msg ai"><strong>CODEX ONLINE.</strong><br>I am the Steward of the Tarth Archives. Select a persona above to begin inquiry.</div>
-                    </div>
-                    <div class="chat-input-bar">
-                        <input id="chat-input" style="flex:1;" placeholder="Query Archives..." onkeypress="if(event.key==='Enter') App.Codex.sendChat()">
-                        <button class="btn-action" style="background:var(--accent-cyan);" onclick="App.Codex.sendChat()">SEND</button>
+                    <div class="chat-feed" id="chat-feed"><div class="msg ai"><strong>CODEX ONLINE.</strong><br>I am the Steward. How may I assist?</div></div>
+                    <div class="chat-input-area">
+                        <input id="chat-msg" placeholder="Query Archives..." onkeypress="if(event.key==='Enter') app.player.send()">
+                        <button class="btn btn-cyan" onclick="app.player.send()">SEND</button>
                     </div>
                 </div>
             </div>
 
-            <div id="view-codex-imagery" class="viewport hidden">
-                <div class="scroll-view">
-                    <input style="width:100%; margin-bottom:20px;" placeholder="Search Visuals..." oninput="App.Codex.renderImagery(this.value)">
-                    <div id="gem-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:20px;"></div>
+            <div id="view-imagery" class="scroll-container hidden">
+                <input style="width:100%; margin-bottom:20px;" placeholder="Search Visuals..." oninput="app.player.renderImg(this.value)">
+                <div class="grid" id="img-grid"></div>
+            </div>
+
+            <div id="view-atlas" class="hidden" style="height:100%; background:#000; display:flex; align-items:center; justify-content:center;">
+                <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+FILE+NOT+FOUND'">
+            </div>
+
+            <div id="view-journal" class="scroll-container hidden">
+                <div style="max-width:800px; margin:0 auto; background:var(--panel); padding:30px; border-radius:10px;">
+                    <h2 style="color:var(--cyan); margin-top:0;">FIELD JOURNAL</h2>
+                    <div class="form-grid">
+                        <div class="span-2"><label>Title</label><input id="j-title"></div>
+                        <div><label>Date</label><input id="j-date"></div>
+                        <div><label>Location</label><input id="j-loc"></div>
+                        <div><label>Country</label><input id="j-country"></div>
+                        <div><label>Author</label><input id="j-auth" readonly></div>
+                        <div class="span-2"><label>Participants (Tags)</label><input id="j-tags"></div>
+                    </div>
+                    <label>Entry</label><textarea id="j-narr" style="height:200px;"></textarea>
+                    <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="app.player.submitJ()">SUBMIT</button>
                 </div>
             </div>
 
-            <div id="view-codex-atlas" class="viewport hidden" style="display:flex; justify-content:center; align-items:center; background:#000;">
-                <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+FILE+MISSING'">
-            </div>
+        </div>
+    </div>
 
-            <div id="view-codex-journal" class="viewport hidden">
-                <div class="scroll-view">
-                    <div style="max-width:800px; margin:0 auto; background:var(--surface-light); padding:40px; border-radius:12px;">
-                        <h2 style="color:var(--accent-cyan); margin-top:0;">FIELD JOURNAL</h2>
-                        <div class="form-grid">
-                            <div><label>Title</label><input id="j-title"></div>
-                            <div><label>Date</label><input id="j-date"></div>
-                            <div><label>Location</label><input id="j-loc"></div>
-                            <div><label>Country</label><input id="j-country"></div>
-                            <div><label>Author</label><input id="j-author" readonly></div>
-                            <div><label>Characters (Tags)</label><input id="j-tags"></div>
-                        </div>
-                        <div style="margin-bottom:15px;"><label>Entry Details</label><textarea id="j-entry" style="height:200px;"></textarea></div>
-                        <button class="btn-action btn-save" style="width:100%;" onclick="App.Codex.submitJournal()">SUBMIT ENTRY</button>
-                    </div>
+    <div id="edit-modal" class="modal">
+        <div class="modal-box">
+            <h2 style="color:var(--gold); margin-top:0;">EDIT RECORD</h2>
+            <input type="hidden" id="e-id">
+            <div class="form-grid">
+                <div class="span-2"><label>Name</label><input id="e-name"></div>
+                <div><label>Status</label><select id="e-status"><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
+                <div><label>Category</label><select id="e-cat"><option>Event</option><option>People</option><option>Location</option><option>Creature</option><option>History</option><option>Lore</option><option>Journal</option><option>System</option><option>Factions</option></select></div>
+                <div><label>Game Date</label><input id="e-date"></div>
+                <div><label>Author</label><input id="e-auth"></div>
+                <div><label>Game System</label><input id="e-game"></div>
+                <div><label>Campaign</label><input id="e-camp"></div>
+                <div><label>Perspective</label><input id="e-persp"></div>
+                <div><label>Sensory</label><input id="e-sense"></div>
+                <div class="span-2"><label>Image URL</label><input id="e-url"></div>
+                <div class="span-2"><label>Ref URL</label><input id="e-ref"></div>
+                <div class="span-2"><label>Stats Block</label><textarea id="e-stats" style="height:80px; font-family:monospace;"></textarea></div>
+                <div class="span-2"><label>Tags</label><input id="e-tags"></div>
+                <div class="span-2"><label>Narrative</label><textarea id="e-narr" style="height:150px;"></textarea></div>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <button class="btn btn-red" onclick="app.admin.del()">DELETE</button>
+                <div>
+                    <button class="btn" style="background:#444; color:#fff; margin-right:10px;" onclick="document.getElementById('edit-modal').style.display='none'">CANCEL</button>
+                    <button class="btn btn-gold" onclick="app.admin.save()">SAVE RECORD</button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div id="edit-modal" class="modal-bg">
-            <div class="modal-win">
-                <h2 style="color:var(--accent-gold); margin-top:0;">EDIT RECORD</h2>
-                <input type="hidden" id="inp-id">
-                
-                <div class="form-grid">
-                    <div class="full-width"><label>Name</label><input id="inp-name"></div>
-                    <div><label>Category</label><select id="inp-cat"><option>Event</option><option>Location</option><option>People</option><option>Creature</option><option>Journal</option><option>Factions</option><option>System</option><option>Lore</option><option>History</option></select></div>
-                    <div><label>Status</label><select id="inp-status"><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
-                    <div><label>In-Game Date</label><input id="inp-date"></div>
-                    <div><label>Author</label><input id="inp-author" readonly></div>
-                </div>
-
-                <div class="form-grid">
-                    <div><label>Game System</label><input id="inp-game"></div>
-                    <div><label>Campaign</label><input id="inp-camp"></div>
-                    <div><label>Perspective</label><input id="inp-persp"></div>
-                    <div><label>Sensory Details</label><input id="inp-sense"></div>
-                </div>
-
-                <div class="form-grid">
-                    <div class="full-width"><label>Image URL</label><input id="inp-url"></div>
-                    <div class="full-width"><label>Reference URL</label><input id="inp-ref"></div>
-                </div>
-
-                <div style="margin-bottom:15px;"><label>Stats Block</label><textarea id="inp-stats" style="height:80px; font-family:monospace;"></textarea></div>
-                <div style="margin-bottom:15px;"><label>Tags (Comma Separated)</label><input id="inp-tags"></div>
-                <div style="margin-bottom:15px;"><label>Narrative</label><textarea id="inp-narr" style="height:150px;"></textarea></div>
-
-                <div style="display:flex; justify-content:space-between;">
-                    <button class="btn-action btn-del" onclick="App.Lorekeeper.deleteRecord()">DELETE</button>
-                    <div>
-                        <button class="btn-action" style="background:#333; color:#fff; margin-right:10px;" onclick="document.getElementById('edit-modal').style.display='none'">CANCEL</button>
-                        <button class="btn-action btn-save" onclick="App.Lorekeeper.saveRecord()">SAVE RECORD</button>
-                    </div>
-                </div>
-            </div>
+    <div id="key-modal" class="modal">
+        <div class="modal-box" style="width:400px; height:auto; text-align:center;">
+            <h3>NEURAL LINK KEY</h3>
+            <input id="api-key" type="password" placeholder="Paste Google API Key">
+            <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="app.auth.saveKey()">SAVE</button>
+            <button class="btn" style="margin-top:10px; background:transparent; color:#888;" onclick="document.getElementById('key-modal').style.display='none'">CLOSE</button>
         </div>
-
-        <div id="api-modal" class="modal-bg">
-            <div class="modal-win" style="width:400px; height:auto;">
-                <h2 style="color:var(--accent-cyan); margin-top:0;">NEURAL LINK</h2>
-                <input id="api-key-input" type="password" autocomplete="off" data-lpignore="true" style="width:100%; margin-bottom:15px;" placeholder="Paste Google API Key">
-                <button class="btn-action" style="background:var(--accent-cyan); color:#000; width:100%;" onclick="App.Core.saveKey()">CONNECT</button>
-                <button class="btn-action" style="background:transparent; color:#888; width:100%; margin-top:10px;" onclick="document.getElementById('api-modal').style.display='none'">CLOSE</button>
-            </div>
-        </div>
-
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getFirestore, collection, getDocs, orderBy, query, Timestamp, setDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-    // --- CONFIG ---
-    const firebaseConfig = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
+    const cfg = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
-    // --- APP NAMESPACE ---
-    window.App = {
-        Core: {}, Lorekeeper: {}, Codex: {}, Auth: {},
-        db: null, data: [], user: "Guest", role: "guest",
-        key: localStorage.getItem('tarth_api_key') || "",
-        md: window.markdownit({html: false, breaks: true})
-    };
+    // SINGLE GLOBAL APP OBJECT
+    window.app = {
+        dbInstance: null,
+        data: [],
+        user: "Guest",
+        role: "guest",
+        key: localStorage.getItem('tarth_key') || "",
+        md: window.markdownit(),
 
-    // --- UTILS ---
-    const TARTH_MONTHS = ["Arlen", "Mistril", "Johhanis", "Sadistar", "Kern", "Satari", "Shanteel", "Donril", "Concadin", "Zent", "Osass", "Gonde"];
-    const parseDate = (dStr) => { if(!dStr) return -9999; const m = dStr.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
-    const getImg = (cat, name) => { 
-        let bg='333'; 
-        if((cat||'').match(/People|Faction/i)) bg='1a1a2e'; 
-        if((cat||'').match(/Location/i)) bg='0f2027'; 
-        return `https://placehold.co/600x400/${bg}/FFF?text=${(name||'IMG').replace(/ /g,'+')}`; 
-    };
-
-    // --- AUTH MODULE (SIMPLE) ---
-    App.Auth = {
-        login: function() {
-            const user = document.getElementById('login-id').value;
-            const pass = document.getElementById('secure-token').value.trim();
-            
-            if (user === "Archivist" && pass === "DawkKn1ght") {
-                App.role = "gm"; App.user = "The Archivist";
-                this.initUI("LOREKEEPER", "var(--accent-gold)", ['LIBRARY','TIMELINE','PROFILES','IMPORT']);
-                document.getElementById('module-admin').classList.remove('hidden');
-                App.Lorekeeper.renderLibrary();
-            } else if (pass === "codex") {
-                let name = user === 'Guest' ? prompt("Enter Callsign:") : user;
-                if(!name) return;
-                App.role = "player"; App.user = name;
-                this.initUI("CODEX", "var(--accent-cyan)", ['CHAT','IMAGERY','ATLAS','JOURNAL']);
-                document.getElementById('module-codex').classList.remove('hidden');
-                document.getElementById('persona-wrapper').classList.remove('hidden');
-                document.getElementById('j-author').value = name;
-            } else { alert("ACCESS DENIED"); }
-        },
-        initUI: function(title, color, tabs) {
-            document.getElementById('landing').style.display = 'none';
-            document.getElementById('app-shell').style.display = 'flex';
-            document.querySelector('.logo-x').style.color = color;
-            document.getElementById('user-badge').innerText = App.user;
-            const nav = document.getElementById('nav-container'); nav.innerHTML = '';
-            tabs.forEach(t => {
-                const btn = document.createElement('button');
-                btn.className = 'nav-btn'; btn.innerText = t;
-                btn.onclick = () => App.Core.switchTab(t.toLowerCase());
-                nav.appendChild(btn);
-            });
-            App.Core.switchTab(tabs[0].toLowerCase());
-        }
-    };
-
-    // --- CORE MODULE ---
-    App.Core = {
+        // INITIALIZATION
         init: function() {
-            const app = initializeApp(firebaseConfig);
-            App.db = getFirestore(app);
-            this.loadData();
+            const fApp = initializeApp(cfg);
+            this.dbInstance = getFirestore(fApp);
+            this.db.load();
         },
-        loadData: async function() {
-            const q = query(collection(App.db, "lore_library"), orderBy("timestamp", "desc"));
-            const snap = await getDocs(q);
-            App.data = [];
-            snap.forEach(d => { const doc = d.data(); doc.fid = d.id; App.data.push(doc); });
-            if(App.role === 'gm') App.Lorekeeper.renderLibrary();
-        },
-        switchTab: function(tab) {
-            document.querySelectorAll('.viewport').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active', 'admin-active'));
-            let targetView = tab === 'chat' ? 'chat' : tab;
-            let viewId = `view-${App.role === 'gm' ? 'admin' : 'codex'}-${targetView}`;
-            const view = document.getElementById(viewId);
-            if(view) view.classList.remove('hidden');
-            const btns = document.querySelectorAll('.nav-btn');
-            btns.forEach(b => { if(b.innerText.toLowerCase() === tab) b.classList.add(App.role === 'gm' ? 'admin-active' : 'active'); });
-            
-            if(tab === 'library') App.Lorekeeper.renderLibrary();
-            if(tab === 'timeline') App.Lorekeeper.renderTimeline();
-            if(tab === 'profiles') App.Lorekeeper.renderProfiles();
-            if(tab === 'imagery') App.Codex.renderImagery();
-        },
-        saveKey: function() {
-            const k = document.getElementById('api-key-input').value.trim();
-            if(k) { App.key = k; localStorage.setItem('tarth_api_key', k); alert("Key Saved"); document.getElementById('api-modal').style.display='none'; }
-        },
-        exportData: function() {
-            const header = ["eventName", "gameDate", "category", "status", "narrative", "tags", "game", "campaign", "perspective", "sensory", "stats", "author"];
-            const csv = [header.join(",")];
-            App.data.forEach(d => {
-                const row = header.map(field => `"${(d[field]||"").toString().replace(/"/g, '""')}"`);
-                csv.push(row.join(","));
-            });
-            const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_export.csv"; a.click();
-        }
-    };
 
-    // --- LOREKEEPER (ADMIN) MODULE ---
-    App.Lorekeeper = {
-        renderLibrary: function() {
-            const tbody = document.querySelector('#library-table tbody'); tbody.innerHTML = "";
-            const term = document.getElementById('lib-search').value.toLowerCase();
-            const catFilter = document.getElementById('lib-cat').value;
-            App.data.forEach(d => {
-                if(catFilter !== 'All' && d.category !== catFilter) return;
-                if(term && !(d.eventName+d.author).toLowerCase().includes(term)) return;
-                const tr = document.createElement('tr');
-                const modDate = d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleDateString() : '-';
-                tr.innerHTML = `<td><span class="pill ${d.status.toLowerCase()}">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td style="color:#888">${d.author||'System'}</td><td>${d.gameDate||''}</td><td style="color:#666">${modDate}</td>`;
-                tr.onclick = () => this.openEditor(d.fid);
-                tbody.appendChild(tr);
-            });
-        },
-        renderTimeline: function() {
-            const con = document.getElementById('timeline-feed'); con.innerHTML = "";
-            const sorted = [...App.data].sort((a,b) => parseDate(a.gameDate) - parseDate(b.gameDate));
-            sorted.forEach(d => {
-                if(['Event','History'].includes(d.category)) {
-                    const div = document.createElement('div'); div.className = 'tl-item';
-                    div.innerHTML = `<div class="tl-date">${d.gameDate}</div><div class="tl-content"><div class="tl-title">${d.eventName}</div><div class="tl-desc">${d.narrative}</div></div>`;
-                    div.onclick = () => this.openEditor(d.fid);
-                    con.appendChild(div);
+        // AUTHENTICATION
+        auth: {
+            login: function() {
+                const u = document.getElementById('login-user').value.trim();
+                const p = document.getElementById('login-pass').value.trim();
+                
+                if(u === "Archivist" && p === "DawkKn1ght") {
+                    app.role = "admin"; app.user = "The Archivist";
+                    app.router.setupAdmin();
+                } else if (p === "codex") {
+                    if(!u) return alert("Callsign Required");
+                    app.role = "player"; app.user = u;
+                    app.router.setupPlayer();
+                } else {
+                    alert("ACCESS DENIED");
                 }
-            });
-        },
-        renderProfiles: function() {
-            const list = document.getElementById('profile-list'); list.innerHTML = "";
-            const map = {}; App.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(t => map[t.trim()] = true); });
-            Object.keys(map).sort().forEach(t => {
-                const div = document.createElement('div'); div.className = 'profile-row'; div.innerText = t;
-                div.onclick = () => this.showDossier(t);
-                list.appendChild(div);
-            });
-        },
-        showDossier: function(name) {
-            const d = document.getElementById('profile-detail');
-            const recs = App.data.filter(r => r.tags && r.tags.includes(name)).sort((a,b) => parseDate(a.gameDate) - parseDate(b.gameDate));
-            const primary = App.data.find(r => r.eventName === name) || {};
-            const img = primary.url || getImg('People', name);
-            const isGhost = !primary.fid;
-            d.innerHTML = `
-                <div class="profile-header"><div class="profile-name">${name}</div>${isGhost ? `<button class="btn-action btn-save" onclick="App.Lorekeeper.openEditor({eventName:'${name}', category:'People', status:'Draft', tags:'${name}'})">CREATE RECORD</button>` : `<button class="btn-action" style="background:#333; color:#fff;" onclick="App.Lorekeeper.openEditor('${primary.fid}')">EDIT PRIMARY</button>`}</div>
-                ${isGhost ? '<div class="ghost-warning">:: UNREGISTERED ENTITY (GHOST) ::</div>' : ''}
-                <div class="dossier-grid"><div><img src="${img}" class="dossier-img"></div><div><h3 style="color:var(--accent-gold)">BIO / OVERVIEW</h3><p style="color:#ccc; white-space:pre-wrap;">${primary.narrative || "No primary record. Bio derived from event context."}</p>${primary.stats ? `<div class="stat-box">${primary.stats}</div>` : ''}</div></div>
-                <h3 style="border-bottom:1px solid #333; padding-bottom:10px;">TIMELINE APPEARANCES</h3>${recs.map(r => `<div style="margin-bottom:10px; border-left:2px solid #444; padding-left:10px;"><strong style="color:var(--accent-gold)">${r.gameDate}</strong> <span style="color:#fff">${r.eventName}</span><br><span style="color:#888; font-size:0.9rem;">${r.narrative}</span></div>`).join('')}
-            `;
-        },
-        openEditor: function(fidOrObj) {
-            let d = (typeof fidOrObj === 'string') ? App.data.find(r => r.fid === fidOrObj) : (fidOrObj || {});
-            ['id','name','date','game','camp','url','ref','persp','sense','stats','tags','narr'].forEach(k => document.getElementById('inp-'+k).value = "");
-            document.getElementById('inp-id').value = d.fid || "";
-            document.getElementById('inp-name').value = d.eventName || "";
-            document.getElementById('inp-status').value = d.status || "Approved";
-            document.getElementById('inp-date').value = d.gameDate || "";
-            document.getElementById('inp-cat').value = d.category || "Event";
-            document.getElementById('inp-author').value = d.author || App.user;
-            document.getElementById('inp-game').value = d.game || "";
-            document.getElementById('inp-camp').value = d.campaign || "";
-            document.getElementById('inp-url').value = d.url || "";
-            document.getElementById('inp-ref').value = d.reference || "";
-            document.getElementById('inp-persp').value = d.perspective || "";
-            document.getElementById('inp-sense').value = d.sensory || "";
-            document.getElementById('inp-stats').value = d.stats || "";
-            document.getElementById('inp-tags').value = d.tags || "";
-            document.getElementById('inp-narr').value = d.narrative || "";
-            document.getElementById('edit-modal').style.display = 'flex';
-        },
-        saveRecord: async function() {
-            const id = document.getElementById('inp-id').value;
-            const d = {
-                eventName: document.getElementById('inp-name').value, status: document.getElementById('inp-status').value,
-                gameDate: document.getElementById('inp-date').value, category: document.getElementById('inp-cat').value,
-                game: document.getElementById('inp-game').value, campaign: document.getElementById('inp-camp').value,
-                url: document.getElementById('inp-url').value, reference: document.getElementById('inp-ref').value,
-                perspective: document.getElementById('inp-persp').value, sensory: document.getElementById('inp-sense').value,
-                stats: document.getElementById('inp-stats').value, tags: document.getElementById('inp-tags').value,
-                narrative: document.getElementById('inp-narr').value, author: document.getElementById('inp-author').value,
-                timestamp: Timestamp.now()
-            };
-            if(!id) await setDoc(doc(App.db, "lore_library", `REC-${Date.now()}`), d);
-            else await setDoc(doc(App.db, "lore_library", id), d, {merge:true});
-            document.getElementById('edit-modal').style.display = 'none';
-            App.Core.loadData();
-        },
-        deleteRecord: async function() {
-            const id = document.getElementById('inp-id').value;
-            if(id && confirm("Delete Permanently?")) { await deleteDoc(doc(App.db, "lore_library", id)); document.getElementById('edit-modal').style.display = 'none'; App.Core.loadData(); }
-        },
-        parseImport: function() {
-            const val = document.getElementById('import-paste').value;
-            if(!val) return alert("Paste CSV data first.");
-            Papa.parse(val, { header: true, skipEmptyLines: true, complete: (res) => {
-                App.parsedCSV = res.data;
-                const fields = res.meta.fields || Object.keys(res.data[0]);
-                document.querySelectorAll('.map-sel').forEach(s => { s.innerHTML = '<option value="">-- Auto --</option>' + fields.map(f => `<option value="${f}">${f}</option>`).join(''); });
-                document.getElementById('import-map-ui').classList.remove('hidden');
-            }});
-        },
-        runImport: async function() {
-            const m = { name: document.getElementById('map-name').value, date: document.getElementById('map-date').value, cat: document.getElementById('map-cat').value, narr: document.getElementById('map-narr').value };
-            let count = 0;
-            for(let row of App.parsedCSV) {
-                const d = {
-                    eventName: row[m.name] || row['eventName'] || "Unknown", gameDate: row[m.date] || row['gameDate'] || "",
-                    category: row[m.cat] || row['category'] || "Event", narrative: row[m.narr] || row['narrative'] || "",
-                    status: "Approved", author: App.user, timestamp: Timestamp.now()
-                };
-                await setDoc(doc(App.db, "lore_library", `IMP-${Date.now()}-${count++}`), d);
+            },
+            saveKey: function() {
+                const k = document.getElementById('api-key').value.trim();
+                if(k) { app.key = k; localStorage.setItem('tarth_key', k); alert("Key Saved"); document.getElementById('key-modal').style.display='none'; }
             }
-            alert(`Imported ${count} records.`); App.Core.loadData();
+        },
+
+        // ROUTER (NAVIGATION)
+        router: {
+            setupAdmin: function() {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-ui').style.display = 'flex';
+                document.querySelector('.brand span').style.color = 'var(--gold)';
+                document.getElementById('user-display').innerText = app.user;
+                
+                const nav = document.getElementById('nav-container'); nav.innerHTML = "";
+                ['Library','Timeline','Profiles','Import'].forEach(t => {
+                    nav.innerHTML += `<button class="nav-btn" onclick="app.router.go('${t}')">${t.toUpperCase()}</button>`;
+                });
+                this.go('Library');
+            },
+            setupPlayer: function() {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-ui').style.display = 'flex';
+                document.querySelector('.brand span').style.color = 'var(--cyan)';
+                document.getElementById('user-display').innerText = app.user;
+                document.getElementById('persona-select').classList.remove('hidden');
+                
+                const nav = document.getElementById('nav-container'); nav.innerHTML = "";
+                ['Chat','Imagery','Atlas','Journal'].forEach(t => {
+                    nav.innerHTML += `<button class="nav-btn" onclick="app.router.go('${t}')">${t.toUpperCase()}</button>`;
+                });
+                document.getElementById('j-auth').value = app.user;
+                this.go('Chat');
+            },
+            go: function(tab) {
+                // Hide all views
+                document.querySelectorAll('.scroll-container, #view-profiles, #view-atlas, #view-chat').forEach(e => e.classList.add('hidden'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-player', 'active-admin'));
+                
+                // Show Target
+                const id = 'view-' + tab.toLowerCase();
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('hidden');
+                
+                // Highlight Button
+                const activeClass = app.role === 'admin' ? 'active-admin' : 'active-player';
+                Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText === tab.toUpperCase())?.classList.add(activeClass);
+
+                // Trigger Renderers
+                if(tab === 'Library') app.admin.renderLib();
+                if(tab === 'Timeline') app.admin.renderTime();
+                if(tab === 'Profiles') app.admin.renderProf();
+                if(tab === 'Imagery') app.player.renderImg();
+            }
+        },
+
+        // DATABASE OPS
+        db: {
+            load: async function() {
+                const q = query(collection(app.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                app.data = [];
+                snap.forEach(d => { 
+                    const obj = d.data(); obj.fid = d.id; 
+                    app.data.push(obj); 
+                });
+                if(app.role === 'admin') app.admin.renderLib();
+            }
+        },
+
+        // ADMIN MODULE
+        admin: {
+            renderLib: function() {
+                const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
+                const term = document.getElementById('lib-search').value.toLowerCase();
+                const cat = document.getElementById('lib-cat').value;
+                app.data.forEach(d => {
+                    if(cat !== 'All' && d.category !== cat) return;
+                    if(term && !(d.eventName+d.author).toLowerCase().includes(term)) return;
+                    
+                    const tr = document.createElement('tr');
+                    const mod = d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleDateString() : '-';
+                    tr.innerHTML = `<td><span class="pill" style="color:${d.status=='Approved'?'var(--green)':'#aaa'}">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td style="color:#888">${d.author||'-'}</td><td>${d.gameDate||'-'}</td><td style="color:#666">${mod}</td>`;
+                    tr.onclick = () => this.edit(d.fid);
+                    t.appendChild(tr);
+                });
+            },
+            renderTime: function() {
+                const c = document.getElementById('timeline-list'); c.innerHTML = "";
+                const sorted = [...app.data].sort((a,b) => (parseInt(a.gameDate)||0) - (parseInt(b.gameDate)||0));
+                sorted.forEach(d => {
+                    if(['Event','History'].includes(d.category)) {
+                        c.innerHTML += `<div class="tl-row" onclick="app.admin.edit('${d.fid}')"><div class="tl-date">${d.gameDate}</div><div><div style="font-weight:bold; color:#fff;">${d.eventName}</div><div style="color:#aaa;">${d.narrative}</div></div></div>`;
+                    }
+                });
+            },
+            renderProf: function() {
+                const l = document.getElementById('profile-list'); l.innerHTML = "";
+                const tags = {}; app.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(x => tags[x.trim()]=true); });
+                Object.keys(tags).sort().forEach(t => {
+                    l.innerHTML += `<div class="list-item" onclick="app.admin.showProf('${t}')">${t}</div>`;
+                });
+            },
+            showProf: function(name) {
+                const v = document.getElementById('profile-view');
+                const recs = app.data.filter(r => r.tags && r.tags.includes(name));
+                const prim = app.data.find(r => r.eventName === name) || {};
+                const img = prim.url || `https://placehold.co/600x400/1a1a2e/FFF?text=${name}`;
+                const isGhost = !prim.fid;
+                v.innerHTML = `
+                    <div class="dossier-header"><div class="dossier-name">${name}</div>${isGhost ? `<button class="btn btn-green" onclick="app.admin.edit({eventName:'${name}', category:'People', status:'Draft', tags:'${name}'})">CREATE RECORD</button>` : `<button class="btn" style="background:#333; color:#fff;" onclick="app.admin.edit('${prim.fid}')">EDIT PRIMARY</button>`}</div>
+                    <div style="display:flex; gap:20px;">
+                        <img src="${img}" style="width:200px; height:300px; object-fit:cover; border:1px solid #444;">
+                        <div><h3 style="color:var(--gold)">BIO</h3><p style="color:#ccc;">${prim.narrative||"No primary bio."}</p></div>
+                    </div>
+                    <h3 style="border-bottom:1px solid #333; margin-top:20px;">TIMELINE</h3>
+                    ${recs.map(r=>`<div style="margin-bottom:5px; border-left:2px solid #444; padding-left:10px;"><strong style="color:var(--gold)">${r.gameDate}</strong> ${r.eventName} <span style="color:#666">${r.narrative.substring(0,50)}...</span></div>`).join('')}
+                `;
+            },
+            edit: function(ref) {
+                const d = (typeof ref === 'string') ? app.data.find(r => r.fid === ref) : ref;
+                // Clear
+                ['id','name','date','game','camp','url','ref','persp','sense','stats','tags','narr','auth'].forEach(k => document.getElementById('e-'+k).value = "");
+                // Fill
+                document.getElementById('e-id').value = d.fid || "";
+                document.getElementById('e-name').value = d.eventName || "";
+                document.getElementById('e-status').value = d.status || "Approved";
+                document.getElementById('e-cat').value = d.category || "Event";
+                document.getElementById('e-date').value = d.gameDate || "";
+                document.getElementById('e-auth').value = d.author || app.user;
+                document.getElementById('e-game').value = d.game || "";
+                document.getElementById('e-camp').value = d.campaign || "";
+                document.getElementById('e-url').value = d.url || "";
+                document.getElementById('e-ref').value = d.reference || "";
+                document.getElementById('e-persp').value = d.perspective || "";
+                document.getElementById('e-sense').value = d.sensory || "";
+                document.getElementById('e-stats').value = d.stats || "";
+                document.getElementById('e-tags').value = d.tags || "";
+                document.getElementById('e-narr').value = d.narrative || "";
+                
+                document.getElementById('edit-modal').style.display = 'flex';
+            },
+            save: async function() {
+                const id = document.getElementById('e-id').value;
+                const obj = {
+                    eventName: document.getElementById('e-name').value, status: document.getElementById('e-status').value,
+                    category: document.getElementById('e-cat').value, gameDate: document.getElementById('e-date').value,
+                    author: document.getElementById('e-auth').value, game: document.getElementById('e-game').value,
+                    campaign: document.getElementById('e-camp').value, url: document.getElementById('e-url').value,
+                    reference: document.getElementById('e-ref').value, perspective: document.getElementById('e-persp').value,
+                    sensory: document.getElementById('e-sense').value, stats: document.getElementById('e-stats').value,
+                    tags: document.getElementById('e-tags').value, narrative: document.getElementById('e-narr').value,
+                    timestamp: Timestamp.now()
+                };
+                if(!id) await setDoc(doc(app.dbInstance, "lore_library", `REC-${Date.now()}`), obj);
+                else await setDoc(doc(app.dbInstance, "lore_library", id), obj, {merge:true});
+                document.getElementById('edit-modal').style.display = 'none';
+                app.db.load();
+            },
+            del: async function() {
+                const id = document.getElementById('e-id').value;
+                if(id && confirm("Delete?")) { await deleteDoc(doc(app.dbInstance, "lore_library", id)); document.getElementById('edit-modal').style.display = 'none'; app.db.load(); }
+            },
+            import: function() {
+                const val = document.getElementById('csv-paste').value;
+                if(!val) return;
+                Papa.parse(val, { header:true, skipEmptyLines:true, complete: async (res) => {
+                    let c=0; for(let row of res.data) {
+                        await setDoc(doc(app.dbInstance, "lore_library", `IMP-${Date.now()}-${c++}`), {
+                            eventName: row['Name']||row['eventName']||"Unknown", gameDate: row['Date']||row['gameDate']||"",
+                            category: row['Category']||row['category']||"Event", narrative: row['Narrative']||row['narrative']||"",
+                            status: "Approved", author: app.user, timestamp: Timestamp.now()
+                        });
+                    }
+                    alert("Imported "+c); app.db.load();
+                }});
+            },
+            export: function() {
+                const h = ["eventName","gameDate","category","status","narrative","tags","game","campaign","perspective","sensory","stats","author"];
+                const csv = [h.join(",")];
+                app.data.forEach(d => { csv.push(h.map(k => `"${(d[k]||"").toString().replace(/"/g,'""')}"`).join(",")); });
+                const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_export.csv"; a.click();
+            }
+        },
+
+        // PLAYER MODULE
+        player: {
+            renderImg: function(filter="") {
+                const g = document.getElementById('img-grid'); g.innerHTML = "";
+                app.data.filter(d => d.status === 'Approved').forEach(d => {
+                    if(filter && !(d.eventName+d.category).toLowerCase().includes(filter.toLowerCase())) return;
+                    const img = d.url && d.url.includes('http') ? d.url : `https://placehold.co/400x600/333/FFF?text=${d.eventName}`;
+                    g.innerHTML += `<div class="card"><img src="${img}" class="card-img"><div class="card-body"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
+                });
+            },
+            send: async function() {
+                const inp = document.getElementById('chat-msg');
+                const txt = inp.value; if(!txt || !app.key) return;
+                this.addMsg(txt, 'user'); inp.value = "";
+                const loadId = this.addMsg("Thinking...", 'ai');
+                
+                const hits = app.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(txt.toLowerCase())).slice(0, 15);
+                const ctx = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
+                const sys = document.getElementById('persona-select').value;
+                
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${app.key}`;
+                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `SYSTEM: You are ${sys}.\nCTX:\n${ctx}\nUSER: ${txt}` }] }] }) });
+                    const json = await res.json();
+                    document.getElementById(loadId).remove();
+                    this.addMsg(json.candidates[0].content.parts[0].text, 'ai');
+                } catch(e) { document.getElementById(loadId).innerText = "Error connecting."; }
+            },
+            addMsg: function(t, s) {
+                const d = document.createElement('div'); d.className = `msg ${s}`; d.innerHTML = app.md.render(t);
+                const f = document.getElementById('chat-feed'); f.appendChild(d); f.scrollTop = f.scrollHeight;
+                return d.id = 'msg-'+Date.now();
+            },
+            submitJ: async function() {
+                const d = {
+                    eventName: document.getElementById('j-title').value, gameDate: document.getElementById('j-date').value,
+                    location: document.getElementById('j-loc').value, country: document.getElementById('j-country').value,
+                    author: app.user, tags: document.getElementById('j-tags').value, narrative: document.getElementById('j-narr').value,
+                    category: "Journal", status: "Pending", timestamp: Timestamp.now()
+                };
+                if(!d.eventName) return alert("Title Required");
+                await setDoc(doc(app.dbInstance, "lore_library", `JRN-${Date.now()}`), d);
+                alert("Submitted."); app.db.load();
+            }
         }
     };
 
-    // --- CODEX MODULE ---
-    App.Codex = {
-        renderImagery: function(filter="") {
-            const grid = document.getElementById('gem-grid'); grid.innerHTML = "";
-            const term = (filter||"").toLowerCase();
-            App.data.filter(d => d.status === 'Approved' && !d.isSecret).forEach(d => {
-                if(term && !(d.eventName+d.category).toLowerCase().includes(term)) return;
-                const img = d.url && d.url.includes('http') ? d.url : getImg(d.category, d.eventName);
-                const card = document.createElement('div'); card.className = 'gem-card';
-                card.innerHTML = `<img src="${img}" class="gem-card-img"><div class="gem-card-content"><div class="gem-card-meta">${d.category}</div><div class="gem-card-title">${d.eventName}</div></div>`;
-                grid.appendChild(card);
-            });
-        },
-        submitJournal: async function() {
-            const d = {
-                eventName: document.getElementById('j-title').value, gameDate: document.getElementById('j-date').value,
-                location: document.getElementById('j-loc').value, country: document.getElementById('j-country').value,
-                author: App.user, tags: document.getElementById('j-tags').value, narrative: document.getElementById('j-entry').value,
-                category: "Journal", status: "Pending", timestamp: Timestamp.now()
-            };
-            if(!d.eventName) return alert("Title Required");
-            await setDoc(doc(App.db, "lore_library", `JRN-${Date.now()}`), d);
-            alert("Entry Submitted."); App.Core.loadData();
-        },
-        sendChat: async function() {
-            const input = document.getElementById('chat-input');
-            const msg = input.value; if(!msg || !App.key) return;
-            this.addMsg(msg, 'user'); input.value = "";
-            const loadId = this.addMsg("Thinking...", 'ai');
-            const persona = document.getElementById('persona-select').value;
-            const personas = {
-                'Codex': "You are Codex, Steward of Tarth. Precise, objective.",
-                'Saverath': "You are Saverath Snowleaf, Elven historian. Academic, haughty.",
-                'NaVan': "You are Na'Van, Lanthorian soldier. Direct, factual.",
-                'Brigit': "You are Capt. Brigit Haderon. Bold, honorable.",
-                'Leaf': "You are Leaf Blackhand, Priest of Tem. Optimistic."
-            };
-            const context = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 20).map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
-            const prompt = `SYSTEM: ${personas[persona] || personas['Codex']}\nCTX:\n${context}\nUSER: ${msg}`;
-            
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${App.key}`;
-                const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                const json = await res.json();
-                document.getElementById(loadId).remove();
-                this.addMsg(json.candidates[0].content.parts[0].text, 'ai');
-            } catch(e) { document.getElementById(loadId).innerText = "Connection Error."; }
-        },
-        addMsg: function(txt, sender) {
-            const div = document.createElement('div'); div.className = `msg ${sender}`;
-            div.innerHTML = App.md.render(txt);
-            const feed = document.getElementById('chat-feed'); feed.appendChild(div); feed.scrollTop = feed.scrollHeight;
-            return div.id = 'msg-'+Date.now();
-        }
-    };
-
-    window.onload = function() { App.Core.init(); };
+    window.onload = function() { app.init(); };
 </script>
 </body>
 </html>
