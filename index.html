@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V18.3 [CHAT FIX]</title>
+    <title>LorekeeperX V19.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
     
     <style>
-        /* === [LOCKED] CORE THEME === */
+        /* === CORE THEME === */
         :root {
             --bg: #0b0c10; --panel: #1f2833; --border: #3b4252;
             --cyan: #66fcf1; --gold: #d4af37; --red: #ff6b6b; --green: #51cf66;
@@ -19,7 +19,7 @@
         body { background: var(--bg); color: var(--text); font-family: var(--font-ui); margin: 0; height: 100vh; overflow: hidden; font-size: 14px; }
         .hidden { display: none !important; }
         
-        /* === [LOCKED] GATEKEEPER (LOGIN) === */
+        /* === GATEKEEPER (LOGIN) === */
         #gatekeeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; }
         .gate-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.3s; position: relative; border-right: 1px solid #222; }
         .gate-panel:hover { background: #111; }
@@ -33,12 +33,12 @@
         .gate-btn { padding: 12px 30px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 250px; transition:0.2s; }
         .gate-btn:hover { transform: scale(1.05); }
         
-        /* === [LOCKED] APP SHELL === */
+        /* === APP SHELL === */
         #app-ui { display: none; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; background: #121418; border-left: 1px solid #333; border-right: 1px solid #333; }
         
         .header { padding: 15px 20px; background: rgba(18,20,24,0.95); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .brand { font-family: var(--font-head); font-size: 1.5rem; font-weight: bold; }
-        .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; }
+        .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; flex-wrap:wrap; }
         .nav-btn { background: transparent; border: none; color: var(--text-dim); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.2s; }
         .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
         .nav-btn.active-codex { background: var(--cyan); color: #000; }
@@ -47,7 +47,7 @@
         .viewport { flex: 1; overflow: hidden; position: relative; }
         .scroll-y { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
 
-        /* === [LOCKED] LIBRARY (ADMIN) === */
+        /* === LIBRARY (ADMIN) === */
         .filter-dock { display: flex; gap: 10px; margin-bottom: 15px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
         .filter-group { display: flex; flex-direction: column; }
         .filter-label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
@@ -60,13 +60,13 @@
         tr:hover td { background: var(--panel); color: #fff; }
         .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid #555; }
 
-        /* === [LOCKED] TIMELINE === */
+        /* === TIMELINE === */
         .tl-feed { max-width: 1000px; margin: 0 auto; }
         .tl-node { display: flex; margin-bottom: 10px; background: var(--panel); border-left: 3px solid var(--gold); padding: 15px; cursor: pointer; transition: 0.2s; }
         .tl-node:hover { transform: translateX(5px); border-color: var(--cyan); }
         .tl-date { width: 100px; font-weight: bold; color: var(--gold); font-family: monospace; flex-shrink: 0; }
         
-        /* === [LOCKED] PROFILES === */
+        /* === PROFILES === */
         .profile-layout { display: flex; height: 100%; overflow: hidden; }
         .profile-list { width: 250px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; height: 100%; }
         .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: 0.2s; }
@@ -75,7 +75,7 @@
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
         .dossier-img { width: 100%; height: 300px; object-fit: cover; border: 4px double var(--border); }
 
-        /* === [LOCKED] CHAT === */
+        /* === CHAT === */
         .chat-wrap { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; }
         .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg { max-width: 80%; padding: 15px; border-radius: 8px; line-height: 1.5; }
@@ -83,7 +83,7 @@
         .msg.ai { align-self: flex-start; background: rgba(102, 252, 241, 0.05); border-left: 3px solid var(--cyan); }
         .chat-tools { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: #121418; }
 
-        /* === [LOCKED] FORMS === */
+        /* === FORMS (SHARED) === */
         .form-box { max-width: 900px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 10px; border: 1px solid var(--border); }
         .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .span2 { grid-column: span 2; }
@@ -91,11 +91,11 @@
         .f-input { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; box-sizing: border-box; font-family: var(--font-ui); }
         .f-input:focus { outline: none; border-color: var(--cyan); }
         
-        /* === [LOCKED] MODAL === */
+        /* === MODAL === */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
         .modal-body { background: #1a1c24; width: 900px; max-height: 95vh; overflow-y: auto; padding: 30px; border: 1px solid var(--border); border-radius: 10px; }
 
-        /* === [LOCKED] UTILS === */
+        /* === UTILS === */
         .btn { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:hover { opacity: 0.8; }
         .bg-gold { background: var(--gold); color: #000; }
@@ -110,16 +110,16 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V18.3 [CHAT FIX]</div>
+            <div class="gate-version">V19.0 (Secure)</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
-            <input id="login-player-pass" type="password" class="gate-input" placeholder="Password (codex)" autocomplete="off" data-lpignore="true">
+            <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
         </div>
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V18.3 [LOCKED]</div>
-            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Password (DawkKn1ght)" autocomplete="off" data-lpignore="true">
+            <div class="gate-version">V19.0 (Secure)</div>
+            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
     </div>
@@ -140,9 +140,10 @@
             
             <div class="nav-bar" id="nav-container"></div>
 
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; flex-shrink:0;">
                 <button id="switch-btn" class="btn bg-dark hidden" onclick="App.auth.switch()">TO ADMIN</button>
-                <button class="btn" style="background:transparent; color:#666;" onclick="location.reload()">⏻</button>
+                <button class="btn" style="background:transparent; color:#888;" title="API Settings" onclick="document.getElementById('key-modal').style.display='flex'">⚙️</button>
+                <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
             </div>
         </header>
 
@@ -259,6 +260,15 @@
         </div>
     </div>
 
+    <div id="key-modal" class="modal">
+        <div class="modal-body" style="width:400px; text-align:center;">
+            <h2 style="color:var(--cyan); margin-top:0;">NEURAL LINK SETTINGS</h2>
+            <input id="api-key-input" type="password" class="f-input" placeholder="Paste Google API Key Here" style="margin-bottom:15px;">
+            <button class="btn bg-cyan" style="width:100%;" onclick="App.auth.saveKey()">CONNECT</button>
+            <button class="btn bg-dark" style="width:100%; margin-top:10px;" onclick="document.getElementById('key-modal').style.display='none'">CLOSE</button>
+        </div>
+    </div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getFirestore, collection, getDocs, orderBy, query, Timestamp, setDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -268,13 +278,12 @@
     // UTILS
     const PARSE_DATE = (d) => { if(!d) return -9999; const m = d.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
-    const ESCAPE = (s) => s.replace(/'/g, "\\'"); // Fix for breaking onClick events
+    const ESCAPE = (s) => s.replace(/'/g, "\\'"); 
 
     // APP CORE
     window.App = {
         dbInstance: null, data: [], user: "Guest", role: "guest",
-        // LEGACY KEY CHECK: Supports both old tarth_api_key and new tarth_key
-        key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "",
+        key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", // CHECKS BOTH LEGACY AND NEW
         md: window.markdownit({html: false, breaks: true}),
 
         init: function() {
@@ -303,6 +312,10 @@
                 if(prompt("Enter Admin Password:") === "DawkKn1ght") {
                     App.role = "admin"; App.user = "The Archivist"; App.router.initAdmin();
                 }
+            },
+            saveKey: function() {
+                const k = document.getElementById('api-key-input').value.trim();
+                if(k) { App.key = k; localStorage.setItem('tarth_api_key', k); alert("Key Saved"); document.getElementById('key-modal').style.display='none'; }
             }
         },
 
@@ -396,9 +409,6 @@
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const tags = new Set(); App.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(x => tags.add(x.trim())); });
-                
-                if(tags.size === 0) { l.innerHTML = "<div style='padding:20px; color:#666'>No tags found.</div>"; return; }
-
                 Array.from(tags).sort().forEach(t => {
                     const safeName = ESCAPE(t);
                     l.innerHTML += `<div class="profile-item" onclick="App.admin.showProf('${safeName}')">${t}</div>`;
@@ -518,8 +528,13 @@
             send: async function() {
                 const inp = document.getElementById('chat-input');
                 const msg = inp.value; 
-                // ERROR CHECK: If key is missing, alert the user.
-                if(!App.key) return alert("API Key Missing. Click Gear Icon to Connect.");
+                
+                // --- V19 FIX: DIRECT CONNECT BUTTON IF MISSING KEY ---
+                if(!App.key) {
+                    App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai');
+                    return;
+                }
+                
                 if(!msg) return;
                 
                 this.msg(msg, 'user'); inp.value = "";
