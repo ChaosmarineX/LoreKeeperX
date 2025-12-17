@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V20.0 [AUDITED]</title>
+    <title>LorekeeperX V20.1 [OPEN ACCESS]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -39,7 +39,7 @@
         .header { padding: 15px 20px; background: rgba(18,20,24,0.95); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .brand { font-family: var(--font-head); font-size: 1.5rem; font-weight: bold; min-width: 200px; }
         
-        /* NAV BAR FIXED (No Scroll) */
+        /* NAV BAR FIXED */
         .nav-bar { display: flex; gap: 5px; background: var(--panel); padding: 4px; border-radius: 8px; flex-wrap: wrap; justify-content: center; }
         
         .nav-btn { background: transparent; border: none; color: var(--text-dim); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.2s; }
@@ -114,16 +114,16 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V20.0 [AUDITED]</div>
+            <div class="gate-version">V20.1 (Unlocked)</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
-            <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
+            <input id="login-player-pass" type="password" class="gate-input" placeholder="Password (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
         </div>
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V20.0 [AUDITED]</div>
-            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code" autocomplete="off" data-lpignore="true">
+            <div class="gate-version">V20.1 (Unlocked)</div>
+            <input id="login-admin-pass" type="password" class="gate-input" placeholder="Password (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
     </div>
@@ -301,20 +301,19 @@
                 const u = document.getElementById('login-player-name').value.trim();
                 const p = document.getElementById('login-player-pass').value.trim();
                 if(!u) return alert("Callsign Required");
-                if(p.toLowerCase() !== "codex") return alert("Access Denied");
+                // PASSWORD DISABLED: if(p.toLowerCase() !== "codex") return alert("Access Denied");
                 App.role = "player"; App.user = u;
                 App.router.initPlayer();
             },
             loginAdmin: function() {
                 const p = document.getElementById('login-admin-pass').value.trim();
-                if(p !== "DawkKn1ght") return alert("Access Denied");
+                // PASSWORD DISABLED: if(p !== "DawkKn1ght") return alert("Access Denied");
                 App.role = "admin"; App.user = "The Archivist";
                 App.router.initAdmin();
             },
             switch: function() {
-                if(prompt("Enter Admin Password:") === "DawkKn1ght") {
-                    App.role = "admin"; App.user = "The Archivist"; App.router.initAdmin();
-                }
+                // PASSWORD DISABLED: if(prompt("Enter Admin Password:") === "DawkKn1ght")
+                { App.role = "admin"; App.user = "The Archivist"; App.router.initAdmin(); }
             },
             saveKey: function() {
                 const k = document.getElementById('api-key-input').value.trim();
@@ -356,12 +355,22 @@
                 document.querySelectorAll('.viewport').forEach(v => v.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-codex','active-lore'));
                 
+                // V20.1 FIX: Simplified Routing Logic (No double-prefixing)
                 let target = tab;
-                if(tab === 'Contribute') target = 'codex-contribute'; // Mapped Journal tab
+                if(tab === 'Contribute') target = 'codex-contribute';
                 
                 const viewId = `view-${App.role==='admin'?'admin':'codex'}-${target.toLowerCase()}`;
                 const el = document.getElementById(viewId);
-                if(el) el.classList.remove('hidden');
+                
+                // Fallback for direct ID matches (fixes Contribute/Journal confusion)
+                if(!el) {
+                    // Try looking for it directly if mapping failed
+                    const directId = `view-codex-${tab.toLowerCase()}`;
+                    const directEl = document.getElementById(directId);
+                    if(directEl) directEl.classList.remove('hidden');
+                } else {
+                    el.classList.remove('hidden');
+                }
                 
                 const activeClass = App.role==='admin'?'active-lore':'active-codex';
                 Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText === tab.toUpperCase())?.classList.add(activeClass);
@@ -422,7 +431,6 @@
                     if(['People','Location','Factions','Creature'].includes(d.category)) entities.add(d.eventName);
                 });
                 
-                // USE DOM ELEMENTS TO PREVENT QUOTE ERRORS
                 Array.from(entities).sort().forEach(t => {
                     const div = document.createElement('div');
                     div.className = 'profile-item';
@@ -456,13 +464,12 @@
                     ${recs.map(r => `<div style="margin-bottom:10px; padding-left:10px; border-left:2px solid #444;"><strong style="color:var(--gold)">${r.gameDate}</strong> <span style="color:#fff">${r.eventName}</span><br><span style="color:#888; font-size:0.9rem;">${r.narrative}</span></div>`).join('')}
                 `;
                 
-                // INJECT BUTTON VIA DOM TO PREVENT QUOTE ERRORS
                 const btnArea = document.getElementById('prof-btn-area');
                 const btn = document.createElement('button');
                 btn.className = isGhost ? "btn bg-green" : "btn bg-gold";
                 btn.innerText = isGhost ? "CREATE RECORD" : "EDIT PRIMARY";
                 btn.onclick = () => {
-                    if(isGhost) App.admin.edit({eventName: name, category: 'People', status: 'Draft', tags: name});
+                    if (isGhost) App.admin.edit({eventName: name, category: 'People', status: 'Draft', tags: name});
                     else App.admin.edit(prim.fid);
                 };
                 btnArea.appendChild(btn);
@@ -570,9 +577,9 @@
                 const sys = document.getElementById('persona-select').value;
                 const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
                 
-                // FIXED API MODEL CALL
+                // V20.1 API FIX: gemini-1.5-flash
                 try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${App.key}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${App.key}`;
                     const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }] }) });
                     
                     const json = await res.json();
