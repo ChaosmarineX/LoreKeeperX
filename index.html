@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V18.0</title>
+    <title>LorekeeperX V18.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -28,7 +28,8 @@
         .gate-icon { font-size: 4rem; margin-bottom: 20px; }
         .gate-title { font-family: var(--font-head); font-size: 2rem; letter-spacing: 3px; margin-bottom: 10px; }
         .gate-input { background: #000; border: 1px solid #444; padding: 12px; color: #fff; text-align: center; width: 250px; margin-bottom: 10px; border-radius: 4px; }
-        .gate-btn { padding: 12px 30px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 250px; }
+        .gate-btn { padding: 12px 30px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 250px; transition:0.2s; }
+        .gate-btn:hover { transform: scale(1.05); }
         
         /* === APP SHELL === */
         #app-ui { display: none; flex-direction: column; height: 100vh; max-width: 1600px; margin: 0 auto; background: #121418; border-left: 1px solid #333; border-right: 1px solid #333; }
@@ -64,11 +65,11 @@
         .tl-date { width: 100px; font-weight: bold; color: var(--gold); font-family: monospace; flex-shrink: 0; }
         
         /* === PROFILES === */
-        .profile-layout { display: flex; height: 100%; }
-        .profile-list { width: 250px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; }
-        .profile-item { padding: 10px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; }
-        .profile-item:hover { background: #333; color: #fff; }
-        .profile-view { flex: 1; padding: 30px; overflow-y: auto; }
+        .profile-layout { display: flex; height: 100%; overflow: hidden; }
+        .profile-list { width: 250px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; height: 100%; }
+        .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: 0.2s; }
+        .profile-item:hover { background: #333; color: #fff; padding-left: 20px; }
+        .profile-view { flex: 1; padding: 30px; overflow-y: auto; height: 100%; }
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
         .dossier-img { width: 100%; height: 300px; object-fit: cover; border: 4px double var(--border); }
 
@@ -109,14 +110,13 @@
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
             <div style="color:#888; margin-bottom:20px;">PLAYER ACCESS</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
-            <input id="login-player-pass" type="password" class="gate-input" placeholder="Password" autocomplete="off" data-lpignore="true">
+            <input id="login-player-pass" type="password" class="gate-input" placeholder="Password (codex)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
         </div>
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
             <div style="color:#888; margin-bottom:20px;">ARCHIVIST ACCESS</div>
-            <input id="login-admin-user" class="gate-input" placeholder="Identity" value="Archivist" readonly>
             <input id="login-admin-pass" type="password" class="gate-input" placeholder="Password" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
@@ -168,7 +168,11 @@
         <div id="view-admin-profiles" class="viewport hidden">
             <div class="profile-layout">
                 <div class="profile-list" id="profile-list"></div>
-                <div class="profile-view" id="profile-detail">Select a type...</div>
+                <div class="profile-view" id="profile-detail">
+                    <div style="display:flex; align-items:center; justify-content:center; height:100%; color:#666;">
+                        Select a Profile Tag from the left.
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -262,6 +266,7 @@
     // UTILS
     const PARSE_DATE = (d) => { if(!d) return -9999; const m = d.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
+    const ESCAPE = (s) => s.replace(/'/g, "\\'"); // Fix for breaking onClick events
 
     // APP CORE
     window.App = {
@@ -281,7 +286,7 @@
                 const u = document.getElementById('login-player-name').value.trim();
                 const p = document.getElementById('login-player-pass').value.trim();
                 if(!u) return alert("Callsign Required");
-                if(p !== "codex") return alert("Access Denied");
+                if(p.toLowerCase() !== "codex") return alert("Access Denied"); // Case insensitive check
                 App.role = "player"; App.user = u;
                 App.router.initPlayer();
             },
@@ -388,8 +393,13 @@
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const tags = new Set(); App.data.forEach(d => { if(d.tags) d.tags.split(',').forEach(x => tags.add(x.trim())); });
+                
+                if(tags.size === 0) { l.innerHTML = "<div style='padding:20px; color:#666'>No tags found.</div>"; return; }
+
                 Array.from(tags).sort().forEach(t => {
-                    l.innerHTML += `<div class="profile-item" onclick="App.admin.showProf('${t}')">${t}</div>`;
+                    // SAFE ESCAPING for names like Na'Van
+                    const safeName = ESCAPE(t);
+                    l.innerHTML += `<div class="profile-item" onclick="App.admin.showProf('${safeName}')">${t}</div>`;
                 });
             },
             showProf: function(name) {
@@ -398,11 +408,12 @@
                 const prim = App.data.find(r => r.eventName === name) || {};
                 const img = prim.url || GET_IMG('People', name);
                 const isGhost = !prim.fid;
+                const safeName = ESCAPE(name);
                 
                 v.innerHTML = `
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px;">
                         <h1 style="color:var(--gold); margin:0;">${name}</h1>
-                        ${isGhost ? `<button class="btn bg-green" onclick="App.admin.edit({eventName:'${name}', category:'People', status:'Draft', tags:'${name}'})">CREATE GHOST RECORD</button>` : `<button class="btn bg-gold" onclick="App.admin.edit('${prim.fid}')">EDIT PRIMARY</button>`}
+                        ${isGhost ? `<button class="btn bg-green" onclick="App.admin.edit({eventName:'${safeName}', category:'People', status:'Draft', tags:'${safeName}'})">CREATE GHOST RECORD</button>` : `<button class="btn bg-gold" onclick="App.admin.edit('${prim.fid}')">EDIT PRIMARY</button>`}
                     </div>
                     ${isGhost ? '<div style="background:rgba(212,175,55,0.1); color:var(--gold); padding:10px; margin:10px 0;">:: GHOST ENTITY (No Primary Record) ::</div>' : ''}
                     <div class="dossier-grid">
