@@ -347,7 +347,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.22", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.23", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -510,13 +510,18 @@ function getSystemPrimer(data) {
                     t.appendChild(tr);
                 });
             },
-            // 1. HIDE A TAG (Add to Blacklist)
             hideTag: async function(tagName) {
                 if(!confirm(`Hide "${tagName}" from the index?`)) return;
             
-                const newList = [...(App.hiddenTags || []), tagName];
+                // FORCE LOWERCASE TO ENSURE MATCHES
+                const safeTag = String(tagName).toLowerCase();
+                const currentList = (App.hiddenTags || []).map(t => t.toLowerCase());
 
-                // Save to the single config file
+                // Avoid duplicates
+                if(currentList.includes(safeTag)) return alert("Already hidden.");
+            
+                const newList = [...currentList, safeTag];
+
                 await setDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"), { 
                     list: newList,
                     category: "System",
@@ -524,12 +529,13 @@ function getSystemPrimer(data) {
                 });
             
                 alert("Tag Hidden.");
-                App.db.load(); // Refresh
+                App.db.load(); 
             },
 
-            // 2. UNHIDE A TAG (Remove from Blacklist)
             unhideTag: async function(tagName) {
-                const newList = (App.hiddenTags || []).filter(t => t !== tagName);
+                const safeTag = String(tagName).toLowerCase();
+                const currentList = (App.hiddenTags || []).map(t => t.toLowerCase());
+                const newList = currentList.filter(t => t !== safeTag);
 
                 await setDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"), { 
                     list: newList,
@@ -820,14 +826,12 @@ function getSystemPrimer(data) {
                 html += `</div>`;
                 v.innerHTML = html;
                 
-                // BUTTONS
-                // Inside App.admin.showProf ... (Button Area)
-
+            // BUTTONS
                 const btnArea = document.getElementById('prof-btn-area');
                 btnArea.innerHTML = ""; 
 
-                // CHECK IF HIDDEN
-                const isHidden = (App.hiddenTags || []).includes(name);
+                // CHECK IF HIDDEN (Case Insensitive)
+                const isHidden = (App.hiddenTags || []).map(t => t.toLowerCase()).includes(String(name).toLowerCase());
 
                 if (isHidden) {
                     // === HIDDEN TAG ACTIONS ===
@@ -859,53 +863,23 @@ function getSystemPrimer(data) {
                     btnArea.appendChild(btnHide);
                     btnArea.appendChild(btnLink);
                     btnArea.appendChild(btnCreate);
-                } else {
-                    // === MASTER RECORD ACTIONS (Existing) ===
-                    const btnDel = document.createElement('button');
-                    btnDel.className = "btn bg-red";
-                    btnDel.innerHTML = "🗑️";
-                    btnDel.onclick = async () => { if(confirm("Delete Record?")) { await deleteDoc(doc(App.dbInstance, "lore_library", master.fid)); App.admin.renderProf(); v.innerHTML=""; }};
 
-                    const btnEdit = document.createElement('button');
-                    btnEdit.className = "btn bg-gold";
-                    btnEdit.innerText = "EDIT";
-                    btnEdit.onclick = () => App.admin.edit(master.fid);
-
-                    btnArea.appendChild(btnDel);
-                    btnArea.appendChild(btnEdit);
-                }
-                
-                if (isGhost) {
-                    // Ghost Actions: Create OR Link
-                    const btnCreate = document.createElement('button');
-                    btnCreate.className = "btn bg-green";
-                    btnCreate.innerText = "CREATE";
-                    btnCreate.onclick = () => App.admin.edit({eventName: name, category: 'Person', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
-                    
-                    const btnLink = document.createElement('button'); // Placeholder for future merge
-                    btnLink.className = "btn bg-dark";
-                    btnLink.innerText = "LINK 🔗";
-                    btnLink.title = "Link this ghost tag to an existing master record";
-                    btnLink.onclick = () => App.admin.openLinker(name);
-                    btnArea.appendChild(btnLink);
-                    btnArea.appendChild(btnCreate);
                 } else {
-                    // Master Actions: Edit OR Delete
+                    // === MASTER RECORD ACTIONS ===
                     const btnDel = document.createElement('button');
                     btnDel.className = "btn bg-red";
                     btnDel.innerHTML = "🗑️";
                     btnDel.onclick = async () => { if(confirm("Permanently delete this Master Record?")) { await deleteDoc(doc(App.dbInstance, "lore_library", master.fid)); App.admin.renderProf(); v.innerHTML=""; }};
-                    
+
                     const btnEdit = document.createElement('button');
                     btnEdit.className = "btn bg-gold";
                     btnEdit.innerText = "EDIT";
                     btnEdit.onclick = () => App.admin.edit(master.fid);
-                    
+
                     btnArea.appendChild(btnDel);
                     btnArea.appendChild(btnEdit);
                 }
-            },
-            
+            },            
             // CRUD (Standard)
             edit: function(ref) {
                 const d = (typeof ref === 'string') ? App.data.find(r => r.fid === ref) : ref;
