@@ -333,14 +333,21 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.12", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.13", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
 
         init: function() {
+            // 1. Initialize Firebase
             const fApp = initializeApp(cfg);
             this.dbInstance = getFirestore(fApp);
+            
+            // 2. UPDATE LOGIN SCREEN VERSION (The Fix)
+            // This finds all elements with class 'gate-version' and updates them
+            document.querySelectorAll('.gate-version').forEach(el => el.innerText = App.version);
+            
+            // 3. Load Data
             this.db.load();
         },
 
@@ -437,6 +444,7 @@ function getSystemPrimer(data) {
         // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         // 4. ADMIN FEATURES (V21.10 FIXED: GREEDY PROFILES)
+        // 4. ADMIN FEATURES (V21.11 PHASE 2: SUPER GREEDY PROFILES)
         admin: {
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
@@ -468,39 +476,47 @@ function getSystemPrimer(data) {
                 });
             },
 
-            // PROFILES: FIXED AGGREGATION
+            // PROFILES: SUPER GREEDY LOGIC
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const entities = new Set();
                 
-                // 1. AGGREGATE
+                // Debug Info: If empty, show why
                 if(App.data.length === 0) {
-                    l.innerHTML = "<div style='padding:15px; color:#666;'>No Archives Found.</div>";
+                    l.innerHTML = "<div style='padding:15px; color:#666;'>Database is empty.</div>";
                     return;
                 }
 
-                // DEBUG: Force allow Singular and Plural terms
-                const validTypes = ['people','person','location','place','faction','factions','creature','monster','npc'];
-
+                // 1. AGGREGATE EVERYTHING
+                // If it's not a Journal or System log, it's a Profile candidate.
+                const ignore = ['journal','system','meta'];
+                
                 App.data.forEach(d => {
-                    // Check strict category match
-                    const cat = (d.category || "").toLowerCase();
-                    if(validTypes.includes(cat)) {
-                        if(d.eventName) entities.add(d.eventName.trim());
+                    const cat = (d.category || "misc").toLowerCase();
+                    
+                    // Rule A: Add the Record Name itself (if not ignored)
+                    if(!ignore.includes(cat) && d.eventName) {
+                        entities.add(d.eventName.trim());
                     }
                     
-                    // Check tags
-                    if(d.tags) d.tags.split(',').forEach(x => {
-                        const tag = x.trim();
-                        if(tag.length > 2) entities.add(tag); 
-                    });
+                    // Rule B: Add ALL Tags (No filtering)
+                    if(d.tags) {
+                        d.tags.split(',').forEach(x => {
+                            const tag = x.trim();
+                            if(tag.length > 1) entities.add(tag); 
+                        });
+                    }
                 });
                 
                 // 2. RENDER
                 if(entities.size === 0) {
-                    l.innerHTML = "<div style='padding:15px; color:#888; font-style:italic;'>No entities found.<br><br>Tip: Ensure records are categorized as 'Person', 'Location', or 'Faction'.</div>";
+                    // If still blank, show a debug message with categories found
+                    const foundCats = [...new Set(App.data.map(d => d.category))].join(", ");
+                    l.innerHTML = `<div style='padding:15px; color:#ff6b6b;'>No Entities Found.<br><br>Debug Info:<br>Categories in DB: [${foundCats}]</div>`;
                 } else {
-                    l.innerHTML = `<div style="padding:10px 15px; font-size:0.7rem; color:#666; border-bottom:1px solid #333;">INDEXING ${entities.size} ENTITIES</div>`;
+                    // Header with count
+                    l.innerHTML = `<div style="padding:10px 15px; font-size:0.7rem; color:#666; border-bottom:1px solid #333; text-transform:uppercase;">${entities.size} Entities Indexed</div>`;
+                    
                     Array.from(entities).sort().forEach(t => {
                         const div = document.createElement('div');
                         div.className = 'profile-item';
@@ -511,17 +527,20 @@ function getSystemPrimer(data) {
                 }
             },
 
+            // DETAIL VIEW (Ghost Logic Unchanged)
             showProf: function(name) {
                 const v = document.getElementById('profile-detail');
-                const validTypes = ['people','person','location','place','faction','factions','creature','monster','npc'];
+                const ignore = ['journal','system','meta'];
 
+                // Find refs (Anything mentioning the name)
                 const refs = App.data.filter(r => (r.tags && r.tags.includes(name)) || r.eventName === name)
                                      .sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
                 
-                const master = App.data.find(r => r.eventName === name && validTypes.includes((r.category||'').toLowerCase()));
+                // Find master (Is there a record with this name that isn't ignored?)
+                const master = App.data.find(r => r.eventName === name && !ignore.includes((r.category||'').toLowerCase()));
                 
                 const isGhost = !master;
-                const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG('People', name);
+                const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG('Profile', name);
                 
                 let html = `
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px;">
