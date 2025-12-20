@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V21.10 [AUTO-LINK]</title>
+    <title>LorekeeperX [AUTO-LINK]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -333,6 +333,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
+        version: "V21.11", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -370,7 +371,7 @@ function getSystemPrimer(data) {
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
                 document.getElementById('brand-text').innerText = "CODEX";
-                document.getElementById('brand-text').style.color = "var(--cyan)";
+                document.getElementById('brand-text').innerHTML = `CODEX <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
                 document.getElementById('user-display').innerText = App.user;
                 document.getElementById('persona-select').classList.remove('hidden');
                 document.getElementById('switch-btn').classList.remove('hidden');
@@ -384,7 +385,7 @@ function getSystemPrimer(data) {
             initAdmin: function() {
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
-                document.getElementById('brand-text').innerText = "LOREKEEPER";
+                document.getElementById('brand-text').innerHTML = `LOREKEEPER <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
                 document.getElementById('brand-text').style.color = "var(--gold)";
                 document.getElementById('user-display').innerText = App.user;
                 document.getElementById('persona-select').classList.add('hidden');
@@ -433,6 +434,7 @@ function getSystemPrimer(data) {
         },
 
         // 4. ADMIN FEATURES
+        // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         admin: {
             // LIBRARY: Search now digs into Narratives and Tags
