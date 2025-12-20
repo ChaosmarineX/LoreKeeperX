@@ -333,7 +333,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.15", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.16", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -456,7 +456,9 @@ function getSystemPrimer(data) {
         // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         // 4. ADMIN FEATURES (V21.10 FIXED: GREEDY PROFILES)
         // 4. ADMIN FEATURES (V21.11 PHASE 2: SUPER GREEDY PROFILES)
+        // 4. ADMIN FEATURES (V21.14 PHASE 2 POLISH)
         admin: {
+            // LIBRARY SEARCH (Unchanged)
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
                 const term = document.getElementById('filt-search').value.toLowerCase();
@@ -477,6 +479,7 @@ function getSystemPrimer(data) {
                 });
             },
             
+            // TIMELINE (Unchanged)
             renderTime: function() {
                 const c = document.getElementById('timeline-list'); c.innerHTML = "";
                 const sorted = [...App.data].sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
@@ -487,37 +490,52 @@ function getSystemPrimer(data) {
                 });
             },
 
-            // PROFILES: DIAGNOSTIC MODE
-            renderProf: function() {
+            // PROFILES: NOW WITH FILTERS & CLEANER UI
+            renderProf: function(filterType = 'All') {
                 const l = document.getElementById('profile-list'); 
                 l.innerHTML = "";
                 const entities = new Set();
                 
-                // DIAGNOSTIC HEADER: Tells us if DB has data
+                // 1. HEADER & FILTER UI
                 const header = document.createElement('div');
-                header.style.padding = "10px";
-                header.style.fontSize = "0.7rem";
+                header.style.padding = "10px 15px"; // Fixed indentation
                 header.style.borderBottom = "1px solid #444";
-                header.style.color = "#666";
-                header.innerHTML = `DB RECORDS: <strong style="color:var(--text)">${App.data.length}</strong>`;
+                header.style.background = "#1a1c24";
+                header.style.position = "sticky";
+                header.style.top = "0";
+                
+                // The Filter Dropdown
+                header.innerHTML = `
+                    <div style="font-size:0.7rem; color:#666; margin-bottom:5px;">INDEX</div>
+                    <select id="prof-filter-select" style="width:100%; background:#000; color:#fff; border:1px solid #444; padding:5px; border-radius:4px; font-size:0.8rem;" onchange="App.admin.renderProf(this.value)">
+                        <option value="All" ${filterType==='All'?'selected':''}>All Types</option>
+                        <option value="People" ${filterType==='People'?'selected':''}>People</option>
+                        <option value="Location" ${filterType==='Location'?'selected':''}>Locations</option>
+                        <option value="Faction" ${filterType==='Faction'?'selected':''}>Factions</option>
+                        <option value="Creature" ${filterType==='Creature'?'selected':''}>Creatures</option>
+                    </select>
+                `;
                 l.appendChild(header);
 
-                if(App.data.length === 0) return;
-
-                // 1. AGGREGATE EVERYTHING
+                // 2. AGGREGATE
                 const ignore = ['journal','system','meta'];
                 
                 App.data.forEach(d => {
-                    const cat = (d.category || "misc").toLowerCase();
+                    const cat = (d.category || "misc");
                     const name = d.eventName ? d.eventName.trim() : "";
                     
-                    // Rule A: Add the Record Name itself
-                    if(!ignore.includes(cat) && name.length > 1) {
+                    // Filter Check (Lazy check: if filter is 'People', allow 'Person' or 'People')
+                    if(filterType !== 'All' && !cat.toLowerCase().includes(filterType.toLowerCase().slice(0,4))) return;
+
+                    // Add Records
+                    if(!ignore.includes(cat.toLowerCase()) && name.length > 1) {
                         entities.add(name);
                     }
                     
-                    // Rule B: Add ALL Tags (Safely)
-                    if(d.tags && typeof d.tags === 'string') {
+                    // Add Tags (Only if we are in 'All' mode, or if the logic implies connection. 
+                    // Note: Filtering tags by type is hard because tags don't have types until they are records. 
+                    // For now, we show ALL tags if filter is All, or only existing records if filtered.)
+                    if(filterType === 'All' && d.tags) {
                         d.tags.split(',').forEach(x => {
                             const tag = x.trim();
                             if(tag.length > 1) entities.add(tag); 
@@ -525,67 +543,88 @@ function getSystemPrimer(data) {
                     }
                 });
                 
-                // 2. RENDER
+                // 3. RENDER LIST
+                const scrollArea = document.createElement('div');
                 if(entities.size === 0) {
-                    const err = document.createElement('div');
-                    err.style.padding = "15px";
-                    err.style.color = "#888";
-                    err.innerText = "No entities found in tags or titles.";
-                    l.appendChild(err);
+                    scrollArea.innerHTML = "<div style='padding:20px; color:#666; font-style:italic;'>No entities found for this filter.</div>";
                 } else {
                     Array.from(entities).sort().forEach(t => {
                         const div = document.createElement('div');
                         div.className = 'profile-item';
                         div.innerText = t;
                         div.onclick = () => App.admin.showProf(t);
-                        l.appendChild(div);
+                        scrollArea.appendChild(div);
                     });
                 }
+                l.appendChild(scrollArea);
             },
 
-            // DETAIL VIEW (Ghost Logic Unchanged)
+            // DETAIL VIEW: ADAPTIVE TEMPLATES
             showProf: function(name) {
                 const v = document.getElementById('profile-detail');
-                const ignore = ['journal','system','meta'];
-
-                // Find refs (Anything mentioning the name)
+                
+                // 1. DATA GATHERING
+                const validTypes = ['people','person','location','place','faction','factions','creature','monster','npc'];
+                
+                // Find master record (if exists)
+                const master = App.data.find(r => r.eventName === name && validTypes.some(t => (r.category||'').toLowerCase().includes(t)));
+                const isGhost = !master;
+                
+                // Find References (Mentions)
                 const refs = App.data.filter(r => (r.tags && r.tags.includes(name)) || r.eventName === name)
                                      .sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
-                
-                // Find master (Is there a record with this name that isn't ignored?)
-                const master = App.data.find(r => r.eventName === name && !ignore.includes((r.category||'').toLowerCase()));
-                
-                const isGhost = !master;
-                const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG('Profile', name);
-                
+
+                const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG(master?.category || 'Entity', name);
+                const category = master ? master.category : "Unknown Entity";
+
+                // 2. TEMPLATE LOGIC
+                // Common Header
                 let html = `
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px;">
                         <div>
                             <h1 style="color:var(--gold); margin:0;">${name}</h1>
-                            <div style="color:${isGhost ? 'var(--red)' : 'var(--green)'}; font-size:0.8rem; letter-spacing:1px; margin-top:5px;">
-                                ${isGhost ? '⚠ GHOST SIGNAL (UNREGISTERED)' : '✅ ARCHIVED RECORD'}
+                            <div style="display:flex; gap:10px; align-items:center; margin-top:5px;">
+                                <span style="color:${isGhost ? 'var(--red)' : 'var(--green)'}; font-size:0.8rem; letter-spacing:1px; border:1px solid #333; padding:2px 6px; border-radius:4px;">
+                                    ${isGhost ? '⚠ GHOST SIGNAL' : '✅ OFFICIAL RECORD'}
+                                </span>
+                                <span style="color:#666; font-size:0.8rem;">${category}</span>
                             </div>
                         </div>
                         <div id="prof-btn-area"></div>
                     </div>
-
                     <div class="dossier-grid">
                         <div style="text-align:center;">
                             <img src="${img}" class="dossier-img" style="border-color:${isGhost ? 'var(--red)' : 'var(--gold)'};">
                             ${!isGhost ? `<div style="margin-top:5px; font-size:0.7rem; color:#666;">ID: ${master.fid}</div>` : ''}
                         </div>
                         <div>
-                            <h3 style="color:var(--cyan); margin-top:0;">BIO / STATUS</h3>
-                            <p style="color:#ccc; white-space:pre-wrap; line-height:1.6;">
-                                ${master ? master.narrative : `<strong>No official record exists.</strong><br>This entity appears in ${refs.length} archive entries but lacks a dedicated dossier.`}
-                            </p>
-                            ${(master && master.stats) ? `<div style="background:#222; border:1px solid #444; color:#aaa; padding:15px; margin-top:15px; font-family:monospace; white-space:pre-wrap;">${master.stats}</div>` : ''}
-                        </div>
-                    </div>
-
-                    <h3 style="margin-top:30px; border-bottom:1px solid #444; padding-bottom:5px; color:var(--text-dim);">TIMELINE REFERENCES (${refs.length})</h3>
-                    <div style="margin-top:15px;">
                 `;
+
+                // Content Block (Changes based on Category)
+                if(category.toLowerCase().includes('location')) {
+                    // LOCATION TEMPLATE
+                    html += `
+                        <h3 style="color:var(--cyan); margin-top:0;">GEOGRAPHY & LORE</h3>
+                        <p style="color:#ccc; white-space:pre-wrap; line-height:1.6;">${master ? master.narrative : "No data available."}</p>
+                        <div style="background:#0f2027; padding:10px; margin-top:10px; border:1px solid #333;">
+                            <strong style="color:var(--gold)">Events at this location:</strong> ${refs.length} recorded.
+                        </div>
+                    `;
+                } else {
+                    // DEFAULT / PEOPLE TEMPLATE
+                    html += `
+                        <h3 style="color:var(--cyan); margin-top:0;">BIO / STATUS</h3>
+                        <p style="color:#ccc; white-space:pre-wrap; line-height:1.6;">
+                            ${master ? master.narrative : `<strong>No official record exists.</strong><br>This entity appears in ${refs.length} archive entries but lacks a dedicated dossier.`}
+                        </p>
+                        ${(master && master.stats) ? `<div style="background:#222; border:1px solid #444; color:#aaa; padding:15px; margin-top:15px; font-family:monospace; white-space:pre-wrap;">${master.stats}</div>` : ''}
+                    `;
+                }
+
+                html += `</div></div>`; // Close grid
+
+                // 3. TIMELINE (Universal)
+                html += `<h3 style="margin-top:30px; border-bottom:1px solid #444; padding-bottom:5px; color:var(--text-dim);">TIMELINE REFERENCES (${refs.length})</h3><div style="margin-top:15px;">`;
 
                 if(refs.length === 0) {
                     html += `<div style="color:#666; font-style:italic;">No recorded events.</div>`;
@@ -594,7 +633,7 @@ function getSystemPrimer(data) {
                         html += `
                         <div style="margin-bottom:15px; padding-left:15px; border-left:2px solid #444; cursor:pointer;" onclick="App.admin.edit('${r.fid}')">
                             <div style="display:flex; justify-content:space-between;">
-                                <span style="color:var(--gold); font-weight:bold;">${r.gameDate || 'Unknown Date'}</span>
+                                <span style="color:var(--gold); font-weight:bold;">${r.gameDate || 'Unknown'}</span>
                                 <span style="font-size:0.7rem; color:#666; border:1px solid #333; padding:2px 5px; border-radius:4px;">${r.category}</span>
                             </div>
                             <div style="color:#fff; margin-top:2px;">${r.eventName}</div>
@@ -607,16 +646,16 @@ function getSystemPrimer(data) {
                 html += `</div>`;
                 v.innerHTML = html;
                 
+                // 4. INJECT BUTTONS
                 const btnArea = document.getElementById('prof-btn-area');
                 const btn = document.createElement('button');
-                
                 if (isGhost) {
                     btn.className = "btn bg-green";
-                    btn.innerText = "CREATE MASTER RECORD";
+                    btn.innerText = "CREATE RECORD";
                     btn.onclick = () => App.admin.edit({eventName: name, category: 'Person', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
                 } else {
                     btn.className = "btn bg-gold";
-                    btn.innerText = "EDIT DOSSIER";
+                    btn.innerText = "EDIT";
                     btn.onclick = () => App.admin.edit(master.fid);
                 }
                 btnArea.appendChild(btn);
