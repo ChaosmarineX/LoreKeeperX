@@ -347,7 +347,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.23", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.24", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -715,7 +715,7 @@ function getSystemPrimer(data) {
                         const key = clean.toLowerCase();
 
                         // LOGIC: If it's hidden, we mark it as 'HiddenGhost'
-                        const isHidden = hiddenList.includes(clean);
+                        const isHidden = hiddenList.map(h => h.toLowerCase()).includes(clean.toLowerCase());
 
                         if(!index.has(key)) {
                             index.set(key, { 
