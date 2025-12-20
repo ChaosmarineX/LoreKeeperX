@@ -333,7 +333,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.11", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.12", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -370,7 +370,7 @@ function getSystemPrimer(data) {
             initPlayer: function() {
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
-                document.getElementById('brand-text').innerText = "CODEX";
+                //document.getElementById('brand-text').innerText = "CODEX";
                 document.getElementById('brand-text').innerHTML = `CODEX <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
                 document.getElementById('user-display').innerText = App.user;
                 document.getElementById('persona-select').classList.remove('hidden');
@@ -386,7 +386,7 @@ function getSystemPrimer(data) {
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
                 document.getElementById('brand-text').innerHTML = `LOREKEEPER <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
-                document.getElementById('brand-text').style.color = "var(--gold)";
+                //document.getElementById('brand-text').style.color = "var(--gold)";
                 document.getElementById('user-display').innerText = App.user;
                 document.getElementById('persona-select').classList.add('hidden');
                 
