@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V21.8 [AUTO-LINK]</title>
+    <title>LorekeeperX V21.9 [AUTO-LINK]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V21.8</div>
+            <div class="gate-version">V21.9</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
             <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
@@ -122,7 +122,7 @@
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V21.8</div>
+            <div class="gate-version">V21.9</div>
             <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
@@ -197,8 +197,8 @@
             <div class="chat-wrap">
                 <div class="chat-area" id="chat-feed"><div class="msg ai"><strong>CODEX ONLINE.</strong><br>I am the Steward. How may I assist?</div></div>
                 <div class="chat-tools" style="align-items:flex-end;">
-                    <textarea id="chat-input" class="f-input" style="height:50px; resize:none;" placeholder="Query Archives (Shift+Enter for new line)..."></textarea>
-                    <button class="btn bg-cyan" style="height:50px;" onclick="App.codex.send()">SEND</button>
+                    <textarea id="chat-input" class="f-input" style="height:60px; resize:none; font-family:inherit;" placeholder="Dictate or type..."></textarea>
+                    <button class="btn bg-cyan" style="height:60px; width:100px;" onclick="App.codex.send()">SEND</button>
                 </div>
             </div>
         </div>
@@ -446,6 +446,7 @@ function getSystemPrimer(data) {
                     if(stat !== 'All' && d.status !== stat) return;
                     if(camp !== 'All' && d.campaign !== camp) return;
                    // NEW: Search Name, Author, Narrative (Body), and Tags
+                    // UPDATED: Searches Title, Author, Narrative, and Tags
                     if(term && !(d.eventName + d.author + d.narrative + d.tags).toLowerCase().includes(term)) return;
                     
                     const tr = document.createElement('tr');
