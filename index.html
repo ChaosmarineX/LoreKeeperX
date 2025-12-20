@@ -436,8 +436,8 @@ function getSystemPrimer(data) {
         // 4. ADMIN FEATURES
         // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
+        // 4. ADMIN FEATURES (V21.10 FIXED: GREEDY PROFILES)
         admin: {
-            // LIBRARY: Search now digs into Narratives and Tags
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
                 const term = document.getElementById('filt-search').value.toLowerCase();
@@ -449,7 +449,6 @@ function getSystemPrimer(data) {
                     if(cat !== 'All' && d.category !== cat) return;
                     if(stat !== 'All' && d.status !== stat) return;
                     if(camp !== 'All' && d.campaign !== camp) return;
-                    // DEEP SEARCH: Name, Author, Narrative, Tags
                     if(term && !(d.eventName + d.author + d.narrative + d.tags).toLowerCase().includes(term)) return;
                     
                     const tr = document.createElement('tr');
@@ -459,7 +458,6 @@ function getSystemPrimer(data) {
                 });
             },
             
-            // TIMELINE: Unchanged
             renderTime: function() {
                 const c = document.getElementById('timeline-list'); c.innerHTML = "";
                 const sorted = [...App.data].sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
@@ -470,55 +468,61 @@ function getSystemPrimer(data) {
                 });
             },
 
-            // PROFILES: The Fix (Aggressive Aggregation)
+            // PROFILES: FIXED AGGREGATION
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const entities = new Set();
                 
-                // 1. AGGREGATE: Scan everything for names
+                // 1. AGGREGATE
                 if(App.data.length === 0) {
                     l.innerHTML = "<div style='padding:15px; color:#666;'>No Archives Found.</div>";
                     return;
                 }
 
+                // DEBUG: Force allow Singular and Plural terms
+                const validTypes = ['people','person','location','place','faction','factions','creature','monster','npc'];
+
                 App.data.forEach(d => {
-                    // Add the record title itself if it's an Entity type (Case insensitive check)
-                    if(['People','Location','Factions','Creature'].some(c => c.toLowerCase() === (d.category||'').toLowerCase())) {
+                    // Check strict category match
+                    const cat = (d.category || "").toLowerCase();
+                    if(validTypes.includes(cat)) {
                         if(d.eventName) entities.add(d.eventName.trim());
                     }
-                    // Add any tags found in this record
+                    
+                    // Check tags
                     if(d.tags) d.tags.split(',').forEach(x => {
                         const tag = x.trim();
-                        if(tag.length > 2) entities.add(tag); // Filter out tiny tags
+                        if(tag.length > 2) entities.add(tag); 
                     });
                 });
                 
-                // 2. RENDER: Sort alphabetical
-                Array.from(entities).sort().forEach(t => {
-                    const div = document.createElement('div');
-                    div.className = 'profile-item';
-                    div.innerText = t;
-                    div.onclick = () => App.admin.showProf(t);
-                    l.appendChild(div);
-                });
+                // 2. RENDER
+                if(entities.size === 0) {
+                    l.innerHTML = "<div style='padding:15px; color:#888; font-style:italic;'>No entities found.<br><br>Tip: Ensure records are categorized as 'Person', 'Location', or 'Faction'.</div>";
+                } else {
+                    l.innerHTML = `<div style="padding:10px 15px; font-size:0.7rem; color:#666; border-bottom:1px solid #333;">INDEXING ${entities.size} ENTITIES</div>`;
+                    Array.from(entities).sort().forEach(t => {
+                        const div = document.createElement('div');
+                        div.className = 'profile-item';
+                        div.innerText = t;
+                        div.onclick = () => App.admin.showProf(t);
+                        l.appendChild(div);
+                    });
+                }
             },
 
-            // PROFILE DETAIL: Ghost Detection & Officialise Logic
             showProf: function(name) {
                 const v = document.getElementById('profile-detail');
-                
-                // 1. FIND DATA
-                // References: Any record that mentions this name in Tags or Title
+                const validTypes = ['people','person','location','place','faction','factions','creature','monster','npc'];
+
                 const refs = App.data.filter(r => (r.tags && r.tags.includes(name)) || r.eventName === name)
                                      .sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
                 
-                // Master Record: A specific record of type Person/Location with this exact name
-                const master = App.data.find(r => r.eventName === name && ['People','Location','Factions','Creature'].some(c => c.toLowerCase() === (r.category||'').toLowerCase()));
+                const master = App.data.find(r => r.eventName === name && validTypes.includes((r.category||'').toLowerCase()));
                 
                 const isGhost = !master;
                 const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG('People', name);
                 
-                // 2. BUILD UI
                 let html = `
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px;">
                         <div>
@@ -548,7 +552,6 @@ function getSystemPrimer(data) {
                     <div style="margin-top:15px;">
                 `;
 
-                // 3. RENDER TIMELINE
                 if(refs.length === 0) {
                     html += `<div style="color:#666; font-style:italic;">No recorded events.</div>`;
                 } else {
@@ -569,15 +572,13 @@ function getSystemPrimer(data) {
                 html += `</div>`;
                 v.innerHTML = html;
                 
-                // 4. INJECT BUTTONS
                 const btnArea = document.getElementById('prof-btn-area');
                 const btn = document.createElement('button');
                 
                 if (isGhost) {
                     btn.className = "btn bg-green";
                     btn.innerText = "CREATE MASTER RECORD";
-                    // Pre-fill the form with the Name and Category
-                    btn.onclick = () => App.admin.edit({eventName: name, category: 'People', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
+                    btn.onclick = () => App.admin.edit({eventName: name, category: 'Person', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
                 } else {
                     btn.className = "btn bg-gold";
                     btn.innerText = "EDIT DOSSIER";
@@ -585,12 +586,11 @@ function getSystemPrimer(data) {
                 }
                 btnArea.appendChild(btn);
             },
-
-            // CRUD OPS: Unchanged but included for modularity
+            
+            // CRUD (Standard)
             edit: function(ref) {
                 const d = (typeof ref === 'string') ? App.data.find(r => r.fid === ref) : ref;
                 ['id','name','date','status','cat','game','camp','url','auth','stats','tags','narr'].forEach(k => document.getElementById('e-'+k).value = "");
-                
                 document.getElementById('e-id').value = d.fid || "";
                 document.getElementById('e-name').value = d.eventName || "";
                 document.getElementById('e-status').value = d.status || "Approved";
@@ -603,7 +603,6 @@ function getSystemPrimer(data) {
                 document.getElementById('e-stats').value = d.stats || "";
                 document.getElementById('e-tags').value = d.tags || "";
                 document.getElementById('e-narr').value = d.narrative || "";
-                
                 document.getElementById('edit-modal').style.display = 'flex';
             },
             save: async function() {
