@@ -333,7 +333,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.17", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.18", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -458,6 +458,7 @@ function getSystemPrimer(data) {
         // 4. ADMIN FEATURES (V21.11 PHASE 2: SUPER GREEDY PROFILES)
         // 4. ADMIN FEATURES (V21.14 PHASE 2 POLISH)
         // 4. ADMIN FEATURES (V21.15 PHASE 2 COMPLETE)
+        // 4. ADMIN FEATURES (V21.18 BULLETPROOF INDEX)
         admin: {
             // LIBRARY (Unchanged)
             renderLib: function() {
@@ -471,7 +472,9 @@ function getSystemPrimer(data) {
                     if(cat !== 'All' && d.category !== cat) return;
                     if(stat !== 'All' && d.status !== stat) return;
                     if(camp !== 'All' && d.campaign !== camp) return;
-                    if(term && !(d.eventName + d.author + d.narrative + d.tags).toLowerCase().includes(term)) return;
+                    // Safe search to prevent crashes
+                    const haystack = (String(d.eventName) + String(d.author) + String(d.narrative) + String(d.tags)).toLowerCase();
+                    if(term && !haystack.includes(term)) return;
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `<td><span class="status-tag" style="color:${d.status=='Approved'?'var(--green)':'#aaa'}">${d.status}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td>${d.campaign||'-'}</td><td>${d.gameDate||'-'}</td><td>${d.author||'System'}</td>`;
@@ -491,118 +494,133 @@ function getSystemPrimer(data) {
                 });
             },
 
-            // PROFILES: INDEXING ENGINE
+            // PROFILES: CRASH-PROOF INDEXING
             renderProf: function(filterType = 'All') {
                 const l = document.getElementById('profile-list'); 
                 l.innerHTML = "";
                 
-                // 1. HEADER & FILTER UI
-                const header = document.createElement('div');
-                header.style.padding = "10px 15px"; 
-                header.style.borderBottom = "1px solid #444";
-                header.style.background = "#1a1c24";
-                header.style.position = "sticky"; 
-                header.style.top = "0";
-                
-                header.innerHTML = `
-                    <div style="font-size:0.7rem; color:#666; margin-bottom:5px;">ENTITY INDEX</div>
-                    <select id="prof-filter-select" style="width:100%; background:#000; color:#fff; border:1px solid #444; padding:5px; border-radius:4px; font-size:0.8rem;" onchange="App.admin.renderProf(this.value)">
-                        <option value="All" ${filterType==='All'?'selected':''}>All Entities</option>
-                        <option value="People" ${filterType==='People'?'selected':''}>People</option>
-                        <option value="Location" ${filterType==='Location'?'selected':''}>Locations</option>
-                        <option value="Faction" ${filterType==='Faction'?'selected':''}>Factions</option>
-                        <option value="Event" ${filterType==='Event'?'selected':''}>Events</option>
-                        <option value="Creature" ${filterType==='Creature'?'selected':''}>Creatures</option>
-                        <option value="Ghost" ${filterType==='Ghost'?'selected':''}>Ghosts (Uncategorized)</option>
-                    </select>
-                `;
-                l.appendChild(header);
-
-                // 2. BUILD INDEX (The "Brain")
-                const index = new Map(); // Key: NameLower, Val: { name, type, isGhost }
-                const ignore = ['journal','system','meta'];
-
-                // Pass A: Find MASTERS (Official Records)
-                App.data.forEach(d => {
-                    const cat = (d.category || "Misc");
-                    if(ignore.includes(cat.toLowerCase())) return;
-                    if(!d.eventName) return;
+                try {
+                    // 1. HEADER & FILTER UI
+                    const header = document.createElement('div');
+                    header.style.padding = "10px 15px"; 
+                    header.style.borderBottom = "1px solid #444";
+                    header.style.background = "#1a1c24";
+                    header.style.position = "sticky"; 
+                    header.style.top = "0";
                     
-                    index.set(d.eventName.toLowerCase().trim(), {
-                        name: d.eventName.trim(),
-                        type: cat,
-                        isGhost: false
-                    });
-                });
-
-                // Pass B: Find GHOSTS (Tags)
-                App.data.forEach(d => {
-                    if(!d.tags) return;
-                    d.tags.split(',').forEach(t => {
-                        const cleanTag = t.trim();
-                        if(cleanTag.length < 2) return;
-                        const key = cleanTag.toLowerCase();
-                        
-                        // Only add if not already a Master
-                        if(!index.has(key)) {
-                            index.set(key, {
-                                name: cleanTag,
-                                type: "Ref", // Unknown type
-                                isGhost: true
-                            });
-                        }
-                    });
-                });
-
-                // 3. FILTER & RENDER
-                const scrollArea = document.createElement('div');
-                let count = 0;
-                
-                Array.from(index.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(entity => {
-                    // Filter Logic
-                    if(filterType === 'Ghost' && !entity.isGhost) return;
-                    if(filterType !== 'All' && filterType !== 'Ghost' && !entity.type.toLowerCase().includes(filterType.toLowerCase())) return;
-
-                    count++;
-                    const div = document.createElement('div');
-                    div.className = 'profile-item';
-                    
-                    // Visuals: Ghost vs Master
-                    const color = entity.isGhost ? '#888' : '#fff';
-                    const weight = entity.isGhost ? 'normal' : 'bold';
-                    const border = entity.isGhost ? '3px solid transparent' : '3px solid var(--green)'; // Indicator dot
-                    
-                    div.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:${color}; font-weight:${weight};">${entity.name}</span>
-                            <span style="font-size:0.65rem; color:#555; text-transform:uppercase; margin-left:10px; flex-shrink:0;">${entity.type}</span>
-                        </div>
+                    header.innerHTML = `
+                        <div style="font-size:0.7rem; color:#666; margin-bottom:5px;">ENTITY INDEX (${App.data.length})</div>
+                        <select id="prof-filter-select" style="width:100%; background:#000; color:#fff; border:1px solid #444; padding:5px; border-radius:4px; font-size:0.8rem;" onchange="App.admin.renderProf(this.value)">
+                            <option value="All" ${filterType==='All'?'selected':''}>All Entities</option>
+                            <option value="People" ${filterType==='People'?'selected':''}>People</option>
+                            <option value="Location" ${filterType==='Location'?'selected':''}>Locations</option>
+                            <option value="Faction" ${filterType==='Faction'?'selected':''}>Factions</option>
+                            <option value="Event" ${filterType==='Event'?'selected':''}>Events</option>
+                            <option value="Creature" ${filterType==='Creature'?'selected':''}>Creatures</option>
+                            <option value="Ghost" ${filterType==='Ghost'?'selected':''}>Ghosts (Uncategorized)</option>
+                        </select>
                     `;
-                    // Click Handler
-                    div.onclick = () => App.admin.showProf(entity.name);
-                    scrollArea.appendChild(div);
-                });
+                    l.appendChild(header);
 
-                if(count === 0) scrollArea.innerHTML = "<div style='padding:20px; color:#666;'>No matches found.</div>";
-                l.appendChild(scrollArea);
+                    // 2. BUILD INDEX (Safety Wrappers Added)
+                    const index = new Map(); 
+                    const ignore = ['journal','system','meta'];
+
+                    // Pass A: Find MASTERS
+                    App.data.forEach(d => {
+                        const cat = String(d.category || "Misc");
+                        const name = String(d.eventName || "").trim();
+                        
+                        if(ignore.includes(cat.toLowerCase())) return;
+                        if(name.length < 1) return;
+                        
+                        index.set(name.toLowerCase(), {
+                            name: name,
+                            type: cat,
+                            isGhost: false
+                        });
+                    });
+
+                    // Pass B: Find GHOSTS (Tags)
+                    App.data.forEach(d => {
+                        if(!d.tags) return;
+                        // Force string before split to prevent crash
+                        String(d.tags).split(',').forEach(t => {
+                            const cleanTag = t.trim();
+                            if(cleanTag.length < 2) return;
+                            const key = cleanTag.toLowerCase();
+                            
+                            if(!index.has(key)) {
+                                index.set(key, {
+                                    name: cleanTag,
+                                    type: "Ref", 
+                                    isGhost: true
+                                });
+                            }
+                        });
+                    });
+
+                    // 3. FILTER & RENDER
+                    const scrollArea = document.createElement('div');
+                    let count = 0;
+                    
+                    Array.from(index.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(entity => {
+                        // Safe Filter Logic
+                        const eType = String(entity.type).toLowerCase();
+                        const fType = String(filterType).toLowerCase();
+
+                        if(filterType === 'Ghost' && !entity.isGhost) return;
+                        if(filterType !== 'All' && filterType !== 'Ghost' && !eType.includes(fType)) return;
+
+                        count++;
+                        const div = document.createElement('div');
+                        div.className = 'profile-item';
+                        
+                        // Visuals
+                        const color = entity.isGhost ? '#888' : '#fff';
+                        const weight = entity.isGhost ? 'normal' : 'bold';
+                        
+                        div.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:${color}; font-weight:${weight};">${entity.name}</span>
+                                <span style="font-size:0.65rem; color:#555; text-transform:uppercase; margin-left:10px; flex-shrink:0;">${entity.type}</span>
+                            </div>
+                        `;
+                        div.onclick = () => App.admin.showProf(entity.name);
+                        scrollArea.appendChild(div);
+                    });
+
+                    if(count === 0) scrollArea.innerHTML = "<div style='padding:20px; color:#666;'>No matches found.</div>";
+                    l.appendChild(scrollArea);
+
+                } catch(e) {
+                    console.error(e);
+                    l.innerHTML += `<div style="padding:15px; color:#ff6b6b;"><strong>System Error:</strong><br>${e.message}</div>`;
+                }
             },
 
             // DETAIL VIEW (Adaptive)
             showProf: function(name) {
                 const v = document.getElementById('profile-detail');
+                const safeName = String(name).toLowerCase();
                 
                 // 1. LOCATE DATA
                 const index = new Map(); 
-                App.data.forEach(d => { if(d.eventName && !['journal','system'].includes((d.category||'').toLowerCase())) index.set(d.eventName.toLowerCase(), d); });
+                App.data.forEach(d => { 
+                    if(d.eventName && !['journal','system'].includes((d.category||'').toLowerCase())) {
+                        index.set(String(d.eventName).toLowerCase(), d);
+                    }
+                });
                 
-                // Master Record?
-                const master = index.get(name.toLowerCase());
+                const master = index.get(safeName);
                 const isGhost = !master;
                 const type = master ? master.category : "Entity";
 
-                // References?
-                const refs = App.data.filter(r => (r.tags && r.tags.toLowerCase().includes(name.toLowerCase())) || r.eventName.toLowerCase() === name.toLowerCase())
-                                     .sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
+                // Safe Reference Search
+                const refs = App.data.filter(r => 
+                    (r.tags && String(r.tags).toLowerCase().includes(safeName)) || 
+                    String(r.eventName).toLowerCase() === safeName
+                ).sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
 
                 const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG(type, name);
 
@@ -628,8 +646,7 @@ function getSystemPrimer(data) {
                         <div>
                 `;
 
-                // Content Block
-                if(type.toLowerCase().includes('location')) {
+                if(String(type).toLowerCase().includes('location')) {
                     html += `
                         <h3 style="color:var(--cyan); margin-top:0;">GEOGRAPHY & LORE</h3>
                         <p style="color:#ccc; white-space:pre-wrap; line-height:1.6;">${master ? master.narrative : "No data available."}</p>
@@ -648,8 +665,6 @@ function getSystemPrimer(data) {
                 }
 
                 html += `</div></div>`; 
-
-                // Timeline
                 html += `<h3 style="margin-top:30px; border-bottom:1px solid #444; padding-bottom:5px; color:var(--text-dim);">TIMELINE REFERENCES (${refs.length})</h3><div style="margin-top:15px;">`;
 
                 if(refs.length === 0) {
@@ -672,7 +687,6 @@ function getSystemPrimer(data) {
                 html += `</div>`;
                 v.innerHTML = html;
                 
-                // Buttons
                 const btnArea = document.getElementById('prof-btn-area');
                 const btn = document.createElement('button');
                 if (isGhost) {
