@@ -433,7 +433,9 @@ function getSystemPrimer(data) {
         },
 
         // 4. ADMIN FEATURES
+        // 4. ADMIN FEATURES (V21.10 PHASE 2: PROFILES & GHOSTS)
         admin: {
+            // LIBRARY: Search now digs into Narratives and Tags
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
                 const term = document.getElementById('filt-search').value.toLowerCase();
@@ -445,8 +447,7 @@ function getSystemPrimer(data) {
                     if(cat !== 'All' && d.category !== cat) return;
                     if(stat !== 'All' && d.status !== stat) return;
                     if(camp !== 'All' && d.campaign !== camp) return;
-                   // NEW: Search Name, Author, Narrative (Body), and Tags
-                    // UPDATED: Searches Title, Author, Narrative, and Tags
+                    // DEEP SEARCH: Name, Author, Narrative, Tags
                     if(term && !(d.eventName + d.author + d.narrative + d.tags).toLowerCase().includes(term)) return;
                     
                     const tr = document.createElement('tr');
@@ -455,6 +456,8 @@ function getSystemPrimer(data) {
                     t.appendChild(tr);
                 });
             },
+            
+            // TIMELINE: Unchanged
             renderTime: function() {
                 const c = document.getElementById('timeline-list'); c.innerHTML = "";
                 const sorted = [...App.data].sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
@@ -464,14 +467,31 @@ function getSystemPrimer(data) {
                     }
                 });
             },
+
+            // PROFILES: The Fix (Aggressive Aggregation)
             renderProf: function() {
                 const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const entities = new Set();
+                
+                // 1. AGGREGATE: Scan everything for names
+                if(App.data.length === 0) {
+                    l.innerHTML = "<div style='padding:15px; color:#666;'>No Archives Found.</div>";
+                    return;
+                }
+
                 App.data.forEach(d => {
-                    if(d.tags) d.tags.split(',').forEach(x => entities.add(x.trim()));
-                    if(['People','Location','Factions','Creature'].includes(d.category)) entities.add(d.eventName);
+                    // Add the record title itself if it's an Entity type (Case insensitive check)
+                    if(['People','Location','Factions','Creature'].some(c => c.toLowerCase() === (d.category||'').toLowerCase())) {
+                        if(d.eventName) entities.add(d.eventName.trim());
+                    }
+                    // Add any tags found in this record
+                    if(d.tags) d.tags.split(',').forEach(x => {
+                        const tag = x.trim();
+                        if(tag.length > 2) entities.add(tag); // Filter out tiny tags
+                    });
                 });
                 
+                // 2. RENDER: Sort alphabetical
                 Array.from(entities).sort().forEach(t => {
                     const div = document.createElement('div');
                     div.className = 'profile-item';
@@ -480,41 +500,91 @@ function getSystemPrimer(data) {
                     l.appendChild(div);
                 });
             },
+
+            // PROFILE DETAIL: Ghost Detection & Officialise Logic
             showProf: function(name) {
                 const v = document.getElementById('profile-detail');
-                const recs = App.data.filter(r => (r.tags && r.tags.includes(name)) || r.eventName === name).sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
-                const prim = App.data.find(r => r.eventName === name && ['People','Location','Factions','Creature'].includes(r.category)) || {};
-                const img = prim.url || GET_IMG('People', name);
-                const isGhost = !prim.fid;
                 
-                v.innerHTML = `
+                // 1. FIND DATA
+                // References: Any record that mentions this name in Tags or Title
+                const refs = App.data.filter(r => (r.tags && r.tags.includes(name)) || r.eventName === name)
+                                     .sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
+                
+                // Master Record: A specific record of type Person/Location with this exact name
+                const master = App.data.find(r => r.eventName === name && ['People','Location','Factions','Creature'].some(c => c.toLowerCase() === (r.category||'').toLowerCase()));
+                
+                const isGhost = !master;
+                const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG('People', name);
+                
+                // 2. BUILD UI
+                let html = `
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px;">
-                        <h1 style="color:var(--gold); margin:0;">${name}</h1>
+                        <div>
+                            <h1 style="color:var(--gold); margin:0;">${name}</h1>
+                            <div style="color:${isGhost ? 'var(--red)' : 'var(--green)'}; font-size:0.8rem; letter-spacing:1px; margin-top:5px;">
+                                ${isGhost ? '⚠ GHOST SIGNAL (UNREGISTERED)' : '✅ ARCHIVED RECORD'}
+                            </div>
+                        </div>
                         <div id="prof-btn-area"></div>
                     </div>
-                    ${isGhost ? '<div style="background:rgba(212,175,55,0.1); color:var(--gold); padding:10px; margin:10px 0;">:: GHOST ENTITY (No Primary Record) ::</div>' : ''}
+
                     <div class="dossier-grid">
-                        <div><img src="${img}" class="dossier-img"></div>
+                        <div style="text-align:center;">
+                            <img src="${img}" class="dossier-img" style="border-color:${isGhost ? 'var(--red)' : 'var(--gold)'};">
+                            ${!isGhost ? `<div style="margin-top:5px; font-size:0.7rem; color:#666;">ID: ${master.fid}</div>` : ''}
+                        </div>
                         <div>
-                            <h3 style="color:var(--cyan)">BIO</h3>
-                            <p style="color:#ccc; white-space:pre-wrap;">${prim.narrative || "No biography available. Derived from cross-references."}</p>
-                            ${prim.stats ? `<div style="background:#ddd; color:#000; padding:10px; margin-top:10px; font-family:monospace;">${prim.stats}</div>` : ''}
+                            <h3 style="color:var(--cyan); margin-top:0;">BIO / STATUS</h3>
+                            <p style="color:#ccc; white-space:pre-wrap; line-height:1.6;">
+                                ${master ? master.narrative : `<strong>No official record exists.</strong><br>This entity appears in ${refs.length} archive entries but lacks a dedicated dossier.`}
+                            </p>
+                            ${(master && master.stats) ? `<div style="background:#222; border:1px solid #444; color:#aaa; padding:15px; margin-top:15px; font-family:monospace; white-space:pre-wrap;">${master.stats}</div>` : ''}
                         </div>
                     </div>
-                    <h3 style="margin-top:30px; border-bottom:1px solid #444;">TIMELINE</h3>
-                    ${recs.map(r => `<div style="margin-bottom:10px; padding-left:10px; border-left:2px solid #444;"><strong style="color:var(--gold)">${r.gameDate}</strong> <span style="color:#fff">${r.eventName}</span><br><span style="color:#888; font-size:0.9rem;">${r.narrative}</span></div>`).join('')}
+
+                    <h3 style="margin-top:30px; border-bottom:1px solid #444; padding-bottom:5px; color:var(--text-dim);">TIMELINE REFERENCES (${refs.length})</h3>
+                    <div style="margin-top:15px;">
                 `;
+
+                // 3. RENDER TIMELINE
+                if(refs.length === 0) {
+                    html += `<div style="color:#666; font-style:italic;">No recorded events.</div>`;
+                } else {
+                    refs.forEach(r => {
+                        html += `
+                        <div style="margin-bottom:15px; padding-left:15px; border-left:2px solid #444; cursor:pointer;" onclick="App.admin.edit('${r.fid}')">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color:var(--gold); font-weight:bold;">${r.gameDate || 'Unknown Date'}</span>
+                                <span style="font-size:0.7rem; color:#666; border:1px solid #333; padding:2px 5px; border-radius:4px;">${r.category}</span>
+                            </div>
+                            <div style="color:#fff; margin-top:2px;">${r.eventName}</div>
+                            <div style="color:#888; font-size:0.9rem; margin-top:5px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                ${r.narrative}
+                            </div>
+                        </div>`;
+                    });
+                }
+                html += `</div>`;
+                v.innerHTML = html;
                 
+                // 4. INJECT BUTTONS
                 const btnArea = document.getElementById('prof-btn-area');
                 const btn = document.createElement('button');
-                btn.className = isGhost ? "btn bg-green" : "btn bg-gold";
-                btn.innerText = isGhost ? "CREATE RECORD" : "EDIT PRIMARY";
-                btn.onclick = () => {
-                    if (isGhost) App.admin.edit({eventName: name, category: 'People', status: 'Draft', tags: name});
-                    else App.admin.edit(prim.fid);
-                };
+                
+                if (isGhost) {
+                    btn.className = "btn bg-green";
+                    btn.innerText = "CREATE MASTER RECORD";
+                    // Pre-fill the form with the Name and Category
+                    btn.onclick = () => App.admin.edit({eventName: name, category: 'People', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
+                } else {
+                    btn.className = "btn bg-gold";
+                    btn.innerText = "EDIT DOSSIER";
+                    btn.onclick = () => App.admin.edit(master.fid);
+                }
                 btnArea.appendChild(btn);
             },
+
+            // CRUD OPS: Unchanged but included for modularity
             edit: function(ref) {
                 const d = (typeof ref === 'string') ? App.data.find(r => r.fid === ref) : ref;
                 ['id','name','date','status','cat','game','camp','url','auth','stats','tags','narr'].forEach(k => document.getElementById('e-'+k).value = "");
