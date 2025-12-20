@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V21.4 [AUTO-LINK]</title>
+    <title>LorekeeperX V21.5 [AUTO-LINK]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V21.4</div>
+            <div class="gate-version">V21.5</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
             <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
@@ -122,7 +122,7 @@
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V21.4</div>
+            <div class="gate-version">V21.5</div>
             <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
@@ -283,6 +283,53 @@
     // UTILS
     const PARSE_DATE = (d) => { if(!d) return -9999; const m = d.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
+
+    // --- NEW HELPER FUNCTIONS ---
+
+// 1. Semantic Scoring: Ranks relevance by Title > Tags > Body
+function findBestContext(userQuery, data, topN = 3) {
+    if (!userQuery || !data || data.length === 0) return [];
+
+    const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2); 
+    
+    const scoredItems = data.map(item => {
+        let score = 0;
+        const title = (item.eventName || "").toLowerCase();
+        const body = (item.narrative || "").toLowerCase();
+        // Check if tags exist, otherwise empty array
+        const tags = (item.tags || []).map(t => t.toLowerCase());
+
+        // A. Exact Title Match (Highest Priority)
+        if (title === userQuery.toLowerCase()) score += 100;
+
+        queryTerms.forEach(term => {
+            // B. Partial Title Match
+            if (title.includes(term)) score += 20;
+
+            // C. Tag Match
+            if (tags.some(t => t.includes(term))) score += 10;
+
+            // D. Body Text Match
+            if (body.includes(term)) score += 1;
+        });
+
+        return { item, score };
+    });
+
+    // Sort by score high-to-low and grab the top N
+    return scoredItems
+        .filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, topN)
+        .map(x => x.item);
+}
+
+// 2. System Primer: Tells the AI what "files" exist
+function getSystemPrimer(data) {
+    // Creates a list like: "Goblin Ambush, King's Castle, Iron Sword"
+    const titles = data.map(d => d.eventName).join(", ");
+    return `You have access to the following data entries: [${titles}].`;
+}
 
     // APP CORE
     window.App = {
@@ -528,7 +575,34 @@
         },
 
         // 5. CODEX FEATURES (V21.3 AUTO-NEGOTIATION)
+        // 5. CODEX FEATURES (V21.4 SEMANTIC UPGRADE)
         codex: {
+            // Helper: Weighted Search Algorithm
+            findBestContext: function(userQuery, data, topN = 5) {
+                if (!userQuery || !data || data.length === 0) return [];
+                const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+                
+                return data.map(item => {
+                    let score = 0;
+                    const title = (item.eventName || "").toLowerCase();
+                    const body = (item.narrative || "").toLowerCase();
+                    const tags = (item.tags || "").toLowerCase(); 
+
+                    if (title === userQuery.toLowerCase()) score += 100; // Exact Match
+                    
+                    queryTerms.forEach(term => {
+                        if (title.includes(term)) score += 20; // Title Partial
+                        if (tags.includes(term)) score += 10;  // Tag Match
+                        if (body.includes(term)) score += 1;   // Body Match
+                    });
+                    return { item, score };
+                })
+                .filter(x => x.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, topN)
+                .map(x => x.item);
+            },
+
             renderImg: function(filter="") {
                 const g = document.getElementById('img-grid'); g.innerHTML = "";
                 const term = (filter||"").toLowerCase();
@@ -538,6 +612,7 @@
                     g.innerHTML += `<div style="background:#1f2833; border-radius:8px; overflow:hidden;"><img src="${img}" style="width:100%; height:150px; object-fit:cover;"><div style="padding:10px;"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
                 });
             },
+            
             submit: function() {
                 const d = {
                     eventName: document.getElementById('c-title').value, category: document.getElementById('c-cat').value,
@@ -551,6 +626,7 @@
                     alert("Submitted for Review."); App.router.go('Chat');
                 });
             },
+            
             send: async function() {
                 const inp = document.getElementById('chat-input');
                 const msg = inp.value; 
@@ -562,43 +638,55 @@
                 
                 if(!msg) return;
                 this.msg(msg, 'user'); inp.value = "";
-                const loadId = this.msg("Thinking...", 'ai');
+                const loadId = this.msg("Accessing Archives...", 'ai');
                 
-                const hits = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 15);
-                const ctx = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
+                // 1. RUN NEW SEARCH LOGIC
+                const hits = this.findBestContext(msg, App.data);
+                
+                // 2. FORMAT CONTEXT
+                const ctx = hits.map(d => `[ENTRY: ${d.eventName}]\nTAGS: ${d.tags||''}\n${d.narrative}`).join("\n\n");
+                
+                // 3. SYSTEM PRIMER (List of titles to reduce hallucinations)
+                const primer = App.data.map(d => d.eventName).join(", ");
+                
                 const sys = document.getElementById('persona-select').value;
                 const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
+                const basePersona = personas[sys] || personas['Codex'];
+
+                // 4. CONSTRUCT PROMPT
+                const fullPrompt = `
+                SYSTEM: ${basePersona}
+                DATABASE INDEX: ${primer}
+                
+                RELEVANT ARCHIVES:
+                ${ctx}
+                
+                USER QUERY: ${msg}
+                `;
                 
                 try {
-                    // 1. AUTO-DISCOVERY
+                    // AUTO-DISCOVERY (Unchanged)
                     const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${App.key}`);
                     if (!listReq.ok) throw new Error("Could not list models. Key may be invalid.");
                     const listData = await listReq.json();
                     
-                    let targetModel = "gemini-1.5-flash"; // Fallback
+                    let targetModel = "gemini-1.5-flash"; 
                     const validModels = listData.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
                     const bestMatch = validModels.find(m => m.name.includes("flash") && !m.name.includes("exp") && !m.name.includes("8b"));
-                    
                     if (bestMatch) targetModel = bestMatch.name.replace("models/", "");
-                    else if (validModels.length > 0) targetModel = validModels[0].name.replace("models/", "");
 
-                    console.log("Auto-Negotiated Model:", targetModel);
-
-                    // 2. EXECUTE
+                    // EXECUTE
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${App.key}`;
                     const res = await fetch(url, { 
                         method: 'POST', 
                         headers: {'Content-Type': 'application/json'}, 
                         body: JSON.stringify({ 
-                            contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }],
+                            contents: [{ parts: [{ text: fullPrompt }] }],
                             safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
                         }) 
                     });
                     
-                    if (!res.ok) {
-                        const errText = await res.text();
-                        throw new Error(`${res.status} - ${errText}`);
-                    }
+                    if (!res.ok) throw new Error(await res.text());
                     
                     const json = await res.json();
                     if (json.error) throw new Error(json.error.message);
@@ -612,6 +700,7 @@
                     bubble.innerHTML = `⚠️ <strong>Connection Failed.</strong><br><span style="font-size:0.7rem; color:#ff6b6b; font-family:monospace;">${e.message}</span>`;
                 }
             },
+            
             msg: function(t, s) {
                 const d = document.createElement('div'); d.className = `msg ${s}`; d.innerHTML = App.md.render(t);
                 const f = document.getElementById('chat-feed'); f.appendChild(d); f.scrollTop = f.scrollHeight;
