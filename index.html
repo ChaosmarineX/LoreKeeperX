@@ -575,7 +575,8 @@
     const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
     
     // AUTO-NEGOTIATION LOOP (UPDATED FOR DIAGNOSIS)
-    const models = ["gemini-1.5-flash-002", "gemini-1.5-pro-002", "gemini-2.0-flash-exp"];
+    // I moved the 1.5-flash-002 to the end or set it as your default selection
+    const models = ["gemini-1.5-flash"];
     let success = false;
     let lastError = "";
 
