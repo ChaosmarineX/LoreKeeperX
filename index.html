@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LorekeeperX V21.2 [AUTO-LINK]</title>
+    <title>LorekeeperX V21.3 [AUTO-LINK]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@
         <div class="gate-panel codex">
             <div class="gate-icon" style="color:var(--cyan)">💎</div>
             <div class="gate-title" style="color:var(--cyan)">CODEX</div>
-            <div class="gate-version">V21.2</div>
+            <div class="gate-version">V21.3</div>
             <input id="login-player-name" class="gate-input" placeholder="Callsign / Identity" autocomplete="off" data-lpignore="true">
             <input id="login-player-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--cyan); color:#000;" onclick="App.auth.loginPlayer()">ENTER</button>
@@ -122,7 +122,7 @@
         <div class="gate-panel lore">
             <div class="gate-icon" style="color:var(--gold)">🛡️</div>
             <div class="gate-title" style="color:var(--gold)">LOREKEEPER</div>
-            <div class="gate-version">V21.2</div>
+            <div class="gate-version">V21.3</div>
             <input id="login-admin-pass" type="password" class="gate-input" placeholder="Access Code (Optional)" autocomplete="off" data-lpignore="true">
             <button class="gate-btn" style="background:var(--gold); color:#000;" onclick="App.auth.loginAdmin()">AUTHORIZE</button>
         </div>
@@ -557,60 +557,67 @@
                 });
             },
             send: async function() {
-    const inp = document.getElementById('chat-input');
-    const msg = inp.value; 
-    
-    if(!App.key) {
-        App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai');
-        return;
-    }
-    
-    if(!msg) return;
-    this.msg(msg, 'user'); inp.value = "";
-    const loadId = this.msg("Thinking...", 'ai');
-    
-    const hits = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 15);
-    const ctx = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
-    const sys = document.getElementById('persona-select').value;
-    const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
-    
-    // AUTO-NEGOTIATION LOOP (UPDATED FOR DIAGNOSIS)
-    // I moved the 1.5-flash-002 to the end or set it as your default selection
-    // STABLE CONFIGURATION (No editing required)
-const models = ["gemini-1.5-flash-002", "gemini-1.5-flash-001"];
-    let success = false;
-    let lastError = "";
+                const inp = document.getElementById('chat-input');
+                const msg = inp.value; 
+                
+                if(!App.key) {
+                    App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai');
+                    return;
+                }
+                
+                if(!msg) return;
+                this.msg(msg, 'user'); inp.value = "";
+                const loadId = this.msg("Thinking...", 'ai');
+                
+                const hits = App.data.filter(d => (d.eventName+d.narrative).toLowerCase().includes(msg.toLowerCase())).slice(0, 15);
+                const ctx = hits.map(d => `[${d.eventName}]: ${d.narrative}`).join("\n");
+                const sys = document.getElementById('persona-select').value;
+                const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
+                
+                try {
+                    // 1. AUTO-DISCOVERY: Ask Google what models THIS key can use
+                    const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${App.key}`);
+                    if (!listReq.ok) throw new Error("Could not list models. Key may be invalid.");
+                    const listData = await listReq.json();
+                    
+                    // 2. FILTER: Find a Stable Flash model (No Experimental, No 8b, Must support Generate)
+                    let targetModel = "gemini-1.5-flash"; // Ultimate fallback
+                    const validModels = listData.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
+                    const bestMatch = validModels.find(m => m.name.includes("flash") && !m.name.includes("exp") && !m.name.includes("8b"));
+                    
+                    if (bestMatch) targetModel = bestMatch.name.replace("models/", "");
+                    else if (validModels.length > 0) targetModel = validModels[0].name.replace("models/", "");
 
-    for (const model of models) {
-        try {
-            // Added 'unsafe' block setting to prevent over-sensitive refusals
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${App.key}`;
-            const res = await fetch(url, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }],
-                    safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
-                }) 
-            });
-            
-            if (!res.ok) {
-                const errText = await res.text(); // Get the raw error text from Google
-                throw new Error(`${res.status} ${res.statusText} - ${errText}`);
-            }
-            
-            const json = await res.json();
-            if (json.error) throw new Error(json.error.message);
-            
-            document.getElementById(loadId).remove();
-            this.msg(json.candidates[0].content.parts[0].text, 'ai');
-            success = true;
-            break; 
-        } catch(e) {
-            console.warn(`Model ${model} failed:`, e);
-            lastError = e.toString(); // Capture the specific error
-        }
-    }
+                    console.log("Auto-Negotiated Model:", targetModel);
+
+                    // 3. EXECUTE: Use the discovered model
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${App.key}`;
+                    const res = await fetch(url, { 
+                        method: 'POST', 
+                        headers: {'Content-Type': 'application/json'}, 
+                        body: JSON.stringify({ 
+                            contents: [{ parts: [{ text: `SYSTEM: ${personas[sys]||personas['Codex']}\nCTX:\n${ctx}\nUSER: ${msg}` }] }],
+                            safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
+                        }) 
+                    });
+                    
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error(`${res.status} - ${errText}`);
+                    }
+                    
+                    const json = await res.json();
+                    if (json.error) throw new Error(json.error.message);
+                    
+                    document.getElementById(loadId).remove();
+                    this.msg(json.candidates[0].content.parts[0].text, 'ai');
+                    
+                } catch(e) {
+                    console.warn("Generation failed:", e);
+                    const bubble = document.getElementById(loadId);
+                    bubble.innerHTML = `⚠️ <strong>Connection Failed.</strong><br><span style="font-size:0.7rem; color:#ff6b6b; font-family:monospace;">${e.message}</span>`;
+                }
+            },
 
     if (!success) {
         const bubble = document.getElementById(loadId);
