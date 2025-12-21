@@ -114,6 +114,17 @@
         .bg-cyan { background: var(--cyan); color: #000; }
         .bg-red { background: var(--red); color: #000; }
         .bg-dark { background: #333; color: #fff; }
+
+        /* === ATLAS (INTERACTIVE MAP) === */
+        #atlas-viewport { overflow: hidden; position: relative; width: 100%; height: 100%; background: #0b0c10; cursor: grab; }
+        #atlas-viewport:active { cursor: grabbing; }
+        #atlas-content { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.1s linear; }
+        
+        .map-pin { position: absolute; width: 20px; height: 20px; background: var(--gold); border: 2px solid #000; border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; z-index: 10; transition: 0.2s; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .map-pin:hover { transform: translate(-50%, -60%) scale(1.3); background: #fff; z-index: 20; }
+        
+        .map-label { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; pointer-events: none; opacity: 0; transition: 0.2s; border: 1px solid var(--border); }
+        .map-pin:hover .map-label { opacity: 1; bottom: 30px; }
     </style>
 </head>
 <body>
@@ -239,8 +250,18 @@
             </div>
         </div>
 
-        <div id="view-codex-atlas" class="viewport hidden" style="background:#000; display:flex; align-items:center; justify-content:center;">
-            <img src="Tarth 2.1 80.jpg" style="max-width:100%; max-height:100%;" onerror="this.src='https://placehold.co/1200x800/111/444?text=MAP+NOT+FOUND'">
+        <div id="view-codex-atlas" class="viewport hidden">
+            <div id="atlas-viewport">
+                <div id="atlas-content">
+                    <img id="atlas-img" src="Tarth 2.1 80.jpg" style="display:block; pointer-events:none;" onerror="this.src='https://placehold.co/2000x1500/111/444?text=MAP+IMAGE+NOT+FOUND'">
+                    
+                    <div id="atlas-pins"></div>
+                </div>
+            </div>
+            
+            <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:5px; z-index:100;">
+                <button class="btn bg-dark" onclick="App.atlas.reset()">Recenter</button>
+            </div>
         </div>
 
     </div>
@@ -349,7 +370,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.32", 
+        version: "V21.33", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -899,7 +920,124 @@
 
         // 5. CODEX FEATURES
         codex: {
-            findBestContext: function(userQuery, data, topN = 5) {
+            // 6. ATLAS (Interactive Map System)
+        atlas: {
+            scale: 1, panning: false, pointX: 0, pointY: 0, start: {x:0, y:0},
+            
+            init: function() {
+                const view = document.getElementById('atlas-viewport');
+                const content = document.getElementById('atlas-content');
+                
+                // 1. DRAG LOGIC
+                view.onmousedown = (e) => {
+                    if(e.target.classList.contains('map-pin')) return; // Don't drag if clicking a pin
+                    e.preventDefault();
+                    this.panning = true;
+                    this.start = { x: e.clientX - this.pointX, y: e.clientY - this.pointY };
+                };
+                
+                view.onmouseup = () => { this.panning = false; };
+                view.onmouseleave = () => { this.panning = false; };
+                
+                view.onmousemove = (e) => {
+                    if(!this.panning) return;
+                    e.preventDefault();
+                    this.pointX = e.clientX - this.start.x;
+                    this.pointY = e.clientY - this.start.y;
+                    this.update();
+                };
+                
+                // 2. ZOOM LOGIC (Wheel)
+                view.onwheel = (e) => {
+                    e.preventDefault();
+                    const xs = (e.clientX - this.pointX) / this.scale;
+                    const ys = (e.clientY - this.pointY) / this.scale;
+                    const delta = -Math.sign(e.deltaY);
+                    
+                    // Cap Zoom between 0.2x and 5x
+                    const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5);
+                    
+                    this.pointX = e.clientX - (xs * newScale);
+                    this.pointY = e.clientY - (ys * newScale);
+                    this.scale = newScale;
+                    this.update();
+                };
+
+                // 3. ADMIN: RIGHT-CLICK TO ADD PIN
+                view.oncontextmenu = (e) => {
+                    if(App.role !== 'admin') return;
+                    e.preventDefault();
+                    
+                    // Calculate Click Position as Percentage of Image Size (so it works on any screen)
+                    const img = document.getElementById('atlas-img');
+                    const rect = img.getBoundingClientRect();
+                    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+                    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+                    
+                    this.plantFlag(xPct, yPct);
+                };
+            },
+
+            update: function() {
+                const el = document.getElementById('atlas-content');
+                el.style.transform = `translate(${this.pointX}px, ${this.pointY}px) scale(${this.scale})`;
+            },
+            
+            reset: function() {
+                this.scale = 1; this.pointX = 0; this.pointY = 0;
+                this.update();
+            },
+
+            // RENDER PINS
+            render: function() {
+                const layer = document.getElementById('atlas-pins');
+                layer.innerHTML = "";
+                
+                App.data.forEach(d => {
+                    // Only show records that have Coordinates (d.coords)
+                    if(d.category === 'Location' && d.coords) {
+                        const p = document.createElement('div');
+                        p.className = 'map-pin';
+                        p.style.left = d.coords.x + "%";
+                        p.style.top = d.coords.y + "%";
+                        p.innerHTML = `<div class="map-label">${d.eventName}</div>`;
+                        
+                        // Click to Open Record
+                        p.onclick = (e) => {
+                            e.stopPropagation(); // Stop map drag
+                            App.router.go('Profiles');
+                            App.admin.showProf(d.eventName);
+                        };
+                        
+                        layer.appendChild(p);
+                    }
+                });
+            },
+
+            // CREATE PIN LOGIC
+            plantFlag: async function(x, y) {
+                // Find Locations that don't have pins yet
+                const candidates = App.data.filter(d => d.category === 'Location' && !d.coords && !d.deleted);
+                
+                if(candidates.length === 0) return alert("No unmapped locations found.\nCreate a 'Location' record first.");
+
+                // Simple Prompt (We can make this a fancy modal later)
+                const list = candidates.map(c => `• ${c.eventName}`).join("\n");
+                const name = prompt(`PLANT FLAG at ${Math.floor(x)}%, ${Math.floor(y)}%\n\nEnter the Exact Name of the location to link:\n\n${list}`);
+                
+                if(!name) return;
+                
+                const match = candidates.find(c => c.eventName.toLowerCase() === name.toLowerCase());
+                if(match) {
+                    await setDoc(doc(App.dbInstance, "lore_library", match.fid), { coords: {x:x, y:y} }, { merge: true });
+                    alert(`📍 Linked to ${match.eventName}`);
+                    App.db.load(); // Refresh to show pin
+                } else {
+                    alert("Location not found or already mapped.");
+                }
+            }
+        },
+        findBestContext: function(userQuery, data, topN = 5) {
                 if (!userQuery || !data || data.length === 0) return [];
                 const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
                 return data.map(item => {
