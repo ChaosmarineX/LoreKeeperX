@@ -177,13 +177,14 @@
         <header class="header">
             <div style="display:flex; align-items:center;">
                 <div class="brand" id="brand-text">LOREKEEPER</div>
-                <div style="color:#666; margin-left:15px; border:1px solid #333; padding:2px 8px; border-radius:4px; font-size:0.8rem;" id="user-display">GUEST</div>
-                <select id="persona-select" class="hidden" style="margin-left:15px; background:#000; color:var(--cyan); border:1px solid var(--border); padding:5px;">
+                
+                <select id="campaign-select" style="margin-left:15px; background:#000; color:var(--gold); border:1px solid #333; padding:5px; border-radius:4px; font-weight:bold; max-width:150px;" onchange="App.setCampaign(this.value)">
+                    <option value="Tarth 2.0" selected>Tarth 2.0</option>
+                    <option value="System">System</option>
+                </select>
+
+                <select id="persona-select" class="hidden" style="margin-left:10px; background:#000; color:var(--cyan); border:1px solid var(--border); padding:5px; border-radius:4px; max-width:150px;">
                     <option value="Codex">Codex (Steward)</option>
-                    <option value="Saverath">Saverath (Historian)</option>
-                    <option value="NaVan">Na'Van (Soldier)</option>
-                    <option value="Brigit">Capt. Brigit</option>
-                    <option value="Leaf">Leaf (Priest)</option>
                 </select>
             </div>
             
@@ -193,7 +194,7 @@
                 <button id="switch-btn" class="btn bg-dark hidden" onclick="App.auth.switch()">TO ADMIN</button>
                 <button class="btn" style="background:transparent; color:#888;" title="API Settings" onclick="document.getElementById('key-modal').style.display='flex'">⚙️</button>
                 <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
-                <button class="btn bg-gold" style="margin-left:10px;" onclick="App.router.toggleDual()">⚔ COMMAND MODE</button>
+                <button id="canvas-btn" class="btn bg-gold" style="margin-left:10px;" onclick="App.router.toggleCanvas()">🎨 CANVAS</button>
             </div>
         </header>
 
@@ -221,6 +222,7 @@
                     <div class="canvas-input-dock">
                         <div class="canvas-pill">
                             <span style="color:#888; font-size:1.2rem; padding:0 5px; cursor:pointer;">+</span>
+                            <button class="btn" style="background:transparent; color:var(--cyan); padding:0 8px; font-size:1.2rem;" title="Generate Visual" onclick="const p = prompt('Describe the visual:'); App.codex.dream(p);">✨</button>
                             <input id="dual-chat-input" style="flex:1; background:transparent; border:none; color:#fff; padding:10px; outline:none; font-family:inherit;" placeholder="Ask Codex...">
                             <button class="btn bg-cyan" style="border-radius:20px; padding:6px 12px; font-size:0.8rem;" onclick="App.codex.sendDual()">➤</button>
                         </div>
@@ -432,10 +434,28 @@
 
     // APP CORE
     window.App = {
-        version: "V21.37", 
+        version: "V21.50", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
+
+        // === NEW: CAMPAIGN MANAGER ===
+        campaign: "Tarth 2.0",
+        
+        setCampaign: function(name) {
+            this.campaign = name;
+            
+            // 1. Reload Admin View
+            if(this.role === 'admin') this.admin.renderLib();
+            
+            // 2. Reload Map (Visuals)
+            this.atlas.loadCampaignMap();
+            
+            // 3. Reload Personas (Voices)
+            this.codex.loadPersonas();
+            
+            alert(`Context switched to: ${name}`);
+        },
 
         init: function() {
             // 1. Initialize Firebase
@@ -445,8 +465,11 @@
             // 2. FORCE UPDATE VERSION LABELS
             document.querySelectorAll('.gate-version').forEach(el => el.innerText = App.version);
             
-            // 3. Load Data
-            this.db.load();
+            // 3. Load Data & Assets
+            this.db.load().then(() => {
+                 this.atlas.loadCampaignMap(); // Load Map Image
+                 this.codex.loadPersonas();    // Load Persona Voices
+            });
         },
 
         // 1. AUTHENTICATION
@@ -1004,6 +1027,60 @@
 
         // 5. CODEX FEATURES
         codex: {
+            // 1. POPULATE PERSONA DROPDOWN
+            loadPersonas: function() {
+                const sel = document.getElementById('persona-select');
+                if(!sel) return;
+                sel.innerHTML = "";
+                
+                // Find Personas for this Campaign
+                const voices = App.data.filter(d => 
+                    (d.category === 'Persona' || d.category === 'System') && 
+                    (d.campaign === App.campaign || d.campaign === 'All' || !d.campaign)
+                );
+                
+                // Add Default
+                const optDefault = document.createElement('option');
+                optDefault.value = "Codex";
+                optDefault.innerText = "Codex (Steward)";
+                sel.appendChild(optDefault);
+
+                // Add Custom Voices
+                voices.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.eventName;
+                    opt.innerText = `${v.eventName} (${v.tags || 'NPC'})`;
+                    sel.appendChild(opt);
+                });
+            },
+
+            // 2. GENERATE VISUALS (The "Dream" Feature)
+            dream: function(promptText) {
+                if(!promptText) return alert("Describe what you want to see.");
+                
+                // Open Canvas & Show Image Layer
+                const canvas = document.getElementById('view-dual-mode');
+                if(canvas.classList.contains('hidden')) App.router.toggleCanvas();
+                
+                document.getElementById('dual-atlas-viewport').classList.add('hidden');
+                const stage = document.getElementById('dual-image-viewport');
+                stage.classList.remove('hidden');
+                
+                // Loading State
+                const imgTarget = document.getElementById('dual-image-target');
+                imgTarget.src = "https://placehold.co/800x600/000/FFF?text=DREAMING...";
+                
+                // Generate
+                const seed = Math.floor(Math.random() * 999999);
+                const safePrompt = encodeURIComponent(promptText + ", fantasy art style, detailed, 8k");
+                const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=600&nologo=true&seed=${seed}`;
+                
+                const loader = new Image();
+                loader.onload = () => { imgTarget.src = url; };
+                loader.src = url;
+                
+                this.msg(`**VISUALIZING:** ${promptText}`, 'ai');
+            },
             findBestContext: function(userQuery, data, topN = 5) {
                 if (!userQuery || !data || data.length === 0) return [];
                 const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
@@ -1166,17 +1243,17 @@
             }
         },
 
-        // 6. ATLAS ENGINE (Unified)
+        // 6. ATLAS ENGINE (Unified & Smooth)
         atlas: {
             scale: 1, pointX: 0, pointY: 0, panning: false, start: {x:0, y:0},
             
-            // 1. The "Mount" function attaches logic to ANY container
+            // 1. MOUNT: Attaches physics to ANY container (Canvas or Tab)
             mount: function(viewId, contentId) {
                 const view = document.getElementById(viewId);
                 const content = document.getElementById(contentId);
                 if(!view || !content) return;
 
-                // Reset State
+                // Reset
                 this.scale = 1; this.pointX = 0; this.pointY = 0;
                 content.style.transform = `translate(0px, 0px) scale(1)`;
 
@@ -1206,7 +1283,9 @@
                     const xs = (e.clientX - this.pointX) / this.scale;
                     const ys = (e.clientY - this.pointY) / this.scale;
                     const delta = -Math.sign(e.deltaY);
-                    const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5); // Max 5x zoom
+                    
+                    // Smooth Zoom Limits (0.2x to 5x)
+                    const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5);
 
                     this.pointX = e.clientX - (xs * newScale);
                     this.pointY = e.clientY - (ys * newScale);
@@ -1215,13 +1294,13 @@
                 };
             },
 
-            // Main Tab Init
+            // 2. Main Tab Init
             init: function() {
                 this.mount('atlas-viewport', 'atlas-content');
                 this.render('atlas-pins');
             },
 
-            // Canvas (Dual) Init
+            // 3. Canvas (Dual) Init
             initDual: function() {
                 setTimeout(() => {
                     this.mount('dual-atlas-viewport', 'dual-atlas-content');
@@ -1229,19 +1308,18 @@
                 }, 100);
             },
 
-            // Show Map Layer (Hides Image Layer)
+            // 4. Show Map Layer (Hides Image Layer in Canvas)
             showDual: function() {
                 document.getElementById('dual-atlas-viewport').classList.remove('hidden');
                 document.getElementById('dual-image-viewport').classList.add('hidden');
             },
 
-            // Recenter Logic
+            // 5. Recenter
             resetDual: function() {
                 this.scale = 1; this.pointX = 0; this.pointY = 0;
                 const el = document.getElementById('dual-atlas-content');
                 if(el) el.style.transform = `translate(0px, 0px) scale(1)`;
             },
-            
             reset: function() {
                 this.scale = 1; this.pointX = 0; this.pointY = 0;
                 const el = document.getElementById('atlas-content');
@@ -1259,8 +1337,6 @@
                         p.style.left = d.coords.x + "%";
                         p.style.top = d.coords.y + "%";
                         p.innerHTML = `<div class="map-label">${d.eventName}</div>`;
-                        // Clicking a pin in Canvas Mode opens the Profile in the Chat? 
-                        // For now let's just alert, or we can make it pull the profile card.
                         layer.appendChild(p);
                     }
                 });
