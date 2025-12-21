@@ -76,7 +76,15 @@
         .profile-item:hover { background: #333; color: #fff; padding-left: 20px; }
         .profile-view { flex: 1; padding: 30px; overflow-y: auto; height: 100%; }
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
-        .dossier-img { width: 100%; height: 300px; object-fit: cover; border: 4px double var(--border); }
+        .dossier-img { 
+            width: 100%; 
+            height: auto; /* Allow natural height */
+            max-height: 400px; /* Cap it so it doesn't take over the screen */
+            object-fit: contain; /* Prevents cropping/stretching */
+            border: 1px solid var(--border); 
+            background: #000; /* Fills empty space if ratio doesn't match */
+            cursor: zoom-in; /* Shows the user they can click */
+        }
 
         /* === CHAT === */
         .chat-wrap { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; }
@@ -297,6 +305,12 @@
         </div>
     </div>
     </div>
+    <div id="lightbox" class="modal" onclick="this.style.display='none'">
+    <div style="position:relative; max-width:90vw; max-height:90vh;">
+        <img id="lightbox-img" src="" style="width:100%; height:100%; object-fit:contain; border:2px solid var(--gold); background:#000;">
+        <div style="text-align:center; margin-top:10px; color:#888; font-size:0.8rem;">CLICK ANYWHERE TO CLOSE</div>
+    </div>
+</div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getFirestore, collection, getDocs, getDoc, orderBy, query, Timestamp, setDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -335,7 +349,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.30", 
+        version: "V21.31", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -749,7 +763,10 @@
                     </div>
                     <div class="dossier-grid">
                         <div style="text-align:center;">
-                            <img src="${img}" class="dossier-img" style="border-color:${isGhost ? 'var(--red)' : 'var(--gold)'};">
+                            <img src="${img}" class="dossier-img" 
+                                style="border-color:${isGhost ? 'var(--red)' : 'var(--gold)'};" 
+                                onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex'; event.stopPropagation();">
+                            
                             ${!isGhost ? `<div style="margin-top:5px; font-size:0.7rem; color:#666;">ID: ${master.fid}</div>` : ''}
                         </div>
                         <div>
