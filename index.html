@@ -265,7 +265,7 @@
                     <span class="f-label">Image URL</span>
                     <div style="display:flex; gap:5px;">
                         <input id="e-url" class="f-input" placeholder="https://..." oninput="document.getElementById('e-preview').src = this.value; document.getElementById('e-preview').style.display='inline-block'; document.getElementById('e-preview-placeholder').style.display='none';">
-                        <button class="btn bg-cyan" style="width:150px; font-size:0.8rem;" onclick="App.admin.magicLens()">✨ GENERATE</button>
+                        <button id="btn-gen" class="btn bg-cyan" style="width:150px; font-size:0.8rem;" onclick="App.admin.magicLens()">✨ GENERATE</button>
                     </div>
                 </div>
                 <div class="span2"><span class="f-label">Stats</span><textarea id="e-stats" class="f-input" style="height:80px; font-family:monospace;"></textarea></div>
@@ -349,7 +349,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.31", 
+        version: "V21.32", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -551,6 +551,13 @@
             },
         
             edit: function(ref) {
+                // 1. RESET GENERATOR BUTTON (Fixes "Dreaming" bug)
+                const btnGen = document.getElementById('btn-gen');
+                if(btnGen) {
+                    btnGen.innerText = "✨ GENERATE";
+                    btnGen.disabled = false;
+                    btnGen.style.opacity = "1";
+                }
                 const d = (typeof ref === 'string') ? App.data.find(r => r.fid === ref) : ref;
                 ['id','name','date','status','cat','game','camp','url','auth','stats','tags','narr'].forEach(k => document.getElementById('e-'+k).value = "");
                 document.getElementById('e-id').value = d.fid || "";
@@ -606,32 +613,75 @@
             },
 
             magicLens: function() {
-                const btn = event.target; 
+                const btn = document.getElementById('btn-gen') || event.target;
+                const urlInput = document.getElementById('e-url');
+                const docId = document.getElementById('e-id').value; // Capture ID immediately
+
+                // 1. CAVEAT: Block if image exists
+                if (urlInput.value.trim().length > 10) {
+                     return alert("⛔ IMAGE EXISTS.\n\nPlease clear the URL field to generate a new one.");
+                }
+                
+                // 2. REQUIRE SAVED RECORD (For background saving)
+                if (!docId) {
+                    return alert("Please SAVE this record at least once before generating images.");
+                }
+
+                // 3. UI FEEDBACK
                 const originalText = "✨ GENERATE";
-                btn.innerText = "⏳ DREAMING..."; btn.disabled = true; btn.style.opacity = "0.7";
+                btn.innerText = "⏳ DREAMING...";
+                btn.disabled = true;
+                btn.style.opacity = "0.7";
 
                 const name = document.getElementById('e-name').value;
                 const cat = document.getElementById('e-cat').value;
                 const desc = document.getElementById('e-narr').value;
-                if(!name) { btn.innerText = originalText; btn.disabled = false; return alert("Please enter a Name first."); }
-
+                
+                // 4. BUILD URL
                 const seed = Math.floor(Math.random() * 999999);
                 const prompt = `Fantasy concept art of ${name}, ${cat}. ${desc.substring(0,80)}. Detailed, 8k resolution.`;
                 const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&seed=${seed}`;
                 
-                const img = document.getElementById('e-preview');
-                const txt = document.getElementById('e-preview-placeholder');
+                // 5. BACKGROUND LOADER
                 const loader = new Image();
                 
-                loader.onload = function() {
-                    document.getElementById('e-url').value = url;
-                    img.src = url; img.style.display = 'inline-block'; txt.style.display = 'none';
-                    btn.innerText = originalText; btn.disabled = false; btn.style.opacity = "1";
+                loader.onload = async function() {
+                    // A. AUTO-SAVE to Database (Background)
+                    // Uses the 'docId' we captured at the start
+                    try {
+                        const docRef = doc(App.dbInstance, "lore_library", docId);
+                        await setDoc(docRef, { url: url }, { merge: true });
+                        console.log("Background Image Saved to " + docId);
+                    } catch(e) { console.error("Auto-save failed", e); }
+
+                    // B. UPDATE UI (Only if you are still looking at the same record)
+                    const currentId = document.getElementById('e-id').value;
+                    if (currentId === docId) {
+                        document.getElementById('e-url').value = url;
+                        
+                        const img = document.getElementById('e-preview');
+                        const txt = document.getElementById('e-preview-placeholder');
+                        img.src = url;
+                        img.style.display = 'inline-block';
+                        txt.style.display = 'none';
+                        
+                        // Success State
+                        btn.innerText = "✅ SAVED";
+                        setTimeout(() => { 
+                            btn.innerText = originalText; 
+                            btn.disabled = false; 
+                            btn.style.opacity = "1"; 
+                        }, 2000);
+                    }
                 };
+                
                 loader.onerror = function() {
                     alert("Visual Link Failed. Try again.");
-                    btn.innerText = originalText; btn.disabled = false; btn.style.opacity = "1";
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
                 };
+                
                 loader.src = url;
             },
 
