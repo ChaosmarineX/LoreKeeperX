@@ -354,18 +354,14 @@
                 <div><span class="f-label">Game System</span><input id="e-game" class="f-input"></div>
                 <div><span class="f-label">Author</span><input id="e-auth" class="f-input"></div>
                 <div class="span2">
-    <div class="span2">
-    <span class="f-label">Image URL / Upload</span>
-    <div style="display:flex; gap:5px; align-items:center;">
-        <input id="e-url" class="f-input" placeholder="https://..." oninput="document.getElementById('e-preview').src = this.value; document.getElementById('e-preview').style.display='block';">
-        
-        <input type="file" id="e-file-input" style="display:none" onchange="App.admin.upload()">
-        
-        <button id="btn-upload" class="btn bg-dark" style="font-size:1.2rem;" title="Upload Local File" onclick="document.getElementById('e-file-input').click()">📂</button>
-        
-        <button id="btn-gen" class="btn bg-cyan" style="width:150px; font-size:0.8rem;" onclick="App.admin.magicLens()">✨ GENERATE</button>
-    </div>
-</div>
+                    <span class="f-label">Image URL / Upload</span>
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <input id="e-url" class="f-input" placeholder="https://..." oninput="document.getElementById('e-preview').src = this.value; document.getElementById('e-preview').style.display='block';">
+                        <input type="file" id="e-file-input" style="display:none" onchange="App.admin.upload()">
+                        <button id="btn-upload" class="btn bg-dark" style="font-size:1.2rem;" title="Upload Local File" onclick="document.getElementById('e-file-input').click()">📂</button>
+                        <button id="btn-gen" class="btn bg-cyan" style="width:150px; font-size:0.8rem;" onclick="App.admin.magicLens()">✨ GENERATE</button>
+                    </div>
+                </div>
                 <div class="span2"><span class="f-label">Stats</span><textarea id="e-stats" class="f-input" style="height:80px; font-family:monospace;"></textarea></div>
                 <div class="span2"><span class="f-label">Tags</span><input id="e-tags" class="f-input"></div>
                 <div class="span2"><span class="f-label">Narrative</span><textarea id="e-narr" class="f-input" style="height:150px;"></textarea></div>
@@ -421,7 +417,7 @@
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
     // APP CORE
     window.App = {
-        version: "V21.56", 
+        version: "V21.57", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -774,25 +770,6 @@
                 btn.disabled = false;
             },
 
-        // 2. UPDATE App.codex.renderImg (Fixes stretched gallery images)
-        renderImg: function(filter="") {
-            const g = document.getElementById('img-grid'); g.innerHTML = "";
-            const term = (filter||"").toLowerCase();
-            App.data.filter(d => d.status === 'Approved').forEach(d => {
-                if(term && !(d.eventName+d.category).toLowerCase().includes(term)) return;
-                const img = d.url && d.url.includes('http') ? d.url : GET_IMG(d.category, d.eventName);
-                
-                // NEW HTML STRUCTURE FOR GRID ITEMS:
-                g.innerHTML += `
-                <div style="background:#1f2833; border-radius:8px; overflow:hidden; text-align:center; padding:10px;">
-                    <img src="${img}" style="height:200px; width:auto; max-width:100%; object-fit:contain; cursor:zoom-in;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex';">
-                    <div style="margin-top:10px;">
-                        <strong style="font-size:0.9rem;">${d.eventName}</strong><br>
-                        <small style="color:var(--cyan)">${d.category}</small>
-                    </div>
-                </div>`;
-            });
-        },
             magicLens: function() {
                 const btn = document.getElementById('btn-gen') || event.target;
                 const urlInput = document.getElementById('e-url');
