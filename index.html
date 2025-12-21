@@ -300,6 +300,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getFirestore, collection, getDocs, getDoc, orderBy, query, Timestamp, setDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    
     // Configuration
     const cfg = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
@@ -307,56 +308,34 @@
     const PARSE_DATE = (d) => { if(!d) return -9999; const m = d.toString().match(/-?\d{1,4}/); return m ? parseInt(m[0]) : 0; };
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
 
-    // --- NEW HELPER FUNCTIONS ---
+    // --- HELPER FUNCTIONS ---
+    function findBestContext(userQuery, data, topN = 3) {
+        if (!userQuery || !data || data.length === 0) return [];
+        const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2); 
+        
+        return data.map(item => {
+            let score = 0;
+            const title = (item.eventName || "").toLowerCase();
+            const body = (item.narrative || "").toLowerCase();
+            const tags = (item.tags || []).map(t => t.toLowerCase());
 
-// 1. Semantic Scoring: Ranks relevance by Title > Tags > Body
-function findBestContext(userQuery, data, topN = 3) {
-    if (!userQuery || !data || data.length === 0) return [];
-
-    const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2); 
-    
-    const scoredItems = data.map(item => {
-        let score = 0;
-        const title = (item.eventName || "").toLowerCase();
-        const body = (item.narrative || "").toLowerCase();
-        // Check if tags exist, otherwise empty array
-        const tags = (item.tags || []).map(t => t.toLowerCase());
-
-        // A. Exact Title Match (Highest Priority)
-        if (title === userQuery.toLowerCase()) score += 100;
-
-        queryTerms.forEach(term => {
-            // B. Partial Title Match
-            if (title.includes(term)) score += 20;
-
-            // C. Tag Match
-            if (tags.some(t => t.includes(term))) score += 10;
-
-            // D. Body Text Match
-            if (body.includes(term)) score += 1;
-        });
-
-        return { item, score };
-    });
-
-    // Sort by score high-to-low and grab the top N
-    return scoredItems
+            if (title === userQuery.toLowerCase()) score += 100;
+            queryTerms.forEach(term => {
+                if (title.includes(term)) score += 20;
+                if (tags.some(t => t.includes(term))) score += 10;
+                if (body.includes(term)) score += 1;
+            });
+            return { item, score };
+        })
         .filter(x => x.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, topN)
         .map(x => x.item);
-}
-
-// 2. System Primer: Tells the AI what "files" exist
-function getSystemPrimer(data) {
-    // Creates a list like: "Goblin Ambush, King's Castle, Iron Sword"
-    const titles = data.map(d => d.eventName).join(", ");
-    return `You have access to the following data entries: [${titles}].`;
-}
+    }
 
     // APP CORE
     window.App = {
-        version: "V21.29", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.30", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -366,8 +345,7 @@ function getSystemPrimer(data) {
             const fApp = initializeApp(cfg);
             this.dbInstance = getFirestore(fApp);
             
-            // 2. UPDATE LOGIN SCREEN VERSION (The Fix)
-            // This finds all elements with class 'gate-version' and updates them
+            // 2. FORCE UPDATE VERSION LABELS
             document.querySelectorAll('.gate-version').forEach(el => el.innerText = App.version);
             
             // 3. Load Data
@@ -452,64 +430,54 @@ function getSystemPrimer(data) {
         },
 
         // 3. DATA
-        // 3. DATA (FIXED REFRESH LOGIC)
         db: {
-            // Inside App.db = { ... }
             load: async function() {
-            // 1. Fetch Main Data
-            const q = query(collection(App.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
-            const snap = await getDocs(q);
-            App.data = [];
-            
-            snap.forEach(d => { 
-                // Don't mix the config file into the main data array
-                if (d.id === 'CONFIG_HIDDEN') return;
+                // 1. Fetch Main Data
+                const q = query(collection(App.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                App.data = [];
                 
-                const o = d.data(); 
-                o.fid = d.id; 
-                App.data.push(o); 
-            });
+                snap.forEach(d => { 
+                    if (d.id === 'CONFIG_HIDDEN') return; // Don't mix config
+                    const o = d.data(); 
+                    o.fid = d.id; 
+                    App.data.push(o); 
+                });
 
-            // 2. Fetch Hidden Tag Config (SEPARATELY)
-            try {
-                const cfgSnap = await getDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"));
-                if (cfgSnap.exists()) {
-                    // Force lowercase for better matching
-                    App.hiddenTags = (cfgSnap.data().list || []).map(t => String(t).toLowerCase());
-                } else {
-                    App.hiddenTags = [];
+                // 2. Fetch Hidden Tag Config
+                try {
+                    const cfgSnap = await getDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"));
+                    if (cfgSnap.exists()) {
+                        App.hiddenTags = (cfgSnap.data().list || []).map(t => String(t).toLowerCase());
+                    } else {
+                        App.hiddenTags = [];
+                    }
+                } catch(e) { console.log("Config load error:", e); App.hiddenTags = []; }
+
+                // 3. Refresh UI
+                if(App.role === 'admin') {
+                    const profView = document.getElementById('view-admin-profiles');
+                    if(profView && !profView.classList.contains('hidden')) App.admin.renderProf();
+                    else App.admin.renderLib();
                 }
-            } catch(e) { console.log("Config load error:", e); App.hiddenTags = []; }
-
-            // 3. Refresh UI
-            if(App.role === 'admin') {
-                const profView = document.getElementById('view-admin-profiles');
-                if(profView && !profView.classList.contains('hidden')) App.admin.renderProf();
-                else App.admin.renderLib();
             }
         },
 
         // 4. ADMIN FEATURES
         admin: {
-            // LIBRARY (Unchanged)
-            // 1. UPDATED: Render Library to handle Recycle Bin
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
                 const term = document.getElementById('filt-search').value.toLowerCase();
                 const cat = document.getElementById('filt-cat').value;
-                const stat = document.getElementById('filt-stat').value; // Check this value
+                const stat = document.getElementById('filt-stat').value;
                 const camp = document.getElementById('filt-camp').value;
-
-                // RECYCLE BIN LOGIC
                 const showBin = (stat === 'Recycle Bin');
             
                 App.data.forEach(d => {
-                    // Filter by Deleted Status
-                    if (showBin && !d.deleted) return;      // If viewing Bin, hide active
-                    if (!showBin && d.deleted) return;      // If viewing Normal, hide deleted
+                    if (showBin && !d.deleted) return;
+                    if (!showBin && d.deleted) return;
                 
                     if(cat !== 'All' && d.category !== cat) return;
-                    // Skip status check if we are in Recycle Bin, otherwise normal check
                     if(!showBin && stat !== 'All' && d.status !== stat) return;
                     if(camp !== 'All' && d.campaign !== camp) return;
 
@@ -517,7 +485,6 @@ function getSystemPrimer(data) {
                     if(term && !haystack.includes(term)) return;
 
                     const tr = document.createElement('tr');
-                    // Visual change for deleted items
                     const statusColor = d.deleted ? 'var(--red)' : (d.status=='Approved'?'var(--green)':'#aaa');
                     const statusText = d.deleted ? 'DELETED' : d.status;
                 
@@ -526,26 +493,18 @@ function getSystemPrimer(data) {
                     t.appendChild(tr);
                 });
             },
+
             hideTag: async function(tagName) {
                 if(!confirm(`Hide "${tagName}" from the index?`)) return;
-            
-                // FORCE LOWERCASE TO ENSURE MATCHES
                 const safeTag = String(tagName).toLowerCase();
                 const currentList = (App.hiddenTags || []).map(t => t.toLowerCase());
-
-                // Avoid duplicates
                 if(currentList.includes(safeTag)) return alert("Already hidden.");
-            
                 const newList = [...currentList, safeTag];
 
                 await setDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"), { 
-                    list: newList,
-                    category: "System",
-                    eventName: "Hidden Tags Configuration"
+                    list: newList, category: "System", eventName: "Hidden Tags Configuration"
                 });
-            
-                alert("Tag Hidden.");
-                App.db.load(); 
+                alert("Tag Hidden."); App.db.load(); 
             },
 
             unhideTag: async function(tagName) {
@@ -554,48 +513,34 @@ function getSystemPrimer(data) {
                 const newList = currentList.filter(t => t !== safeTag);
 
                 await setDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"), { 
-                    list: newList,
-                    category: "System",
-                    eventName: "Hidden Tags Configuration"
+                    list: newList, category: "System", eventName: "Hidden Tags Configuration"
                 });
-            
-                alert("Tag Restored.");
-                App.db.load();
+                alert("Tag Restored."); App.db.load();
             },
-            // 2. UPDATED: Delete function (Soft Delete)
+
             del: async function() {
                 const id = document.getElementById('e-id').value;
-                // Confirm Soft Delete
                 if(!id || !confirm("⚠ Move this record to the Recycle Bin?")) return;
-            
-                // SOFT DELETE: Update 'deleted' to true instead of removing the file
                 const docRef = doc(App.dbInstance, "lore_library", id);
                 await setDoc(docRef, { deleted: true }, { merge: true });
-
                 document.getElementById('edit-modal').style.display = 'none';
-                App.db.load(); // Reload to see it move to Recycle Bin
+                App.db.load();
             },
         
-            // 3. NEW: Restore function (for Recycle Bin items)
             restore: async function() {
                 const id = document.getElementById('e-id').value;
                 if(!id) return;
-
                 await setDoc(doc(App.dbInstance, "lore_library", id), { deleted: false }, { merge: true });
                 alert("Record Restored!");
                 document.getElementById('edit-modal').style.display = 'none';
                 App.db.load();
             },
         
-            // 4. UPDATED: Edit Modal Opener (To show Restore button if deleted)
             edit: function(ref) {
                 const d = (typeof ref === 'string') ? App.data.find(r => r.fid === ref) : ref;
-
-                // ... (Keep your existing field clearing logic here) ...
                 ['id','name','date','status','cat','game','camp','url','auth','stats','tags','narr'].forEach(k => document.getElementById('e-'+k).value = "");
                 document.getElementById('e-id').value = d.fid || "";
                 document.getElementById('e-name').value = d.eventName || "";
-                // ... (fill rest of fields as usual) ...
                 document.getElementById('e-status').value = d.status || "Approved";
                 document.getElementById('e-cat').value = d.category || "Event";
                 document.getElementById('e-date').value = d.gameDate || "";
@@ -607,49 +552,36 @@ function getSystemPrimer(data) {
                 document.getElementById('e-tags').value = d.tags || "";
                 document.getElementById('e-narr').value = d.narrative || "";
             
-                // TOGGLE DELETE / RESTORE BUTTONS
-                const btnContainer = document.querySelector('#edit-modal .bg-red').parentElement; // Finds the button area
-                // We replace the button area HTML dynamically
+                // DELETE / RESTORE BUTTON LOGIC
+                const btnContainer = document.querySelector('#edit-modal .bg-red').parentElement; 
                 if (d.deleted) {
-                     // If deleted, show RESTORE and HARD DELETE
                     document.querySelector('#edit-modal .bg-red').innerText = "♻ RESTORE";
                     document.querySelector('#edit-modal .bg-red').onclick = () => App.admin.restore();
-                    document.querySelector('#edit-modal .bg-red').className = "btn bg-green"; // Turn green for restore
+                    document.querySelector('#edit-modal .bg-red').className = "btn bg-green"; 
                 } else {
-                    // Normal behavior
-                    document.querySelector('#edit-modal .btn.bg-green')?.classList.replace('bg-green', 'bg-red'); // Reset color
+                    document.querySelector('#edit-modal .btn.bg-green')?.classList.replace('bg-green', 'bg-red');
                     const delBtn = document.querySelector('#edit-modal .bg-red') || document.querySelector('#edit-modal .bg-green');
                     delBtn.innerText = "DELETE";
                     delBtn.className = "btn bg-red";
                     delBtn.onclick = () => App.admin.del();
                 }
-                // ... (existing code setting values) ...
-                document.getElementById('e-narr').value = d.narrative || "";
-                
-                // NEW: HANDLE PREVIEW IMAGE
+
+                // IMAGE PREVIEW
                 const img = document.getElementById('e-preview');
                 const txt = document.getElementById('e-preview-placeholder');
                 const existingUrl = d.url || "";
-                
                 if (existingUrl.length > 10) {
-                    img.src = existingUrl;
-                    img.style.display = 'inline-block';
-                    txt.style.display = 'none';
+                    img.src = existingUrl; img.style.display = 'inline-block'; txt.style.display = 'none';
                 } else {
-                    img.style.display = 'none';
-                    txt.style.display = 'block';
+                    img.style.display = 'none'; txt.style.display = 'block';
                 }
                 document.getElementById('edit-modal').style.display = 'flex';
             },
-            // 6. NEW: Flush Recycle Bin (Permanently Delete)
-            emptyTrash: async function() {
-                // Find all items in the bin
-                const trash = App.data.filter(d => d.deleted);
-                
-                if(trash.length === 0) return alert("Recycle Bin is empty.");
-                
-                if(!confirm(`⚠ WARNING: PERMANENTLY DELETE ${trash.length} RECORDS?\n\nThis action cannot be undone.`)) return;
 
+            emptyTrash: async function() {
+                const trash = App.data.filter(d => d.deleted);
+                if(trash.length === 0) return alert("Recycle Bin is empty.");
+                if(!confirm(`⚠ WARNING: PERMANENTLY DELETE ${trash.length} RECORDS?\n\nThis action cannot be undone.`)) return;
                 let count = 0;
                 for(const d of trash) {
                     await deleteDoc(doc(App.dbInstance, "lore_library", d.fid));
@@ -659,66 +591,37 @@ function getSystemPrimer(data) {
                 App.db.load();
             },
 
-            // 7. NEW: Magic Lens (AI Image Gen)
-            // 7. UPDATED: Magic Lens (With Loading State)
             magicLens: function() {
-                const btn = event.target; // The button you clicked
+                const btn = event.target; 
                 const originalText = "✨ GENERATE";
-                
-                // 1. UI FEEDBACK
-                btn.innerText = "⏳ DREAMING...";
-                btn.disabled = true;
-                btn.style.opacity = "0.7";
+                btn.innerText = "⏳ DREAMING..."; btn.disabled = true; btn.style.opacity = "0.7";
 
                 const name = document.getElementById('e-name').value;
                 const cat = document.getElementById('e-cat').value;
                 const desc = document.getElementById('e-narr').value;
-                
-                if(!name) {
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                    return alert("Please enter a Name first.");
-                }
+                if(!name) { btn.innerText = originalText; btn.disabled = false; return alert("Please enter a Name first."); }
 
-                // 2. BUILD URL (Robust Seed)
                 const seed = Math.floor(Math.random() * 999999);
                 const prompt = `Fantasy concept art of ${name}, ${cat}. ${desc.substring(0,80)}. Detailed, 8k resolution.`;
                 const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&seed=${seed}`;
                 
-                // 3. PRE-LOAD IMAGE (Fixes the "Delay" feel)
                 const img = document.getElementById('e-preview');
                 const txt = document.getElementById('e-preview-placeholder');
-                
-                // Create a temporary loader
                 const loader = new Image();
                 
                 loader.onload = function() {
-                    // SUCCESS: Image is ready, show it now
                     document.getElementById('e-url').value = url;
-                    img.src = url;
-                    img.style.display = 'inline-block';
-                    txt.style.display = 'none';
-                    
-                    // Reset Button
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                    btn.style.opacity = "1";
+                    img.src = url; img.style.display = 'inline-block'; txt.style.display = 'none';
+                    btn.innerText = originalText; btn.disabled = false; btn.style.opacity = "1";
                 };
-                
                 loader.onerror = function() {
-                    // FAILURE: Server timed out
                     alert("Visual Link Failed. Try again.");
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                    btn.style.opacity = "1";
+                    btn.innerText = originalText; btn.disabled = false; btn.style.opacity = "1";
                 };
-                
-                // Start the fetch
                 loader.src = url;
             },
-            // 5. NEW: Linker Logic (The Picker)
-            linkTarget: null, // Stores the ghost name we are linking
 
+            linkTarget: null, 
             openLinker: function(ghostName) {
                 this.linkTarget = ghostName;
                 document.getElementById('linker-modal').style.display = 'flex';
@@ -730,25 +633,14 @@ function getSystemPrimer(data) {
                 const term = document.getElementById('link-search').value.toLowerCase();
                 const list = document.getElementById('link-list');
                 list.innerHTML = "";
-            
-                // Filter for valid Master Records (Entities only)
                 const candidates = App.data.filter(d => 
-                    !d.deleted && 
-                    ['People','Location','Faction','Creature'].includes(d.category) && 
-                    d.eventName.toLowerCase().includes(term)
+                    !d.deleted && ['People','Location','Faction','Creature'].includes(d.category) && d.eventName.toLowerCase().includes(term)
                 );
-            
                 candidates.forEach(c => {
                     const item = document.createElement('div');
-                    item.style.padding = "10px";
-                    item.style.borderBottom = "1px solid #333";
-                    item.style.cursor = "pointer";
-                    item.style.color = "#ccc";
-                    item.onmouseover = () => item.style.background = "#222";
-                    item.onmouseout = () => item.style.background = "transparent";
-
+                    item.style.padding = "10px"; item.style.borderBottom = "1px solid #333"; item.style.cursor = "pointer"; item.style.color = "#ccc";
+                    item.onmouseover = () => item.style.background = "#222"; item.onmouseout = () => item.style.background = "transparent";
                     item.innerHTML = `<strong>${c.eventName}</strong> <span style="font-size:0.7rem; color:#666; border:1px solid #444; padding:1px 4px; border-radius:3px;">${c.category}</span>`;
-
                     item.onclick = () => this.executeLink(c);
                     list.appendChild(item);
                 });
@@ -756,18 +648,11 @@ function getSystemPrimer(data) {
         
             executeLink: async function(targetRecord) {
                 if(!confirm(`Link ghost tag "${this.linkTarget}" to Master Record "${targetRecord.eventName}"?`)) return;
-            
-                // Logic: Find all records with the Ghost Tag and add the Master Name as a tag
-                // (Note: To do this perfectly requires editing every file. For now, we alert the success.)
-
                 alert(`Linked! In a full database, this would now update all references of '${this.linkTarget}' to point to '${targetRecord.eventName}'.`);
-
                 document.getElementById('linker-modal').style.display = 'none';
-                // Reload profiles to refresh the view
                 this.renderProf();
             },
             
-            // TIMELINE (Unchanged)
             renderTime: function() {
                 const c = document.getElementById('timeline-list'); c.innerHTML = "";
                 const sorted = [...App.data].sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
@@ -778,14 +663,8 @@ function getSystemPrimer(data) {
                 });
             },
 
-            // PROFILES: INDEXING (Unchanged logic, stable)
-            // Replace your renderProf function
-
             renderProf: function(filterType = 'All') {
-                const l = document.getElementById('profile-list'); 
-                l.innerHTML = "";
-
-                // HEADER (Keep your dropdown)
+                const l = document.getElementById('profile-list'); l.innerHTML = "";
                 const header = document.createElement('div');
                 header.style.padding = "10px 15px"; header.style.borderBottom = "1px solid #444"; header.style.background = "#1a1c24"; header.style.position = "sticky"; header.style.top = "0";
                 header.innerHTML = `
@@ -805,50 +684,36 @@ function getSystemPrimer(data) {
                 const index = new Map(); 
                 const hiddenList = App.hiddenTags || [];
                 
-                // 1. Process Real Records
                 App.data.forEach(d => {
                     if(['journal','system'].includes((d.category||'').toLowerCase())) return;
                     index.set(d.eventName.toLowerCase(), { name: d.eventName, type: d.category, isGhost: false });
                 });
             
-                // 2. Process Tags
                 App.data.forEach(d => {
                     if(!d.tags) return;
                     String(d.tags).split(',').forEach(t => {
                         const clean = t.trim();
                         if(clean.length < 2) return;
                         const key = clean.toLowerCase();
-
-                        // LOGIC: If it's hidden, we mark it as 'HiddenGhost'
                         const isHidden = hiddenList.map(h => h.toLowerCase()).includes(clean.toLowerCase());
-
                         if(!index.has(key)) {
-                            index.set(key, { 
-                                name: clean, 
-                                type: isHidden ? "Hidden" : "Ref", 
-                                isGhost: true,
-                                isHidden: isHidden
-                            });
+                            index.set(key, { name: clean, type: isHidden ? "Hidden" : "Ref", isGhost: true, isHidden: isHidden });
                         }
                     });
                 });
             
-                // RENDER
                 const scrollArea = document.createElement('div');
                 Array.from(index.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(e => {
-                    // FILTERING LOGIC
-                    if (filterType === 'Hidden') {
-                        if (!e.isHidden) return; // Only show hidden
-                    } else {
-                        if (e.isHidden) return; // Hide hidden items in normal views
+                    if (filterType === 'Hidden') { if (!e.isHidden) return; } 
+                    else {
+                        if (e.isHidden) return;
                         if (filterType !== 'All' && filterType !== 'Ghost' && !String(e.type).includes(filterType)) return;
                         if (filterType === 'Ghost' && !e.isGhost) return;
                     }
                 
                     const div = document.createElement('div');
                     div.className = 'profile-item';
-                    div.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                    div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color:${e.isHidden ? '#555' : (e.isGhost ? '#888' : '#fff')}; text-decoration:${e.isHidden?'line-through':''};">${e.name}</span>
                             <span style="font-size:0.65rem; color:#444;">${e.isHidden ? 'HIDDEN' : (e.isGhost ? 'GHOST' : e.type)}</span>
                         </div>`;
@@ -858,41 +723,25 @@ function getSystemPrimer(data) {
                 l.appendChild(scrollArea);
             },
 
-            // DETAIL VIEW (Fixed Indentation & Added Tools)
             showProf: function(name) {
                 const v = document.getElementById('profile-detail');
                 const safeName = String(name).toLowerCase();
-                
-                // Locate Data
                 const index = new Map(); 
-                App.data.forEach(d => { 
-                    if(d.eventName && !['journal','system'].includes((d.category||'').toLowerCase())) {
-                        index.set(String(d.eventName).toLowerCase(), d);
-                    }
-                });
+                App.data.forEach(d => { if(d.eventName && !['journal','system'].includes((d.category||'').toLowerCase())) index.set(String(d.eventName).toLowerCase(), d); });
                 
                 const master = index.get(safeName);
                 const isGhost = !master;
                 const type = master ? master.category : "Entity";
-                
-                // Refs
-                const refs = App.data.filter(r => 
-                    (r.tags && String(r.tags).toLowerCase().includes(safeName)) || 
-                    String(r.eventName).toLowerCase() === safeName
-                ).sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
-
+                const refs = App.data.filter(r => (r.tags && String(r.tags).toLowerCase().includes(safeName)) || String(r.eventName).toLowerCase() === safeName).sort((a,b) => PARSE_DATE(a.gameDate) - PARSE_DATE(b.gameDate));
                 const img = (master && master.url && master.url.includes('http')) ? master.url : GET_IMG(type, name);
                 const desc = master ? master.narrative : `<strong>No official record exists.</strong><br>This entity appears in ${refs.length} archive entries.`;
 
-                // TEMPLATE
                 let html = `
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px;">
                         <div>
                             <h1 style="color:var(--gold); margin:0;">${name}</h1>
                             <div style="display:flex; gap:10px; align-items:center; margin-top:5px;">
-                                <span style="color:${isGhost ? 'var(--red)' : 'var(--green)'}; font-size:0.8rem; letter-spacing:1px; border:1px solid #333; padding:2px 6px; border-radius:4px;">
-                                    ${isGhost ? '⚠ GHOST SIGNAL' : '✅ OFFICIAL RECORD'}
-                                </span>
+                                <span style="color:${isGhost ? 'var(--red)' : 'var(--green)'}; font-size:0.8rem; letter-spacing:1px; border:1px solid #333; padding:2px 6px; border-radius:4px;">${isGhost ? '⚠ GHOST SIGNAL' : '✅ OFFICIAL RECORD'}</span>
                                 <span style="color:#666; font-size:0.8rem;">${type}</span>
                             </div>
                         </div>
@@ -908,18 +757,11 @@ function getSystemPrimer(data) {
                             <p style="color:#ccc; white-space:pre-wrap; line-height:1.6; margin-top:0;">${String(desc).trim()}</p>
                             ${(master && master.stats) ? `<div style="background:#222; border:1px solid #444; color:#aaa; padding:15px; margin-top:15px; font-family:monospace; white-space:pre-wrap;">${master.stats}</div>` : ''}
                 `;
+                if(String(type).toLowerCase().includes('location')) { html += `<div style="background:#0f2027; padding:10px; margin-top:10px; border:1px solid #333;"><strong style="color:var(--gold)">Recorded Events:</strong> ${refs.length}</div>`; }
+                html += `</div></div><h3 style="margin-top:30px; border-bottom:1px solid #444; padding-bottom:5px; color:var(--text-dim);">TIMELINE REFERENCES (${refs.length})</h3><div style="margin-top:15px;">`;
 
-                // Location Context (Optional)
-                if(String(type).toLowerCase().includes('location')) {
-                    html += `<div style="background:#0f2027; padding:10px; margin-top:10px; border:1px solid #333;"><strong style="color:var(--gold)">Recorded Events:</strong> ${refs.length}</div>`;
-                }
-
-                html += `</div></div>`; 
-                html += `<h3 style="margin-top:30px; border-bottom:1px solid #444; padding-bottom:5px; color:var(--text-dim);">TIMELINE REFERENCES (${refs.length})</h3><div style="margin-top:15px;">`;
-
-                if(refs.length === 0) {
-                    html += `<div style="color:#666; font-style:italic;">No recorded events.</div>`;
-                } else {
+                if(refs.length === 0) { html += `<div style="color:#666; font-style:italic;">No recorded events.</div>`; } 
+                else {
                     refs.forEach(r => {
                         html += `<div style="margin-bottom:15px; padding-left:15px; border-left:2px solid #444; cursor:pointer;" onclick="App.admin.edit('${r.fid}')">
                             <div style="display:flex; justify-content:space-between;"><span style="color:var(--gold); font-weight:bold;">${r.gameDate || 'Unknown'}</span><span style="font-size:0.7rem; color:#666; border:1px solid #333; padding:2px 5px; border-radius:4px;">${r.category}</span></div>
@@ -931,61 +773,25 @@ function getSystemPrimer(data) {
                 html += `</div>`;
                 v.innerHTML = html;
                 
-            // BUTTONS
-                const btnArea = document.getElementById('prof-btn-area');
-                btnArea.innerHTML = ""; 
-
-                // CHECK IF HIDDEN (Case Insensitive)
+                // BUTTONS
+                const btnArea = document.getElementById('prof-btn-area'); btnArea.innerHTML = ""; 
                 const isHidden = (App.hiddenTags || []).map(t => t.toLowerCase()).includes(String(name).toLowerCase());
 
                 if (isHidden) {
-                    // === HIDDEN TAG ACTIONS ===
-                    const btnUnhide = document.createElement('button');
-                    btnUnhide.className = "btn bg-green";
-                    btnUnhide.innerText = "UNHIDE 👁️";
-                    btnUnhide.onclick = () => App.admin.unhideTag(name);
-                    btnArea.appendChild(btnUnhide);
-                
+                    const btnUnhide = document.createElement('button'); btnUnhide.className = "btn bg-green"; btnUnhide.innerText = "UNHIDE 👁️"; btnUnhide.onclick = () => App.admin.unhideTag(name); btnArea.appendChild(btnUnhide);
                 } else if (isGhost) {
-                    // === GHOST ACTIONS ===
-                    const btnCreate = document.createElement('button');
-                    btnCreate.className = "btn bg-green";
-                    btnCreate.innerText = "CREATE";
-                    btnCreate.onclick = () => App.admin.edit({eventName: name, category: 'Person', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
-
-                    const btnLink = document.createElement('button');
-                    btnLink.className = "btn bg-dark";
-                    btnLink.innerText = "LINK 🔗";
-                    btnLink.onclick = () => App.admin.openLinker(name);
-                
-                    const btnHide = document.createElement('button');
-                    btnHide.className = "btn bg-red";
-                    btnHide.innerText = "HIDE 🚫";
-                    btnHide.title = "Hide from index";
-                    btnHide.style.marginRight = "10px";
-                    btnHide.onclick = () => App.admin.hideTag(name);
-                
-                    btnArea.appendChild(btnHide);
-                    btnArea.appendChild(btnLink);
-                    btnArea.appendChild(btnCreate);
-
+                    const btnCreate = document.createElement('button'); btnCreate.className = "btn bg-green"; btnCreate.innerText = "CREATE"; btnCreate.onclick = () => App.admin.edit({eventName: name, category: 'Person', status: 'Approved', tags: name, narrative: `Bio for ${name}...`});
+                    const btnLink = document.createElement('button'); btnLink.className = "btn bg-dark"; btnLink.innerText = "LINK 🔗"; btnLink.onclick = () => App.admin.openLinker(name);
+                    const btnHide = document.createElement('button'); btnHide.className = "btn bg-red"; btnHide.innerText = "HIDE 🚫"; btnHide.style.marginRight = "10px"; btnHide.onclick = () => App.admin.hideTag(name);
+                    btnArea.appendChild(btnHide); btnArea.appendChild(btnLink); btnArea.appendChild(btnCreate);
                 } else {
-                    // === MASTER RECORD ACTIONS ===
-                    const btnDel = document.createElement('button');
-                    btnDel.className = "btn bg-red";
-                    btnDel.innerHTML = "🗑️";
+                    const btnDel = document.createElement('button'); btnDel.className = "btn bg-red"; btnDel.innerHTML = "🗑️";
                     btnDel.onclick = async () => { if(confirm("Permanently delete this Master Record?")) { await deleteDoc(doc(App.dbInstance, "lore_library", master.fid)); App.admin.renderProf(); v.innerHTML=""; }};
-
-                    const btnEdit = document.createElement('button');
-                    btnEdit.className = "btn bg-gold";
-                    btnEdit.innerText = "EDIT";
-                    btnEdit.onclick = () => App.admin.edit(master.fid);
-
-                    btnArea.appendChild(btnDel);
-                    btnArea.appendChild(btnEdit);
+                    const btnEdit = document.createElement('button'); btnEdit.className = "btn bg-gold"; btnEdit.innerText = "EDIT"; btnEdit.onclick = () => App.admin.edit(master.fid);
+                    btnArea.appendChild(btnDel); btnArea.appendChild(btnEdit);
                 }
             },            
-            // CRUD (Standard)
+            
             save: async function() {
                 const id = document.getElementById('e-id').value;
                 const d = {
@@ -1024,35 +830,24 @@ function getSystemPrimer(data) {
             }
         },
 
-        // 5. CODEX FEATURES (V21.3 AUTO-NEGOTIATION)
-        // 5. CODEX FEATURES (V21.4 SEMANTIC UPGRADE)
-        // 5. CODEX FEATURES (V21.5 STABILITY FIX)
+        // 5. CODEX FEATURES
         codex: {
-            // Helper: Weighted Search Algorithm (Now crash-proof)
             findBestContext: function(userQuery, data, topN = 5) {
                 if (!userQuery || !data || data.length === 0) return [];
                 const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-                
                 return data.map(item => {
                     let score = 0;
-                    // SAFE GUARD: Force everything to string to prevent crashes
                     const title = String(item.eventName || "").toLowerCase();
                     const body = String(item.narrative || "").toLowerCase();
                     const tags = String(item.tags || "").toLowerCase(); 
-
-                    if (title === userQuery.toLowerCase()) score += 100; // Exact Match
-                    
+                    if (title === userQuery.toLowerCase()) score += 100;
                     queryTerms.forEach(term => {
-                        if (title.includes(term)) score += 20; // Title Partial
-                        if (tags.includes(term)) score += 10;  // Tag Match
-                        if (body.includes(term)) score += 1;   // Body Match
+                        if (title.includes(term)) score += 20;
+                        if (tags.includes(term)) score += 10;
+                        if (body.includes(term)) score += 1;
                     });
                     return { item, score };
-                })
-                .filter(x => x.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, topN)
-                .map(x => x.item);
+                }).filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, topN).map(x => x.item);
             },
 
             renderImg: function(filter="") {
@@ -1082,42 +877,21 @@ function getSystemPrimer(data) {
             send: async function() {
                 const inp = document.getElementById('chat-input');
                 const msg = inp.value; 
-                
-                if(!App.key) {
-                    App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai');
-                    return;
-                }
-                
+                if(!App.key) { App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai'); return; }
                 if(!msg) return;
                 this.msg(msg, 'user'); inp.value = "";
                 const loadId = this.msg("Accessing Archives...", 'ai');
                 
                 try {
-                    // 1. RUN SEARCH (Now inside try/catch)
                     const hits = this.findBestContext(msg, App.data);
-                    
-                    // 2. FORMAT CONTEXT
                     const ctx = hits.map(d => `[ENTRY: ${d.eventName}]\nTAGS: ${d.tags||''}\n${d.narrative}`).join("\n\n");
-                    
-                    // 3. SYSTEM PRIMER
                     const primer = App.data.map(d => d.eventName).join(", ");
-                    
                     const sys = document.getElementById('persona-select').value;
                     const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
                     const basePersona = personas[sys] || personas['Codex'];
 
-                    // 4. CONSTRUCT PROMPT
-                    const fullPrompt = `
-                    SYSTEM: ${basePersona}
-                    DATABASE INDEX: ${primer}
+                    const fullPrompt = `SYSTEM: ${basePersona}\nDATABASE INDEX: ${primer}\nRELEVANT ARCHIVES:\n${ctx}\nUSER QUERY: ${msg}`;
                     
-                    RELEVANT ARCHIVES:
-                    ${ctx}
-                    
-                    USER QUERY: ${msg}
-                    `;
-                
-                    // 5. AUTO-DISCOVERY
                     const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${App.key}`);
                     if (!listReq.ok) throw new Error("Could not list models. Check API Key.");
                     const listData = await listReq.json();
@@ -1129,25 +903,18 @@ function getSystemPrimer(data) {
                         if (bestMatch) targetModel = bestMatch.name.replace("models/", "");
                     }
 
-                    // 6. EXECUTE
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${App.key}`;
                     const res = await fetch(url, { 
-                        method: 'POST', 
-                        headers: {'Content-Type': 'application/json'}, 
-                        body: JSON.stringify({ 
-                            contents: [{ parts: [{ text: fullPrompt }] }],
-                            safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }]
-                        }) 
+                        method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                        body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }], safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }] }) 
                     });
                     
                     if (!res.ok) throw new Error(await res.text());
-                    
                     const json = await res.json();
                     if (json.error) throw new Error(json.error.message);
                     
                     document.getElementById(loadId).remove();
                     this.msg(json.candidates[0].content.parts[0].text, 'ai');
-                    
                 } catch(e) {
                     console.warn("Generation failed:", e);
                     const bubble = document.getElementById(loadId);
