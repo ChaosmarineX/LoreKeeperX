@@ -556,15 +556,15 @@ function getSystemPrimer(data) {
             // 2. UPDATED: Delete function (Soft Delete)
             del: async function() {
                 const id = document.getElementById('e-id').value;
-                // Safety Confirm
-                if(!id || !confirm("⚠ Are you sure you want to move this record to the Recycle Bin?")) return;
+                // Confirm Soft Delete
+                if(!id || !confirm("⚠ Move this record to the Recycle Bin?")) return;
             
-                // Soft Delete (Update Flag)
+                // SOFT DELETE: Update 'deleted' to true instead of removing the file
                 const docRef = doc(App.dbInstance, "lore_library", id);
                 await setDoc(docRef, { deleted: true }, { merge: true });
 
                 document.getElementById('edit-modal').style.display = 'none';
-                App.db.load(); // Refresh
+                App.db.load(); // Reload to see it move to Recycle Bin
             },
         
             // 3. NEW: Restore function (for Recycle Bin items)
