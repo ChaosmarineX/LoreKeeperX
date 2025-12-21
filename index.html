@@ -421,7 +421,7 @@
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
     // APP CORE
     window.App = {
-        version: "V21.55", 
+        version: "V21.56", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -491,14 +491,11 @@
                 const dual = document.getElementById('view-dual-mode');
                 const isHidden = dual.classList.contains('hidden');
                 
-                // Hide standard views
                 document.querySelectorAll('.viewport').forEach(v => v.classList.add('hidden'));
                 
                 if(isHidden) {
                     dual.classList.remove('hidden');
-                    // Sync Chat
                     document.getElementById('dual-chat-feed').innerHTML = document.getElementById('chat-feed').innerHTML;
-                    // Start Map Engine
                     App.atlas.initDual();
                 } else {
                     dual.classList.add('hidden');
@@ -512,8 +509,7 @@
                 document.getElementById('persona-select').classList.remove('hidden');
                 document.getElementById('switch-btn').classList.remove('hidden');
                 
-                // SHOW CANVAS BUTTON
-                document.getElementById('canvas-btn').classList.remove('hidden'); 
+                // FIXED: Removed crash caused by missing 'canvas-btn'
 
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
                 ['Chat','Contribute','Imagery','Atlas'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
@@ -528,8 +524,7 @@
                 document.getElementById('brand-text').style.color = "var(--gold)";
                 document.getElementById('persona-select').classList.add('hidden');
                 
-                // HIDE CANVAS BUTTON
-                document.getElementById('canvas-btn').classList.add('hidden');
+                // FIXED: Removed crash caused by missing 'canvas-btn'
 
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
                 ['Library','Timeline','Profiles','Import'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
@@ -1293,17 +1288,28 @@
         atlas: {
             scale: 1, pointX: 0, pointY: 0, panning: false, start: {x:0, y:0},
             
-            // 1. MOUNT: Attaches physics to ANY container (Canvas or Tab)
+            // FIXED: Added missing function that was causing the crash
+            loadCampaignMap: function() {
+                const img = document.getElementById('atlas-img');
+                if(!img) return;
+                
+                // Switch map based on campaign
+                if(App.campaign === 'System') {
+                    img.src = "https://placehold.co/2000x1500/111/444?text=SYSTEM+MODE";
+                } else {
+                    img.src = "Tarth 2.1 80.jpg"; 
+                }
+                this.reset();
+            },
+
             mount: function(viewId, contentId) {
                 const view = document.getElementById(viewId);
                 const content = document.getElementById(contentId);
                 if(!view || !content) return;
 
-                // Reset
                 this.scale = 1; this.pointX = 0; this.pointY = 0;
                 content.style.transform = `translate(0px, 0px) scale(1)`;
 
-                // DRAG (Pan)
                 view.onmousedown = (e) => {
                     if(e.target.classList.contains('map-pin')) return;
                     e.preventDefault();
@@ -1323,16 +1329,12 @@
                     content.style.transform = `translate(${this.pointX}px, ${this.pointY}px) scale(${this.scale})`;
                 };
 
-                // ZOOM (Wheel)
                 view.onwheel = (e) => {
                     e.preventDefault();
                     const xs = (e.clientX - this.pointX) / this.scale;
                     const ys = (e.clientY - this.pointY) / this.scale;
                     const delta = -Math.sign(e.deltaY);
-                    
-                    // Smooth Zoom Limits (0.2x to 5x)
                     const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5);
-
                     this.pointX = e.clientX - (xs * newScale);
                     this.pointY = e.clientY - (ys * newScale);
                     this.scale = newScale;
@@ -1340,13 +1342,11 @@
                 };
             },
 
-            // 2. Main Tab Init
             init: function() {
                 this.mount('atlas-viewport', 'atlas-content');
                 this.render('atlas-pins');
             },
 
-            // 3. Canvas (Dual) Init
             initDual: function() {
                 setTimeout(() => {
                     this.mount('dual-atlas-viewport', 'dual-atlas-content');
@@ -1354,13 +1354,11 @@
                 }, 100);
             },
 
-            // 4. Show Map Layer (Hides Image Layer in Canvas)
             showDual: function() {
                 document.getElementById('dual-atlas-viewport').classList.remove('hidden');
                 document.getElementById('dual-image-viewport').classList.add('hidden');
             },
 
-            // 5. Recenter
             resetDual: function() {
                 this.scale = 1; this.pointX = 0; this.pointY = 0;
                 const el = document.getElementById('dual-atlas-content');
