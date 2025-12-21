@@ -122,7 +122,7 @@
             width: 100%; 
             height: 100%;       /* Critical */
             min-height: 500px;  /* Safety fallback */
-            ackground: #0b0c10; 
+            background: #0b0c10; /* <--- FIXED TYPO HERE (was ackground) */
             cursor: grab; 
         }
         #atlas-viewport:active { cursor: grabbing; }
@@ -434,7 +434,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.50", 
+        version: "V21.51", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -517,7 +517,7 @@
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
                 document.getElementById('brand-text').innerHTML = `CODEX <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
-                document.getElementById('user-display').innerText = App.user;
+                // REMOVED CRASHING LINE: document.getElementById('user-display').innerText = App.user; 
                 document.getElementById('persona-select').classList.remove('hidden');
                 document.getElementById('switch-btn').classList.remove('hidden');
                 
@@ -532,7 +532,7 @@
                 document.getElementById('app-ui').style.display='flex';
                 document.getElementById('brand-text').innerHTML = `LOREKEEPER <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
                 document.getElementById('brand-text').style.color = "var(--gold)";
-                document.getElementById('user-display').innerText = App.user;
+                // REMOVED CRASHING LINE: document.getElementById('user-display').innerText = App.user;
                 document.getElementById('persona-select').classList.add('hidden');
                 
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
@@ -545,7 +545,7 @@
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-codex','active-lore'));
                 
                 if(tab==='Atlas') {
-                    App.atlas.init(); // <--- This starts the engine
+                    App.atlas.init(); 
                     App.atlas.render();
                 }
 
