@@ -427,7 +427,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.35", 
+        version: "V21.36", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -999,120 +999,7 @@
 
         // 5. CODEX FEATURES
         codex: {
-            // 6. ATLAS (Interactive Map System)
-        // 6. ATLAS ENGINE
-        atlas: {
-            scale: 1, panning: false, pointX: 0, pointY: 0, start: {x:0, y:0},
-            
-            initDual: function() {
-                this.viewId = 'dual-atlas-viewport';
-                this.contentId = 'dual-atlas-content';
-                // Delay slightly to allow CSS to calculate card size
-                setTimeout(() => {
-                    this.init(); 
-                    this.render();
-                    this.reset();
-                }, 100);
-            },
-
-            init: function() {
-                const view = document.getElementById('atlas-viewport');
-                if(!view) return; // Safety check
-
-                // DRAG EVENTS
-                view.onmousedown = (e) => {
-                    if(e.target.classList.contains('map-pin')) return;
-                    e.preventDefault();
-                    this.panning = true;
-                    this.start = { x: e.clientX - this.pointX, y: e.clientY - this.pointY };
-                };
-                
-                view.onmouseup = () => { this.panning = false; };
-                view.onmouseleave = () => { this.panning = false; };
-                
-                view.onmousemove = (e) => {
-                    if(!this.panning) return;
-                    e.preventDefault();
-                    this.pointX = e.clientX - this.start.x;
-                    this.pointY = e.clientY - this.start.y;
-                    this.update();
-                };
-                
-                // ZOOM EVENTS
-                view.onwheel = (e) => {
-                    e.preventDefault();
-                    const xs = (e.clientX - this.pointX) / this.scale;
-                    const ys = (e.clientY - this.pointY) / this.scale;
-                    const delta = -Math.sign(e.deltaY);
-                    const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5);
-                    
-                    this.pointX = e.clientX - (xs * newScale);
-                    this.pointY = e.clientY - (ys * newScale);
-                    this.scale = newScale;
-                    this.update();
-                };
-
-                // RIGHT CLICK (Admin Pin)
-                view.oncontextmenu = (e) => {
-                    if(App.role !== 'admin') return;
-                    e.preventDefault();
-                    const img = document.getElementById('atlas-img');
-                    const rect = img.getBoundingClientRect();
-                    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
-                    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
-                    this.plantFlag(xPct, yPct);
-                };
-            },
-
-            update: function() {
-                const el = document.getElementById('atlas-content');
-                if(el) el.style.transform = `translate(${this.pointX}px, ${this.pointY}px) scale(${this.scale})`;
-            },
-            
-            reset: function() {
-                this.scale = 1; this.pointX = 0; this.pointY = 0;
-                this.update();
-            },
-
-            render: function() {
-                const layer = document.getElementById('atlas-pins');
-                if(!layer) return;
-                layer.innerHTML = "";
-                
-                App.data.forEach(d => {
-                    if(d.category === 'Location' && d.coords && !d.deleted) {
-                        const p = document.createElement('div');
-                        p.className = 'map-pin';
-                        p.style.left = d.coords.x + "%";
-                        p.style.top = d.coords.y + "%";
-                        p.innerHTML = `<div class="map-label">${d.eventName}</div>`;
-                        p.onclick = (e) => {
-                            e.stopPropagation();
-                            App.router.go('Profiles');
-                            App.admin.showProf(d.eventName);
-                        };
-                        layer.appendChild(p);
-                    }
-                });
-            },
-
-            plantFlag: async function(x, y) {
-                const candidates = App.data.filter(d => d.category === 'Location' && !d.coords && !d.deleted);
-                if(candidates.length === 0) return alert("No unmapped locations found.");
-                
-                const list = candidates.map(c => `• ${c.eventName}`).join("\n");
-                const name = prompt(`MAP PIN (${Math.floor(x)}%, ${Math.floor(y)}%)\nType Location Name:\n\n${list}`);
-                if(!name) return;
-                
-                const match = candidates.find(c => c.eventName.toLowerCase() === name.toLowerCase());
-                if(match) {
-                    await setDoc(doc(App.dbInstance, "lore_library", match.fid), { coords: {x:x, y:y} }, { merge: true });
-                    alert(`📍 Linked to ${match.eventName}`);
-                    App.db.load();
-                } else { alert("Location not found."); }
-            }
-        },
-        findBestContext: function(userQuery, data, topN = 5) {
+            findBestContext: function(userQuery, data, topN = 5) {
                 if (!userQuery || !data || data.length === 0) return [];
                 const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
                 return data.map(item => {
@@ -1201,6 +1088,8 @@
                     ${ctx}
                     USER QUERY: ${msg}
                     `;
+                    
+                    // 3. AUTO-DISCOVERY & FETCH
                     const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${App.key}`);
                     if (!listReq.ok) throw new Error("Could not list models. Check API Key.");
                     const listData = await listReq.json();
@@ -1235,6 +1124,118 @@
                 const d = document.createElement('div'); d.className = `msg ${s}`; d.innerHTML = App.md.render(t);
                 const f = document.getElementById('chat-feed'); f.appendChild(d); f.scrollTop = f.scrollHeight;
                 return d.id = 'm-'+Date.now();
+            }
+        },
+
+        // 6. ATLAS ENGINE (Now a separate Sibling)
+        atlas: {
+            scale: 1, panning: false, pointX: 0, pointY: 0, start: {x:0, y:0},
+            
+            initDual: function() {
+                this.viewId = 'dual-atlas-viewport';
+                this.contentId = 'dual-atlas-content';
+                setTimeout(() => {
+                    this.init(); 
+                    this.render();
+                    this.reset();
+                }, 100);
+            },
+
+            init: function() {
+                const view = document.getElementById(this.viewId || 'atlas-viewport');
+                if(!view) return; 
+
+                // DRAG EVENTS
+                view.onmousedown = (e) => {
+                    if(e.target.classList.contains('map-pin')) return;
+                    e.preventDefault();
+                    this.panning = true;
+                    this.start = { x: e.clientX - this.pointX, y: e.clientY - this.pointY };
+                };
+                
+                view.onmouseup = () => { this.panning = false; };
+                view.onmouseleave = () => { this.panning = false; };
+                
+                view.onmousemove = (e) => {
+                    if(!this.panning) return;
+                    e.preventDefault();
+                    this.pointX = e.clientX - this.start.x;
+                    this.pointY = e.clientY - this.start.y;
+                    this.update();
+                };
+                
+                // ZOOM EVENTS
+                view.onwheel = (e) => {
+                    e.preventDefault();
+                    const xs = (e.clientX - this.pointX) / this.scale;
+                    const ys = (e.clientY - this.pointY) / this.scale;
+                    const delta = -Math.sign(e.deltaY);
+                    const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5);
+                    
+                    this.pointX = e.clientX - (xs * newScale);
+                    this.pointY = e.clientY - (ys * newScale);
+                    this.scale = newScale;
+                    this.update();
+                };
+
+                // RIGHT CLICK (Admin Pin)
+                view.oncontextmenu = (e) => {
+                    if(App.role !== 'admin') return;
+                    e.preventDefault();
+                    const img = document.getElementById(this.contentId || 'atlas-img').querySelector('img') || document.getElementById('atlas-img');
+                    const rect = img.getBoundingClientRect();
+                    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+                    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+                    this.plantFlag(xPct, yPct);
+                };
+            },
+
+            update: function() {
+                const el = document.getElementById(this.contentId || 'atlas-content');
+                if(el) el.style.transform = `translate(${this.pointX}px, ${this.pointY}px) scale(${this.scale})`;
+            },
+            
+            reset: function() {
+                this.scale = 1; this.pointX = 0; this.pointY = 0;
+                this.update();
+            },
+
+            render: function() {
+                const layer = document.getElementById(this.contentId ? 'dual-atlas-pins' : 'atlas-pins');
+                if(!layer) return;
+                layer.innerHTML = "";
+                
+                App.data.forEach(d => {
+                    if(d.category === 'Location' && d.coords && !d.deleted) {
+                        const p = document.createElement('div');
+                        p.className = 'map-pin';
+                        p.style.left = d.coords.x + "%";
+                        p.style.top = d.coords.y + "%";
+                        p.innerHTML = `<div class="map-label">${d.eventName}</div>`;
+                        p.onclick = (e) => {
+                            e.stopPropagation();
+                            App.router.go('Profiles');
+                            App.admin.showProf(d.eventName);
+                        };
+                        layer.appendChild(p);
+                    }
+                });
+            },
+
+            plantFlag: async function(x, y) {
+                const candidates = App.data.filter(d => d.category === 'Location' && !d.coords && !d.deleted);
+                if(candidates.length === 0) return alert("No unmapped locations found.");
+                
+                const list = candidates.map(c => `• ${c.eventName}`).join("\n");
+                const name = prompt(`MAP PIN (${Math.floor(x)}%, ${Math.floor(y)}%)\nType Location Name:\n\n${list}`);
+                if(!name) return;
+                
+                const match = candidates.find(c => c.eventName.toLowerCase() === name.toLowerCase());
+                if(match) {
+                    await setDoc(doc(App.dbInstance, "lore_library", match.fid), { coords: {x:x, y:y} }, { merge: true });
+                    alert(`📍 Linked to ${match.eventName}`);
+                    App.db.load();
+                } else { alert("Location not found."); }
             }
         }
     };
