@@ -289,8 +289,7 @@
     </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, orderBy, query, Timestamp, setDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-
+    import { getFirestore, collection, getDocs, getDoc, orderBy, query, Timestamp, setDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
     // Configuration
     const cfg = { apiKey: "AIzaSyCMWe8wX4FeK1c20OyFsiXLlYmCfkrRprY", authDomain: "gemini--pilot.firebaseapp.com", projectId: "gemini--pilot", storageBucket: "gemini--pilot.firebasestorage.app", messagingSenderId: "257993365424", appId: "1:257993365424:web:aaa9d2c1fba11c20de6875" };
     
@@ -347,7 +346,7 @@ function getSystemPrimer(data) {
 
     // APP CORE
     window.App = {
-        version: "V21.24", // <--- ADD THIS LINE (Edit this to change version globally)
+        version: "V21.25", // <--- ADD THIS LINE (Edit this to change version globally)
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -447,30 +446,38 @@ function getSystemPrimer(data) {
         db: {
             // Inside App.db = { ... }
             load: async function() {
-                const q = query(collection(App.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
-                const snap = await getDocs(q);
-                App.data = [];
-                App.hiddenTags = []; // Reset the list
+            // 1. Fetch Main Data
+            const q = query(collection(App.dbInstance, "lore_library"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            App.data = [];
             
-                snap.forEach(d => { 
-                    const o = d.data(); 
-                    o.fid = d.id; 
+            snap.forEach(d => { 
+                // Don't mix the config file into the main data array
+                if (d.id === 'CONFIG_HIDDEN') return;
+                
+                const o = d.data(); 
+                o.fid = d.id; 
+                App.data.push(o); 
+            });
 
-                    // CATCH THE CONFIG RECORD
-                    if (d.fid === 'CONFIG_HIDDEN') {
-                        App.hiddenTags = o.list || []; // Store the blacklist in memory
-                    } else {
-                        App.data.push(o); // Normal data
-                    }
-                });
-
-                // Refresh Logic (same as before)
-                if(App.role === 'admin') {
-                    const profView = document.getElementById('view-admin-profiles');
-                    if(profView && !profView.classList.contains('hidden')) App.admin.renderProf();
-                    else App.admin.renderLib();
+            // 2. Fetch Hidden Tag Config (SEPARATELY)
+            try {
+                const cfgSnap = await getDoc(doc(App.dbInstance, "lore_library", "CONFIG_HIDDEN"));
+                if (cfgSnap.exists()) {
+                    // Force lowercase for better matching
+                    App.hiddenTags = (cfgSnap.data().list || []).map(t => String(t).toLowerCase());
+                } else {
+                    App.hiddenTags = [];
                 }
-            },
+            } catch(e) { console.log("Config load error:", e); App.hiddenTags = []; }
+
+            // 3. Refresh UI
+            if(App.role === 'admin') {
+                const profView = document.getElementById('view-admin-profiles');
+                if(profView && !profView.classList.contains('hidden')) App.admin.renderProf();
+                else App.admin.renderLib();
+            }
+        },
         },
 
         // 4. ADMIN FEATURES
