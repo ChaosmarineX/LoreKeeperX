@@ -115,7 +115,7 @@
         .bg-red { background: var(--red); color: #000; }
         .bg-dark { background: #333; color: #fff; }
 
-        /* === ATLAS (INTERACTIVE MAP) === */
+       /* === ATLAS (INTERACTIVE MAP) === */
         #atlas-viewport { overflow: hidden; position: relative; width: 100%; height: 100%; background: #0b0c10; cursor: grab; }
         #atlas-viewport:active { cursor: grabbing; }
         #atlas-content { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.1s linear; }
@@ -326,11 +326,11 @@
         </div>
     </div>
     </div>
-    <div id="lightbox" class="modal" onclick="this.style.display='none'">
-    <div style="position:relative; max-width:90vw; max-height:90vh;">
-        <img id="lightbox-img" src="" style="width:100%; height:100%; object-fit:contain; border:2px solid var(--gold); background:#000;">
-        <div style="text-align:center; margin-top:10px; color:#888; font-size:0.8rem;">CLICK ANYWHERE TO CLOSE</div>
+    <div id="lightbox" class="modal" onclick="this.style.display='none'" style="display:none; align-items:center; justify-content:center; overflow:auto;">
+    <div style="height:100%; display:flex; align-items:center;">
+        <img id="lightbox-img" src="" style="height:95vh; width:auto; max-width:none; border:2px solid var(--gold); box-shadow:0 0 50px #000;">
     </div>
+</div>
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -370,7 +370,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.33", 
+        version: "V21.34", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -441,6 +441,11 @@
                 document.querySelectorAll('.viewport').forEach(v => v.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-codex','active-lore'));
                 
+                if(tab==='Atlas') {
+                    App.atlas.init(); // <--- This starts the engine
+                    App.atlas.render();
+                }
+
                 let target = tab;
                 if(tab === 'Contribute') target = 'codex-contribute';
                 
@@ -835,9 +840,8 @@
                     <div class="dossier-grid">
                         <div style="text-align:center;">
                             <img src="${img}" class="dossier-img" 
-                                style="border-color:${isGhost ? 'var(--red)' : 'var(--gold)'};" 
-                                onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex'; event.stopPropagation();">
-                            
+                                style="border-color:${isGhost ? 'var(--red)' : 'var(--gold)'}; cursor:zoom-in;" 
+                                onclick="event.stopPropagation(); document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex';">
                             ${!isGhost ? `<div style="margin-top:5px; font-size:0.7rem; color:#666;">ID: ${master.fid}</div>` : ''}
                         </div>
                         <div>
@@ -921,16 +925,17 @@
         // 5. CODEX FEATURES
         codex: {
             // 6. ATLAS (Interactive Map System)
+        // 6. ATLAS ENGINE
         atlas: {
             scale: 1, panning: false, pointX: 0, pointY: 0, start: {x:0, y:0},
             
             init: function() {
                 const view = document.getElementById('atlas-viewport');
-                const content = document.getElementById('atlas-content');
-                
-                // 1. DRAG LOGIC
+                if(!view) return; // Safety check
+
+                // DRAG EVENTS
                 view.onmousedown = (e) => {
-                    if(e.target.classList.contains('map-pin')) return; // Don't drag if clicking a pin
+                    if(e.target.classList.contains('map-pin')) return;
                     e.preventDefault();
                     this.panning = true;
                     this.start = { x: e.clientX - this.pointX, y: e.clientY - this.pointY };
@@ -947,14 +952,12 @@
                     this.update();
                 };
                 
-                // 2. ZOOM LOGIC (Wheel)
+                // ZOOM EVENTS
                 view.onwheel = (e) => {
                     e.preventDefault();
                     const xs = (e.clientX - this.pointX) / this.scale;
                     const ys = (e.clientY - this.pointY) / this.scale;
                     const delta = -Math.sign(e.deltaY);
-                    
-                    // Cap Zoom between 0.2x and 5x
                     const newScale = Math.min(Math.max(0.2, this.scale + (delta*0.1)), 5);
                     
                     this.pointX = e.clientX - (xs * newScale);
@@ -963,24 +966,21 @@
                     this.update();
                 };
 
-                // 3. ADMIN: RIGHT-CLICK TO ADD PIN
+                // RIGHT CLICK (Admin Pin)
                 view.oncontextmenu = (e) => {
                     if(App.role !== 'admin') return;
                     e.preventDefault();
-                    
-                    // Calculate Click Position as Percentage of Image Size (so it works on any screen)
                     const img = document.getElementById('atlas-img');
                     const rect = img.getBoundingClientRect();
                     const xPct = ((e.clientX - rect.left) / rect.width) * 100;
                     const yPct = ((e.clientY - rect.top) / rect.height) * 100;
-                    
                     this.plantFlag(xPct, yPct);
                 };
             },
 
             update: function() {
                 const el = document.getElementById('atlas-content');
-                el.style.transform = `translate(${this.pointX}px, ${this.pointY}px) scale(${this.scale})`;
+                if(el) el.style.transform = `translate(${this.pointX}px, ${this.pointY}px) scale(${this.scale})`;
             },
             
             reset: function() {
@@ -988,53 +988,42 @@
                 this.update();
             },
 
-            // RENDER PINS
             render: function() {
                 const layer = document.getElementById('atlas-pins');
+                if(!layer) return;
                 layer.innerHTML = "";
                 
                 App.data.forEach(d => {
-                    // Only show records that have Coordinates (d.coords)
-                    if(d.category === 'Location' && d.coords) {
+                    if(d.category === 'Location' && d.coords && !d.deleted) {
                         const p = document.createElement('div');
                         p.className = 'map-pin';
                         p.style.left = d.coords.x + "%";
                         p.style.top = d.coords.y + "%";
                         p.innerHTML = `<div class="map-label">${d.eventName}</div>`;
-                        
-                        // Click to Open Record
                         p.onclick = (e) => {
-                            e.stopPropagation(); // Stop map drag
+                            e.stopPropagation();
                             App.router.go('Profiles');
                             App.admin.showProf(d.eventName);
                         };
-                        
                         layer.appendChild(p);
                     }
                 });
             },
 
-            // CREATE PIN LOGIC
             plantFlag: async function(x, y) {
-                // Find Locations that don't have pins yet
                 const candidates = App.data.filter(d => d.category === 'Location' && !d.coords && !d.deleted);
+                if(candidates.length === 0) return alert("No unmapped locations found.");
                 
-                if(candidates.length === 0) return alert("No unmapped locations found.\nCreate a 'Location' record first.");
-
-                // Simple Prompt (We can make this a fancy modal later)
                 const list = candidates.map(c => `• ${c.eventName}`).join("\n");
-                const name = prompt(`PLANT FLAG at ${Math.floor(x)}%, ${Math.floor(y)}%\n\nEnter the Exact Name of the location to link:\n\n${list}`);
-                
+                const name = prompt(`MAP PIN (${Math.floor(x)}%, ${Math.floor(y)}%)\nType Location Name:\n\n${list}`);
                 if(!name) return;
                 
                 const match = candidates.find(c => c.eventName.toLowerCase() === name.toLowerCase());
                 if(match) {
                     await setDoc(doc(App.dbInstance, "lore_library", match.fid), { coords: {x:x, y:y} }, { merge: true });
                     alert(`📍 Linked to ${match.eventName}`);
-                    App.db.load(); // Refresh to show pin
-                } else {
-                    alert("Location not found or already mapped.");
-                }
+                    App.db.load();
+                } else { alert("Location not found."); }
             }
         },
         findBestContext: function(userQuery, data, topN = 5) {
@@ -1061,7 +1050,7 @@
                 App.data.filter(d => d.status === 'Approved').forEach(d => {
                     if(term && !(d.eventName+d.category).toLowerCase().includes(term)) return;
                     const img = d.url && d.url.includes('http') ? d.url : GET_IMG(d.category, d.eventName);
-                    g.innerHTML += `<div style="background:#1f2833; border-radius:8px; overflow:hidden;"><img src="${img}" style="width:100%; height:150px; object-fit:cover;"><div style="padding:10px;"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
+                    g.innerHTML += `<div style="background:#1f2833; border-radius:8px; overflow:hidden;"><img src="${img}" style="width:100%; height:150px; object-fit:cover; cursor:zoom-in;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex';"><div style="padding:10px;"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
                 });
             },
             
