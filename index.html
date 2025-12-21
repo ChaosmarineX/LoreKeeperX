@@ -78,13 +78,15 @@
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
         /* 3. Fix Profile Dossier Images */
         .dossier-img { 
-            width: 100%;          
+            width: auto;          /* Let image determine width */
+            max-width: 100%;      /* Stop it from overflowing */
             height: auto;         
-            max-height: 500px;    /* Added cap */
-            object-fit: contain;  /* Changed from cover to contain */
+            max-height: 500px;    
+            display: block;       /* Centers it properly */
+            margin: 0 auto;       
+            object-fit: contain;  
             border: 1px solid var(--border); 
             background: #000; 
-            cursor: zoom-in;
         }
         /* 1. Fix Edit Modal Preview (Agatha fits the box) */
         #e-preview {
@@ -211,9 +213,7 @@
             <div style="display:flex; gap:10px; flex-shrink:0;">
     <button id="switch-btn" class="btn bg-dark hidden" onclick="App.auth.switch()">LOREKEEPER</button>
     
-    <button class="btn" style="background:transparent; color:#888;" title="API Settings" onclick="document.getElementById('key-modal').style.display='flex'">⚙️</button>
-    <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
-    
+    <button class="btn" style="background:transparent; color:#888;" title="API Settings" onclick="App.auth.openSettings()">⚙️</button> <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
     <button id="canvas-btn" class="btn bg-gold" style="margin-left:10px;" onclick="App.router.toggleDual()">🎨 CANVAS</button>
 </div>
         </header>
@@ -460,7 +460,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.53", 
+        version: "V21.54", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -514,6 +514,10 @@
             switch: function() {
                 App.role = "admin"; App.user = "The Archivist"; App.router.initAdmin();
             },
+            // FIXED: Improved Settings Modal Opener
+            openSettings: function() {
+                document.getElementById('key-modal').style.display='flex';
+            },
             saveKey: function() {
                 const k = document.getElementById('api-key-input').value.trim();
                 if(k) { App.key = k; localStorage.setItem('tarth_api_key', k); alert("Key Saved"); document.getElementById('key-modal').style.display='none'; }
@@ -544,10 +548,12 @@
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
                 document.getElementById('brand-text').innerHTML = `CODEX <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
-                // CRASH LINE REMOVED
                 document.getElementById('persona-select').classList.remove('hidden');
                 document.getElementById('switch-btn').classList.remove('hidden');
                 
+                // SHOW CANVAS BUTTON
+                document.getElementById('canvas-btn').classList.remove('hidden'); 
+
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
                 ['Chat','Contribute','Imagery','Atlas'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
                 
@@ -559,9 +565,11 @@
                 document.getElementById('app-ui').style.display='flex';
                 document.getElementById('brand-text').innerHTML = `LOREKEEPER <span style="font-size:0.8rem; opacity:0.5;">${App.version}</span>`;
                 document.getElementById('brand-text').style.color = "var(--gold)";
-                // CRASH LINE REMOVED
                 document.getElementById('persona-select').classList.add('hidden');
                 
+                // HIDE CANVAS BUTTON
+                document.getElementById('canvas-btn').classList.add('hidden');
+
                 const nav = document.getElementById('nav-container'); nav.innerHTML = "";
                 ['Library','Timeline','Profiles','Import'].forEach(t => nav.innerHTML += `<button class="nav-btn" onclick="App.router.go('${t}')">${t.toUpperCase()}</button>`);
                 
@@ -764,34 +772,51 @@
                 App.db.load();
             },
             // 1. ADD THIS TO App.admin
-        upload: async function() {
-            const fileInput = document.getElementById('e-file-input');
-            const file = fileInput.files[0];
-            if (!file) return alert("Select a file first.");
+            upload: async function() {
+                const fileInput = document.getElementById('e-file-input');
+                const file = fileInput.files[0];
+                if (!file) return alert("Select a file first.");
 
-            const btn = document.getElementById('btn-upload');
-            const originalText = btn.innerText;
-            btn.innerText = "⏳";
-            btn.disabled = true;
+                const btn = document.getElementById('btn-upload');
+                const originalText = btn.innerText;
+                btn.innerText = "⏳";
+                btn.disabled = true;
 
-            try {
-                const storageRef = ref(App.storage, 'uploads/' + Date.now() + '_' + file.name);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                // 1. Safety Timer: If upload takes > 15s, throw error
+                const timer = setTimeout(() => {
+                    btn.innerText = "⚠️ TIMEOUT";
+                    alert("Upload timed out. This is usually a Firebase Permission issue.\n\nDid you update the Storage Rules in Firebase Console to 'allow read, write: if true;'?");
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }, 15000);
+
+                try {
+                    const storageRef = ref(App.storage, 'uploads/' + Date.now() + '_' + file.name);
+                    
+                    // 2. Perform Upload
+                    await uploadBytes(storageRef, file);
+                    
+                    // 3. Get URL
+                    const url = await getDownloadURL(storageRef);
+                    
+                    // Clear timer since we succeeded
+                    clearTimeout(timer);
+
+                    document.getElementById('e-url').value = url;
+                    const img = document.getElementById('e-preview');
+                    img.src = url;
+                    img.style.display = 'block'; // Ensure it shows
+                    
+                    alert("Upload Complete!");
+                } catch(e) {
+                    clearTimeout(timer); // Clear timer on error
+                    console.error(e);
+                    alert("Upload Failed: " + e.message);
+                }
                 
-                document.getElementById('e-url').value = url;
-                const img = document.getElementById('e-preview');
-                img.src = url;
-                img.style.display = 'block';
-                
-                alert("Upload Complete!");
-            } catch(e) {
-                console.error(e);
-                alert("Upload Failed. Check Console.");
-            }
-            btn.innerText = originalText;
-            btn.disabled = false;
-        },
+                btn.innerText = originalText;
+                btn.disabled = false;
+            },
 
         // 2. UPDATE App.codex.renderImg (Fixes stretched gallery images)
         renderImg: function(filter="") {
