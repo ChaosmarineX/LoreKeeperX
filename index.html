@@ -77,13 +77,13 @@
         .profile-view { flex: 1; padding: 30px; overflow-y: auto; height: 100%; }
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
         .dossier-img { 
-            width: 100%; 
-            height: auto; /* Allow natural height */
-            max-height: 400px; /* Cap it so it doesn't take over the screen */
-            object-fit: contain; /* Prevents cropping/stretching */
+            width: 100%;          /* Forces it to fill the column width */
+            height: auto;         /* Allows height to grow naturally */
+            min-height: 200px;    /* Prevents it from being too tiny if image is broken */
+            object-fit: contain;  /* Ensures no cropping or stretching */
             border: 1px solid var(--border); 
-            background: #000; /* Fills empty space if ratio doesn't match */
-            cursor: zoom-in; /* Shows the user they can click */
+            background: #000; 
+            cursor: zoom-in;
         }
 
         /* === CHAT === */
@@ -272,8 +272,7 @@
             <input type="hidden" id="e-id">
             <div class="f-grid">
                 <div class="span2" style="text-align:center; background:#000; padding:10px; border:1px solid #333; margin-bottom:10px;">
-                    <img id="e-preview" src="" style="max-height:200px; max-width:100%; object-fit:contain; display:none;">
-                    <div id="e-preview-placeholder" style="color:#444; padding:20px;">NO IMAGE</div>
+                    <img id="e-preview" src="" style="width:100%; height:auto; object-fit:contain; display:none; cursor:zoom-in; border:1px solid #333;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex';"><div id="e-preview-placeholder" style="color:#444; padding:20px;">NO IMAGE</div>
                 </div>
                 <div class="span2"><span class="f-label">Name</span><input id="e-name" class="f-input"></div>
                 <div><span class="f-label">Status</span><select id="e-status" class="f-input"><option>Approved</option><option>Pending</option><option>Draft</option></select></div>
@@ -330,7 +329,7 @@
     <div style="height:100%; display:flex; align-items:center;">
         <img id="lightbox-img" src="" style="height:95vh; width:auto; max-width:none; border:2px solid var(--gold); box-shadow:0 0 50px #000;">
     </div>
-</div>
+    </div>
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -370,7 +369,7 @@
 
     // APP CORE
     window.App = {
-        version: "V21.34", 
+        version: "V21.35", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -1050,7 +1049,7 @@
                 App.data.filter(d => d.status === 'Approved').forEach(d => {
                     if(term && !(d.eventName+d.category).toLowerCase().includes(term)) return;
                     const img = d.url && d.url.includes('http') ? d.url : GET_IMG(d.category, d.eventName);
-                    g.innerHTML += `<div style="background:#1f2833; border-radius:8px; overflow:hidden;"><img src="${img}" style="width:100%; height:150px; object-fit:cover; cursor:zoom-in;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex';"><div style="padding:10px;"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
+                    g.innerHTML += `<div style="background:#1f2833; border-radius:8px; overflow:hidden;"><img src="${img}" style="width:100%; height:auto; aspect-ratio:16/9; object-fit:cover; cursor:zoom-in;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox').style.display='flex';"><strong>${d.eventName}</strong><br><small style="color:var(--cyan)">${d.category}</small></div></div>`;
                 });
             },
             
