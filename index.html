@@ -116,7 +116,15 @@
         .bg-dark { background: #333; color: #fff; }
 
        /* === ATLAS (INTERACTIVE MAP) === */
-        #atlas-viewport { overflow: hidden; position: relative; width: 100%; height: 100%; background: #0b0c10; cursor: grab; }
+        #atlas-viewport { 
+            overflow: hidden; 
+            position: relative; 
+            width: 100%; 
+            height: 100%;       /* Critical */
+            min-height: 500px;  /* Safety fallback */
+            ackground: #0b0c10; 
+            cursor: grab; 
+        }
         #atlas-viewport:active { cursor: grabbing; }
         #atlas-content { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.1s linear; }
         
@@ -125,6 +133,24 @@
         
         .map-label { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; pointer-events: none; opacity: 0; transition: 0.2s; border: 1px solid var(--border); }
         .map-pin:hover .map-label { opacity: 1; bottom: 30px; }
+
+        /* === CANVAS MODE (COMMAND CENTER) === */
+        .canvas-layout { display: flex; height: 100%; gap: 20px; padding: 15px; box-sizing: border-box; background: #0b0c10; }
+        
+        /* Left Column: Chat */
+        .canvas-chat-col { width: 450px; display: flex; flex-direction: column; position: relative; flex-shrink: 0; }
+        .canvas-feed { flex: 1; overflow-y: auto; padding-bottom: 80px; font-size: 0.95rem; }
+        .canvas-feed::-webkit-scrollbar { width: 6px; }
+        .canvas-feed::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        /* Floating Input Pill */
+        .canvas-input-dock { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px 0; background: linear-gradient(to top, #0b0c10 80%, transparent); }
+        .canvas-pill { background: #1f2833; border: 1px solid #333; border-radius: 25px; display: flex; align-items: center; padding: 5px 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition:0.2s; }
+        .canvas-pill:focus-within { border-color: var(--cyan); box-shadow: 0 4px 20px rgba(75, 255, 255, 0.1); }
+
+        /* Right Column: Work Surface (The Card) */
+        .canvas-card { flex: 1; background: #000; border-radius: 16px; border: 1px solid #333; overflow: hidden; position: relative; box-shadow: -5px 0 30px rgba(0,0,0,0.3); display:flex; flex-direction:column; }
+        .canvas-toolbar { position: absolute; top: 15px; right: 15px; z-index: 100; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
@@ -167,6 +193,7 @@
                 <button id="switch-btn" class="btn bg-dark hidden" onclick="App.auth.switch()">TO ADMIN</button>
                 <button class="btn" style="background:transparent; color:#888;" title="API Settings" onclick="document.getElementById('key-modal').style.display='flex'">⚙️</button>
                 <button class="btn" style="background:transparent; color:#888;" onclick="location.reload()">⏻</button>
+                <button class="btn bg-gold" style="margin-left:10px;" onclick="App.router.toggleDual()">⚔ COMMAND MODE</button>
             </div>
         </header>
 
@@ -184,7 +211,38 @@
                 </div>
             </div>
         </div>
+        <div id="view-dual-mode" class="viewport hidden" style="height:100%;">
+            <div class="canvas-layout">
+                
+                <div class="canvas-chat-col">
+                    <div id="dual-chat-feed" class="canvas-feed">
+                        </div>
+                    
+                    <div class="canvas-input-dock">
+                        <div class="canvas-pill">
+                            <span style="color:#888; font-size:1.2rem; padding:0 5px; cursor:pointer;">+</span>
+                            <input id="dual-chat-input" style="flex:1; background:transparent; border:none; color:#fff; padding:10px; outline:none; font-family:inherit;" placeholder="Ask Codex...">
+                            <button class="btn bg-cyan" style="border-radius:20px; padding:6px 12px; font-size:0.8rem;" onclick="App.codex.sendDual()">➤</button>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="canvas-card">
+                    <div class="canvas-toolbar">
+                        <button class="btn bg-dark" style="border-radius:20px; font-size:0.7rem; opacity:0.8;" onclick="App.atlas.resetDual()">Recenter</button>
+                        <button class="btn bg-dark" style="border-radius:20px; font-size:0.7rem; opacity:0.8;" onclick="App.router.toggleDual()">✖ Close</button>
+                    </div>
+
+                    <div id="dual-atlas-viewport" style="width:100%; height:100%; cursor:grab; background:#0b0c10;">
+                        <div id="dual-atlas-content" style="transform-origin:0 0;">
+                            <img id="dual-atlas-img" src="Tarth 2.1 80.jpg" style="display:block; pointer-events:none;" onerror="this.src='https://placehold.co/1920x1080/222/FFF?text=MAP+FILE+MISSING'">
+                            <div id="dual-atlas-pins"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
         <div id="view-admin-timeline" class="viewport hidden">
             <div class="scroll-y">
                 <div id="timeline-list" class="tl-feed"></div>
@@ -409,6 +467,24 @@
 
         // 2. ROUTING
         router: {
+            toggleDual: function() {
+                const dual = document.getElementById('view-dual-mode');
+                const isHidden = dual.classList.contains('hidden');
+                
+                // Hide standard views
+                document.querySelectorAll('.viewport').forEach(v => v.classList.add('hidden'));
+                
+                if(isHidden) {
+                    dual.classList.remove('hidden');
+                    // Sync Chat
+                    document.getElementById('dual-chat-feed').innerHTML = document.getElementById('chat-feed').innerHTML;
+                    // Start Map Engine for the Card
+                    App.atlas.initDual();
+                } else {
+                    dual.classList.add('hidden');
+                    this.go('Chat');
+                }
+            },
             initPlayer: function() {
                 document.getElementById('gatekeeper').style.display='none';
                 document.getElementById('app-ui').style.display='flex';
@@ -928,6 +1004,17 @@
         atlas: {
             scale: 1, panning: false, pointX: 0, pointY: 0, start: {x:0, y:0},
             
+            initDual: function() {
+                this.viewId = 'dual-atlas-viewport';
+                this.contentId = 'dual-atlas-content';
+                // Delay slightly to allow CSS to calculate card size
+                setTimeout(() => {
+                    this.init(); 
+                    this.render();
+                    this.reset();
+                }, 100);
+            },
+
             init: function() {
                 const view = document.getElementById('atlas-viewport');
                 if(!view) return; // Safety check
@@ -1067,24 +1154,53 @@
                 });
             },
             
+            // New Dual Send Function
+            sendDual: function() {
+                const inp = document.getElementById('dual-chat-input');
+                const mainInp = document.getElementById('chat-input');
+                if(!inp.value) return;
+                
+                mainInp.value = inp.value; // Mirror to main input
+                inp.value = "";
+                this.send(); // Fire main logic
+                
+                // Sync feed after delay
+                setTimeout(() => {
+                    document.getElementById('dual-chat-feed').innerHTML = document.getElementById('chat-feed').innerHTML;
+                    const f = document.getElementById('dual-chat-feed'); f.scrollTop = f.scrollHeight;
+                }, 1500);
+            },
+
+            // REPLACEMENT SEND FUNCTION (With Image Fix)
             send: async function() {
                 const inp = document.getElementById('chat-input');
                 const msg = inp.value; 
-                if(!App.key) { App.codex.msg(`⚠️ <strong>Neural Link Offline.</strong><br>API Key missing.<br><button class='btn bg-cyan' style='margin-top:10px; font-size:0.8rem;' onclick='document.getElementById("key-modal").style.display="flex"'>[CONNECT NEURAL LINK]</button>`, 'ai'); return; }
+                
+                if(!App.key) return alert("API Key Missing");
                 if(!msg) return;
+
                 this.msg(msg, 'user'); inp.value = "";
                 const loadId = this.msg("Accessing Archives...", 'ai');
                 
                 try {
                     const hits = this.findBestContext(msg, App.data);
-                    const ctx = hits.map(d => `[ENTRY: ${d.eventName}]\nTAGS: ${d.tags||''}\n${d.narrative}`).join("\n\n");
-                    const primer = App.data.map(d => d.eventName).join(", ");
-                    const sys = document.getElementById('persona-select').value;
-                    const personas = { 'Codex': "You are Codex, Steward.", 'Saverath': "You are Saverath, Historian.", 'NaVan': "You are Na'Van, Soldier." };
-                    const basePersona = personas[sys] || personas['Codex'];
-
-                    const fullPrompt = `SYSTEM: ${basePersona}\nDATABASE INDEX: ${primer}\nRELEVANT ARCHIVES:\n${ctx}\nUSER QUERY: ${msg}`;
                     
+                    // 1. INJECT URLS INTO CONTEXT
+                    const ctx = hits.map(d => `[ENTRY: ${d.eventName}]\nIMAGE_URL: ${d.url || 'None'}\nTAGS: ${d.tags||''}\n${d.narrative}`).join("\n\n");
+                    const primer = App.data.map(d => d.eventName).join(", ");
+                    
+                    // 2. AGGRESSIVE PROMPT (Forces Image Display)
+                    const fullPrompt = `
+                    SYSTEM: You are the Codex Steward.
+                    CRITICAL INSTRUCTION: You MUST display images if available. 
+                    If a record has an 'IMAGE_URL', format it EXACTLY like this: ![Title](IMAGE_URL).
+                    Do not apologize or say you cannot show images.
+                    
+                    DATABASE INDEX: ${primer}
+                    RELEVANT ARCHIVES:
+                    ${ctx}
+                    USER QUERY: ${msg}
+                    `;
                     const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${App.key}`);
                     if (!listReq.ok) throw new Error("Could not list models. Check API Key.");
                     const listData = await listReq.json();
