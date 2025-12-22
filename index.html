@@ -450,7 +450,7 @@
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
     // APP CORE
     window.App = {
-        version: "V21.59", 
+        version: "V21.591", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -846,19 +846,19 @@
             magicLens: function() {
                 const btn = document.getElementById('btn-gen') || event.target;
                 const urlInput = document.getElementById('e-url');
-                const docId = document.getElementById('e-id').value; // Capture ID immediately
+                const docId = document.getElementById('e-id').value; 
 
-                // 1. CAVEAT: Block if image exists
+                // 1. Block if image exists
                 if (urlInput.value.trim().length > 10) {
                      return alert("⛔ IMAGE EXISTS.\n\nPlease clear the URL field to generate a new one.");
                 }
                 
-                // 2. REQUIRE SAVED RECORD (For background saving)
+                // 2. Require Saved Record
                 if (!docId) {
                     return alert("Please SAVE this record at least once before generating images.");
                 }
 
-                // 3. UI FEEDBACK
+                // 3. UI Feedback
                 const originalText = "✨ GENERATE";
                 btn.innerText = "⏳ DREAMING...";
                 btn.disabled = true;
@@ -868,35 +868,32 @@
                 const cat = document.getElementById('e-cat').value;
                 const desc = document.getElementById('e-narr').value;
                 
-                // 4. BUILD URL
+                // 4. BUILD URL (Upgraded to Flux Model)
                 const seed = Math.floor(Math.random() * 999999);
-                const prompt = `Fantasy concept art of ${name}, ${cat}. ${desc.substring(0,80)}. Detailed, 8k resolution.`;
-                const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&seed=${seed}`;
+                // refined prompt for sharpness
+                const prompt = `cinematic shot of ${name}, ${cat}. ${desc.substring(0,100)}. intricate detail, sharp focus, dramatic lighting, 8k, masterpiece`;
                 
-                // 5. BACKGROUND LOADER
+                // ADDED: &model=flux and increased size to 1024x768
+                const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=768&nologo=true&seed=${seed}&model=flux`;
+                
+                // 5. Background Loader
                 const loader = new Image();
                 
                 loader.onload = async function() {
-                    // A. AUTO-SAVE to Database (Background)
-                    // Uses the 'docId' we captured at the start
                     try {
                         const docRef = doc(App.dbInstance, "lore_library", docId);
                         await setDoc(docRef, { url: url }, { merge: true });
-                        console.log("Background Image Saved to " + docId);
                     } catch(e) { console.error("Auto-save failed", e); }
 
-                    // B. UPDATE UI (Only if you are still looking at the same record)
                     const currentId = document.getElementById('e-id').value;
                     if (currentId === docId) {
                         document.getElementById('e-url').value = url;
-                        
                         const img = document.getElementById('e-preview');
                         const txt = document.getElementById('e-preview-placeholder');
                         img.src = url;
                         img.style.display = 'inline-block';
                         txt.style.display = 'none';
                         
-                        // Success State
                         btn.innerText = "✅ SAVED";
                         setTimeout(() => { 
                             btn.innerText = originalText; 
@@ -1153,20 +1150,22 @@
             dream: function(promptText) {
                 if(!promptText) return alert("Describe what you want to see.");
                 
-                // Force Open Canvas
                 const canvas = document.getElementById('view-dual-mode');
                 canvas.classList.remove('hidden'); 
-                
-                // Force Image Mode (Hide Map)
+                document.getElementById('dual-chat-feed').innerHTML = document.getElementById('chat-feed').innerHTML;
+
                 document.getElementById('dual-atlas-viewport').classList.add('hidden');
                 document.getElementById('dual-image-viewport').classList.remove('hidden');
 
                 const imgTarget = document.getElementById('dual-image-target');
-                imgTarget.src = "https://placehold.co/800x600/000/FFF?text=DREAMING...";
+                imgTarget.src = "https://placehold.co/1024x768/000/FFF?text=DREAMING...";
                 
                 const seed = Math.floor(Math.random() * 999999);
-                const safePrompt = encodeURIComponent(promptText + ", fantasy art style, detailed, 8k");
-                const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=600&nologo=true&seed=${seed}`;
+                // refined prompt for sharpness
+                const safePrompt = encodeURIComponent(promptText + ", cinematic lighting, intricate detail, photorealistic, 8k, sharp focus");
+                
+                // ADDED: &model=flux and increased size
+                const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=768&nologo=true&seed=${seed}&model=flux`;
                 
                 const loader = new Image();
                 loader.onload = () => { imgTarget.src = url; };
