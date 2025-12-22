@@ -75,15 +75,32 @@
         .profile-item { padding: 12px 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; transition: 0.2s; }
         .profile-item:hover { background: #333; color: #fff; padding-left: 20px; }
         .profile-view { flex: 1; padding: 30px; overflow-y: auto; height: 100%; }
-        .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
+        .dossier-grid { 
+            display: flex; 
+            flex-wrap: wrap;       /* wraps to next line if screen is narrow */
+            gap: 30px; 
+            margin-top: 20px; 
+            align-items: start;    /* aligns tops of image and text */
+        }
+
+        /* The Image Column */
+        .dossier-grid > div:first-child {
+            flex: 0 0 300px;       /* Force fixed width of 300px */
+            max-width: 100%;       /* Allow shrinking on phones */
+        }
+
+        /* The Text Column */
+        .dossier-grid > div:last-child {
+            flex: 1;               /* Take remaining space */
+            min-width: 300px;      /* Wrap if less than 300px space left */
+        }
         /* 3. Fix Profile Dossier Images */
-        dossier-img { 
-            height: 400px;        /* Fixed height */
-            width: auto;          /* Width adjusts naturally */
-            max-width: 100%;      /* Never overflow container */
+        .dossier-img { 
+            width: 100%;           /* Fill the 300px container */
+            height: auto;          /* Natural height (no stretching) */
+            max-height: 500px;     /* Cap height for tall portraits */
             display: block;       
-            margin: 0 auto;       
-            object-fit: contain;  /* Ensures entire image is visible */
+            object-fit: contain;   
             border: 1px solid var(--border); 
             background: #000; 
         }
@@ -433,7 +450,7 @@
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
     // APP CORE
     window.App = {
-        version: "V21.58", 
+        version: "V21.59", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
