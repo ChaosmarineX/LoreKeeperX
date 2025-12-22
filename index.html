@@ -77,14 +77,13 @@
         .profile-view { flex: 1; padding: 30px; overflow-y: auto; height: 100%; }
         .dossier-grid { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 20px; }
         /* 3. Fix Profile Dossier Images */
-        .dossier-img { 
-            width: auto;          /* Crucial: prevents stretching */
-            max-width: 100%;      
-            height: auto;         
-            max-height: 500px;    
+        dossier-img { 
+            height: 400px;        /* Fixed height */
+            width: auto;          /* Width adjusts naturally */
+            max-width: 100%;      /* Never overflow container */
             display: block;       
             margin: 0 auto;       
-            object-fit: contain;  
+            object-fit: contain;  /* Ensures entire image is visible */
             border: 1px solid var(--border); 
             background: #000; 
         }
@@ -106,14 +105,14 @@
         .msg.ai { align-self: flex-start; background: rgba(102, 252, 241, 0.05); border-left: 3px solid var(--cyan); }
         .msg button { cursor: pointer; } 
         .msg img {
-            width: auto;          /* Crucial: prevents stretching */
-            height: auto;
-            max-height: 400px;
+            height: 300px;       /* Fixed height for chat */
+            width: auto;
             max-width: 100%;
             border-radius: 8px;
             margin-top: 10px;
             object-fit: contain;
         }
+        td img { height: 40px; width: auto; }
         .chat-tools { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: #121418; }
 
         /* === FORMS (SHARED) === */
@@ -276,12 +275,29 @@
         </div>
 
         <div id="view-admin-import" class="viewport hidden">
-            <div class="scroll-y" style="text-align:center;">
-                <textarea id="import-text" style="width:100%; height:300px; background:#000; color:#fff; font-family:monospace;" placeholder="Paste CSV Data..."></textarea>
-                <div style="margin-top:20px;">
-                    <button class="btn bg-green" onclick="App.admin.import()">PROCESS IMPORT</button>
-                    <button class="btn bg-gold" onclick="App.admin.export()">EXPORT DATABASE</button>
+            <div class="scroll-y" style="text-align:center; max-width:800px; margin:0 auto;">
+                <h2 style="color:var(--gold)">DATA IMPORT CENTER</h2>
+                
+                <div style="display:flex; gap:20px; margin-bottom:20px; justify-content:center;">
+                    <div style="background:var(--panel); padding:20px; border-radius:8px; width:45%;">
+                        <h3 style="margin-top:0;">📂 Mass Upload</h3>
+                        <p style="color:#888; font-size:0.8rem;">Upload a CSV or JSON file to bulk-create records.</p>
+                        <button class="btn bg-dark" onclick="App.admin.downloadTemplate()">⬇ Download CSV Template</button>
+                        <input type="file" id="import-file" style="margin-top:15px;" onchange="App.admin.handleFile(this)">
+                    </div>
+                    
+                    <div style="background:var(--panel); padding:20px; border-radius:8px; width:45%;">
+                        <h3 style="margin-top:0;">📝 Text Sifter</h3>
+                        <p style="color:#888; font-size:0.8rem;">Paste journal text to extract tags (Coming).</p>
+                        <textarea id="import-text" style="width:100%; height:60px; background:#000; border:1px solid #333; color:#fff;" placeholder="Paste text..."></textarea>
+                    </div>
                 </div>
+
+                <div id="import-preview" style="text-align:left; border:1px solid #333; padding:10px; min-height:100px; margin-bottom:20px;">
+                    <div style="color:#666; font-style:italic; text-align:center; padding-top:40px;">Preview data will appear here...</div>
+                </div>
+
+                <button class="btn bg-green" onclick="App.admin.processImport()">🚀 PROCESS IMPORT</button>
             </div>
         </div>
 
@@ -417,7 +433,7 @@
     const GET_IMG = (c,n) => { let bg='333'; if((c||'').match(/People|Faction/)) bg='1a1a2e'; if((c||'').match(/Location/)) bg='0f2027'; return `https://placehold.co/600x400/${bg}/FFF?text=${(n||'IMG').replace(/ /g,'+')}`; };
     // APP CORE
     window.App = {
-        version: "V21.57", 
+        version: "V21.58", 
         dbInstance: null, data: [], user: "Guest", role: "guest",
         key: localStorage.getItem('tarth_api_key') || localStorage.getItem('tarth_key') || "", 
         md: window.markdownit({html: true, breaks: true}),
@@ -590,7 +606,9 @@
         },
 
         // 4. ADMIN FEATURES
+        // UPDATE App.admin:
         admin: {
+            // 1. UPDATED RENDER LIB (Adds Date Column)
             renderLib: function() {
                 const t = document.querySelector('#lib-table tbody'); t.innerHTML = "";
                 const term = document.getElementById('filt-search').value.toLowerCase();
@@ -599,27 +617,74 @@
                 const camp = document.getElementById('filt-camp').value;
                 const showBin = (stat === 'Recycle Bin');
             
-                App.data.forEach(d => {
+                // Sort by Timestamp Descending
+                App.data.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0)).forEach(d => {
                     if (showBin && !d.deleted) return;
                     if (!showBin && d.deleted) return;
-                
                     if(cat !== 'All' && d.category !== cat) return;
                     if(!showBin && stat !== 'All' && d.status !== stat) return;
                     if(camp !== 'All' && d.campaign !== camp) return;
-
-                    const haystack = (String(d.eventName) + String(d.author) + String(d.narrative) + String(d.tags)).toLowerCase();
-                    if(term && !haystack.includes(term)) return;
+                    if(term && !(d.eventName+d.author+d.tags).toLowerCase().includes(term)) return;
 
                     const tr = document.createElement('tr');
                     const statusColor = d.deleted ? 'var(--red)' : (d.status=='Approved'?'var(--green)':'#aaa');
-                    const statusText = d.deleted ? 'DELETED' : d.status;
-                
-                    tr.innerHTML = `<td><span class="status-tag" style="color:${statusColor}">${statusText}</span></td><td style="font-weight:bold; color:#fff;">${d.eventName}</td><td>${d.category}</td><td>${d.campaign||'-'}</td><td>${d.gameDate||'-'}</td><td>${d.author||'System'}</td>`;
+                    
+                    // Format Date
+                    let created = "-";
+                    if(d.timestamp) created = new Date(d.timestamp.seconds*1000).toLocaleDateString();
+
+                    tr.innerHTML = `
+                        <td><span class="status-tag" style="color:${statusColor}">${d.deleted?'DELETED':d.status}</span></td>
+                        <td style="font-weight:bold; color:#fff;">${d.eventName}</td>
+                        <td>${d.category}</td>
+                        <td>${d.campaign||'-'}</td>
+                        <td style="color:#888; font-size:0.8rem;">${created}</td>
+                        <td>${d.author||'System'}</td>`;
                     tr.onclick = () => this.edit(d.fid);
                     t.appendChild(tr);
                 });
             },
+            // 2. NEW IMPORT TOOLS
+            downloadTemplate: function() {
+                const csv = "eventName,category,gameDate,location,narrative,tags,status,author\nExample Event,Event,1015,The Citadel,Something happened here.,war;politics,Approved,GM";
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = "lorekeeper_template.csv"; a.click();
+            },
 
+            handleFile: function(input) {
+                const file = input.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('import-text').value = e.target.result;
+                    alert("File loaded! Click 'Process Import' to save records.");
+                };
+                reader.readAsText(file);
+            },
+            
+            processImport: function() {
+                const raw = document.getElementById('import-text').value;
+                if(!raw) return alert("No data to import.");
+                
+                // Simple CSV Parser
+                Papa.parse(raw, { header: true, skipEmptyLines: true, complete: async (res) => {
+                    let count = 0;
+                    for(let row of res.data) {
+                        if(!row.eventName) continue;
+                        await setDoc(doc(App.dbInstance, "lore_library", `IMP-${Date.now()}-${count}`), {
+                            eventName: row.eventName, category: row.category || 'Journal',
+                            gameDate: row.gameDate || '', location: row.location || '',
+                            narrative: row.narrative || '', tags: row.tags || '',
+                            status: row.status || 'Draft', author: App.user,
+                            timestamp: Timestamp.now()
+                        });
+                        count++;
+                    }
+                    alert(`Imported ${count} records successfully.`);
+                    App.db.load();
+                }});
+            },
             hideTag: async function(tagName) {
                 if(!confirm(`Hide "${tagName}" from the index?`)) return;
                 const safeTag = String(tagName).toLowerCase();
@@ -724,50 +789,41 @@
                 App.db.load();
             },
             // 1. ADD THIS TO App.admin
-            upload: async function() {
+            // 1. BASE64 TEXT UPLOAD (No Server Needed)
+            upload: function() {
                 const fileInput = document.getElementById('e-file-input');
                 const file = fileInput.files[0];
                 if (!file) return alert("Select a file first.");
 
+                // SAFETY LIMIT: 800KB (To respect Firestore 1MB Limit)
+                if(file.size > 800000) return alert("⛔ FILE TOO LARGE.\n\nDatabase storage is limited to small images (under 800KB).\nFor large maps, please host externally and paste the link.");
+
                 const btn = document.getElementById('btn-upload');
                 const originalText = btn.innerText;
-                btn.innerText = "⏳";
+                btn.innerText = "⚙️ PROCESSING...";
                 btn.disabled = true;
 
-                // 1. Safety Timer: If upload takes > 15s, throw error
-                const timer = setTimeout(() => {
-                    btn.innerText = "⚠️ TIMEOUT";
-                    alert("Upload timed out. This is usually a Firebase Permission issue.\n\nDid you update the Storage Rules in Firebase Console to 'allow read, write: if true;'?");
-                    btn.disabled = false;
-                    btn.innerText = originalText;
-                }, 15000);
-
-                try {
-                    const storageRef = ref(App.storage, 'uploads/' + Date.now() + '_' + file.name);
-                    
-                    // 2. Perform Upload
-                    await uploadBytes(storageRef, file);
-                    
-                    // 3. Get URL
-                    const url = await getDownloadURL(storageRef);
-                    
-                    // Clear timer since we succeeded
-                    clearTimeout(timer);
-
-                    document.getElementById('e-url').value = url;
-                    const img = document.getElementById('e-preview');
-                    img.src = url;
-                    img.style.display = 'block'; // Ensure it shows
-                    
-                    alert("Upload Complete!");
-                } catch(e) {
-                    clearTimeout(timer); // Clear timer on error
-                    console.error(e);
-                    alert("Upload Failed: " + e.message);
-                }
+                const reader = new FileReader();
                 
-                btn.innerText = originalText;
-                btn.disabled = false;
+                reader.onload = function(e) {
+                    const base64String = e.target.result;
+                    
+                    // 1. Put string into URL field
+                    document.getElementById('e-url').value = base64String;
+                    
+                    // 2. Show Preview
+                    const img = document.getElementById('e-preview');
+                    img.src = base64String;
+                    img.style.display = 'block';
+                    document.getElementById('e-preview-placeholder').style.display='none';
+                    
+                    alert("✅ Image Processed.\n\nClick 'SAVE RECORD' to commit it to the database.");
+                    
+                    btn.innerText = originalText; 
+                    btn.disabled = false; 
+                };
+                
+                reader.readAsDataURL(file);
             },
 
             magicLens: function() {
@@ -1056,26 +1112,23 @@
 
         // 5. CODEX FEATURES
         codex: {
+            // 3. FIXED PERSONA LOADING (Strict Category Check)
             loadPersonas: function() {
                 const sel = document.getElementById('persona-select');
                 if(!sel) return;
                 sel.innerHTML = "";
                 
-                // Add Default
                 const optDefault = document.createElement('option');
                 optDefault.value = "Codex"; optDefault.innerText = "Codex (Steward)";
                 sel.appendChild(optDefault);
 
-                // FIXED: Broader search (Checks Category OR Tags for 'Persona')
-                const voices = App.data.filter(d => 
-                    (d.category === 'Persona' || d.category === 'System' || (d.tags||'').includes('Persona')) && 
-                    (d.campaign === App.campaign || d.campaign === 'All' || !d.campaign)
-                );
+                // STRICT FILTER: Only Category = 'Persona'
+                const voices = App.data.filter(d => d.category === 'Persona' && !d.deleted);
 
                 voices.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.eventName;
-                    opt.innerText = `${v.eventName}`;
+                    opt.innerText = v.eventName;
                     sel.appendChild(opt);
                 });
             },
@@ -1083,12 +1136,11 @@
             dream: function(promptText) {
                 if(!promptText) return alert("Describe what you want to see.");
                 
-                // FIXED: AUTO-OPEN CANVAS
+                // Force Open Canvas
                 const canvas = document.getElementById('view-dual-mode');
                 canvas.classList.remove('hidden'); 
-                document.getElementById('dual-chat-feed').innerHTML = document.getElementById('chat-feed').innerHTML;
-
-                // Ensure Image Mode is Active (Hide Map)
+                
+                // Force Image Mode (Hide Map)
                 document.getElementById('dual-atlas-viewport').classList.add('hidden');
                 document.getElementById('dual-image-viewport').classList.remove('hidden');
 
